@@ -35,9 +35,13 @@
 
 \begin{document}
 
-\maketitle
-
-\input{sections/00_abstract}
+\twocolumn[{%
+  \begin{@twocolumnfalse}
+    \maketitle
+    \input{sections/00_abstract}
+    \vspace{1.5em}
+  \end{@twocolumnfalse}
+}]
 
 % --- Sections ---
 \input{sections/01_introduction}
