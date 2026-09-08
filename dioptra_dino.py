@@ -1479,10 +1479,38 @@ if __name__ == "__main__":
     parser.add_argument("--batch-size", type=int, default=8, help="Batch size per GPU")
     parser.add_argument("--lr-backbone", type=float, default=2e-5, help="Learning rate for DINOv2 backbone")
     parser.add_argument("--lr-head", type=float, default=2e-4, help="Learning rate for geometric head")
+    parser.add_argument("--eval", action="store_true", help="Run quantitative evaluation benchmark")
+    parser.add_argument("--sweep", action="store_true", help="Run multi-FOV sweep visualization")
+    parser.add_argument("--checkpoint", type=str, default="outputs_dino/dioptra_dino_best.pt", help="Path to model checkpoint")
+    parser.add_argument("--image", type=str, default=None, help="Path to input image for single evaluation / sweep")
+    parser.add_argument("--depth", type=str, default=None, help="Path to ground truth depth map (.npy)")
+    parser.add_argument("--output-dir", type=str, default="outputs_dino", help="Directory to save figures and metrics")
     args = parser.parse_args()
 
     if args.train is not None:
         train_dioptra_dino(args)
+    elif args.eval or args.sweep:
+        from scripts.eval_dino import load_model, run_fov_sweep, run_benchmark
+        device = torch.device("cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu"))
+        model = load_model(args.checkpoint, device=device)
+        if args.sweep or args.image:
+            img_target = args.image
+            if not img_target:
+                for cand in ["test_samples/abandonedfactory/000300_left.png", "test_samples/000022_left.png"]:
+                    if os.path.exists(cand):
+                        img_target = cand
+                        break
+            if img_target:
+                sweep_out = os.path.join(args.output_dir, "fig_dino_multi_fov_sweep.png")
+                run_fov_sweep(model, img_target, args.depth, output_path=sweep_out, device=device)
+        if args.eval:
+            test_dir = "test_samples"
+            if not os.path.exists(test_dir):
+                for cand_dir in ["/kaggle/input", "."]:
+                    if os.path.exists(cand_dir):
+                        test_dir = cand_dir
+                        break
+            run_benchmark(model, test_dir=test_dir, device=device, output_dir=args.output_dir)
     elif args.smoke:
         run_smoke_test()
     elif args.count:
