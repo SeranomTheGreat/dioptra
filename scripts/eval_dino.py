@@ -80,8 +80,14 @@ def load_model(checkpoint_path: Optional[str] = None, device: torch.device = tor
 
     if checkpoint_path and os.path.exists(checkpoint_path):
         print(f"[Dioptra-DINO Eval] Loading weights from: {checkpoint_path}")
-        state = torch.load(checkpoint_path, map_location=device)
-        if "model_state_dict" in state:
+        import __main__
+        if not hasattr(__main__, "DioptraDINOConfig"):
+            setattr(__main__, "DioptraDINOConfig", DioptraDINOConfig)
+        try:
+            state = torch.load(checkpoint_path, map_location=device, weights_only=False)
+        except TypeError:
+            state = torch.load(checkpoint_path, map_location=device)
+        if isinstance(state, dict) and "model_state_dict" in state:
             state = state["model_state_dict"]
         # Strip DataParallel 'module.' prefix if present
         cleaned_state = {}

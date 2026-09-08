@@ -34,6 +34,7 @@ outputs/viz/
 outputs/candidates/
 outputs/eval_baseline/
 outputs/eval_stage2/
+outputs_dino/
 
 # OS and IDE files
 .DS_Store
