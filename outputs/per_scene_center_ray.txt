@@ -1,0 +1,16 @@
+Per-Scene Breakdown (sorted by abs_rel)
+============================================================
+
+Top-5 Best Scenes:
+  abandonedfactory/P011/000675_left: abs_rel=0.1159
+  abandonedfactory/P011/000674_left: abs_rel=0.1171
+  abandonedfactory/P011/000676_left: abs_rel=0.1205
+  abandonedfactory/P011/000090_left: abs_rel=0.1215
+  abandonedfactory/P011/000673_left: abs_rel=0.1246
+
+Top-5 Worst Scenes:
+  abandonedfactory/P011/000662_left: abs_rel=0.7578
+  abandonedfactory/P011/000657_left: abs_rel=0.7706
+  abandonedfactory/P011/000664_left: abs_rel=0.7858
+  abandonedfactory/P011/000663_left: abs_rel=0.7875
+  abandonedfactory/P011/000666_left: abs_rel=1.3133

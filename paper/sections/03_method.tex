@@ -1,0 +1,127 @@
+\section{Methodology}
+\label{sec:method}
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=0.98\linewidth]{figures/fig_analysis.png}
+    \caption{\textbf{Dioptra Structural Decomposition and Multi-Panel Diagnostic (\texttt{abandonedfactory/P000\_000544\_left})}. Evaluated under Stage~2 dynamic pinhole conditioning on a strictly held-out zero-shot test scene. (1) Input RGB frame; (2) Predicted metric depth map with true metric scaling ($\text{AbsRel} = 0.2138$, $\text{RMSE} = 3.28$\,m); (3) Reconstructed surface normal vectors $[\hat{n}_x, \hat{n}_y, \hat{n}_z]$ mapped to RGB color space, showing clean separation between the horizontal ground plane (green) and orthogonal vertical masonry walls and pillars (blue/purple); (4) Disparity proximity map ($1/D$) isolating immediate navigation hazards.}
+    \label{fig:method_diagnostic}
+\end{figure*}
+
+\subsection{Architecture Overview}
+Dioptra is structured as an end-to-end geometry-aware dense prediction architecture. Given an input RGB image $\mathbf{I} \in \mathbb{R}^{3 \times H \times W}$ and its camera intrinsic matrix $\mathbf{K} \in \mathbb{R}^{3 \times 3}$, Dioptra outputs a dense metric depth map $\hat{\mathbf{D}} \in \mathbb{R}^{1 \times H \times W}$.
+
+The model consists of four integrated components totaling $8.097$\,M parameters:
+\begin{enumerate}
+    \item \textbf{Convolutional Patch Stem}: Projects the $224 \times 224$ image into $N = 784$ spatial tokens ($P=8$, grid size $28 \times 28$) with embedding dimension $D = 256$ ($0.138$\,M parameters).
+    \item \textbf{Trivision Ray Positional Encoder}: Unprojects 3 continuous camera rays per token, generating geometric positional embeddings modulated via Feature-wise Linear Modulation (FiLM) ($0.162$\,M parameters).
+    \item \textbf{10-Layer ViT with Angular Residual Attention (ARA)}: A 10-layer Vision Transformer with 8 attention heads per layer ($d_h = 32$), MLP expansion ratio $3.0$, LayerScale initialization ($10^{-5}$), and continuous angular residual attention bias ($6.591$\,M parameters).
+    \item \textbf{Multi-Scale Reassembly Head}: Fuses intermediate representations from layers $\{3, 6, 8, 10\}$ via progressive spatial deconvolutions and residual blocks to generate the full-resolution depth map ($1.206$\,M parameters).
+\end{enumerate}
+
+\subsection{Trivision Ray Positional Encoding}
+Standard vision transformers employ 2D spatial embeddings $p_{i, j} = \text{PE}(i, j)$ that are invariant to camera intrinsics. When focal length changes, retinal object scale shifts, but standard positional encodings remain static, forcing the network to confound object scale with focal length.
+
+To preserve optical geometry, we define a continuous unprojection mapping based on the pinhole camera model. When resizing input images from native dataset resolution ($W \times H = 640 \times 480$) to network resolution ($W' \times H' = 224 \times 224$), camera intrinsics $\mathbf{K}$ are rescaled proportionally:
+\begin{equation}
+    f_x' = f_x \frac{W'}{W}, \quad f_y' = f_y \frac{H'}{H}, \quad c_x' = c_x \frac{W'}{W}, \quad c_y' = c_y \frac{H'}{H}
+\end{equation}
+For any image coordinate $(u, v)$ on the $224 \times 224$ grid, the unit optical ray direction $\hat{\mathbf{r}}$ in the camera optical frame is given by:
+\begin{equation}
+    \hat{\mathbf{r}}(u, v) = \frac{\mathbf{K}'^{-1} [u, v, 1]^T}{\|\mathbf{K}'^{-1} [u, v, 1]^T\|_2}
+    \label{eq:ray_unproject}
+\end{equation}
+
+\noindent\textbf{Analytic Matrix Inversion}: To ensure numerical stability and avoid external linear algebra runtime dependencies on edge GPUs, we compute $\mathbf{K}'^{-1}$ in closed form via Cramer's rule:
+\begin{equation}
+    \mathbf{K}'^{-1} = \frac{\text{adj}(\mathbf{K}')}{\det(\mathbf{K}') + \epsilon}
+\end{equation}
+where $\det(\mathbf{K}') = f_x' f_y' > 0$ for standard cameras and $\epsilon = 10^{-8}$.
+
+\noindent\textbf{Ray Triplet and Reflection Symmetry}: For each patch token centered at $(u_c, v_c)$ with half-width $p_h = P / 2$, we extract an optical ray triplet:
+\begin{equation}
+    \mathcal{R}_i = \left\{ \hat{\mathbf{r}}_{\text{center}}, \hat{\mathbf{r}}_{\text{corner1}}, \hat{\mathbf{r}}_{\text{corner2}} \right\}
+\end{equation}
+Under standard orientation, $\hat{\mathbf{r}}_{\text{corner1}}$ samples the top-left offset $(u_c - p_h, v_c - p_h)$ and $\hat{\mathbf{r}}_{\text{corner2}}$ samples the bottom-right offset $(u_c + p_h, v_c + p_h)$. When spatial data augmentation applies a horizontal reflection ($u' = W' - 1 - u$), we track this transformation and reflect the chiral corner rays:
+\begin{equation}
+    \hat{\mathbf{r}}_{\text{corner1}} \leftarrow (u_c + p_h, v_c - p_h), \quad \hat{\mathbf{r}}_{\text{corner2}} \leftarrow (u_c - p_h, v_c + p_h)
+\end{equation}
+This guarantees that optical ray directions correspond accurately to the augmented pixel contents.
+
+\noindent\textbf{Multi-Frequency FiLM Modulation}: Each ray is embedded using multi-scale Fourier features across frequencies $k \in \{1, \dots, F\}$ with $F=6$:
+\begin{equation}
+    \gamma(\hat{\mathbf{r}}) = \left[ \sin(2^k \pi \hat{\mathbf{r}}), \cos(2^k \pi \hat{\mathbf{r}}) \right]_{k=1}^{F}
+\end{equation}
+The concatenated triplet embedding $\gamma(\mathcal{R}_i) \in \mathbb{R}^{108}$ is projected through a 2-layer MLP ($108 \rightarrow 256 \rightarrow 512$) with LayerNorm to generate affine scale $\alpha \in \mathbb{R}^{256}$ and shift $\beta \in \mathbb{R}^{256}$ vectors, modulating patch tokens via Feature-wise Linear Modulation: $\mathbf{x}' = \alpha \odot \mathbf{x} + \beta$.
+
+\subsection{Angular Residual Attention (ARA)}
+To refine high-frequency surface boundaries and encourage planar consistency, Dioptra introduces an intrinsic geometric attention bias. In a perspective optical frame, the angular separation $\theta_{q, k}$ between a query ray $\hat{\mathbf{r}}_q$ and key ray $\hat{\mathbf{r}}_k$ satisfies:
+\begin{equation}
+    d_{\text{ang}}^2(\hat{\mathbf{r}}_q, \hat{\mathbf{r}}_k) = 1 - (\hat{\mathbf{r}}_q \cdot \hat{\mathbf{r}}_k)^2 = \sin^2(\theta_{q, k})
+\end{equation}
+
+We define the Angular Residual Attention bias $\mathbf{B} \in \mathbb{R}^{H \times N \times N}$ for attention head $h$ as:
+\begin{equation}
+    \mathbf{B}_h(i, j) = -\frac{\alpha_h}{\sigma_h^2 + \epsilon} \sum_{m=1}^3 \sin^2(\theta(\hat{\mathbf{r}}_{i, m}, \hat{\mathbf{r}}_{j, \text{center}}))
+    \label{eq:ara_bias}
+\end{equation}
+where $\alpha_h \in \mathbb{R}$ and $\sigma_h^2 \in \mathbb{R}$ are learnable per-head gain and bandwidth parameters initialized to $1.0$, and $m \in \{1, 2, 3\}$ sums over token $i$'s Trivision ray triplet against key token $j$'s principal center ray. The bias matrix is computed on-the-fly during forward passes and is compatible with memory-chunked attention ($256$-token blocks).
+
+Self-attention incorporating ARA is formulated as:
+\begin{equation}
+    \text{Attn}(\mathbf{Q}, \mathbf{K}, \mathbf{V}) = \text{Softmax}\left( \frac{\mathbf{Q}\mathbf{K}^T}{\sqrt{d_h}} + \Gamma(t) \cdot \mathbf{B} \right) \mathbf{V}
+\end{equation}
+where $\Gamma(t) \in [0, 1]$ is a smooth cosine warmup gate governed by epoch $t$:
+\begin{equation}
+    \Gamma(t) = \begin{cases} 
+      0, & t < t_{\text{warmup}} \\
+      \frac{1}{2}\left(1 - \cos\left(\pi \frac{t - t_{\text{warmup}}}{t_{\text{full}} - t_{\text{warmup}}}\right)\right), & t_{\text{warmup}} \le t \le t_{\text{full}} \\
+      1, & t > t_{\text{full}}
+   \end{cases}
+\end{equation}
+We set $t_{\text{warmup}} = 1$ and $t_{\text{full}} = 4$, allowing visual feature representations to stabilize before the geometric attention bias reaches full intensity.
+
+\subsection{Decoupled Metric Scale \& Shape Supervision}
+To prevent the model from collapsing into arbitrary scale-shifted predictions, we decouple global physical scale learning from local relative shape regularizers.
+
+\noindent\textbf{1. Raw Metric SiLog Loss ($\mathcal{L}_{\text{SiLog}}$)}:
+Unlike relative depth frameworks that normalize depth predictions per sample, our Scale-Invariant Logarithmic loss operates directly on unnormalized physical metric depths:
+\begin{equation}
+    \mathcal{L}_{\text{SiLog}} = \frac{1}{|V|} \sum_{i \in V} d_i^2 - \frac{\lambda}{|V|^2} \left( \sum_{i \in V} d_i \right)^2
+\end{equation}
+where $d_i = \log(\hat{\mathbf{D}}_i) - \log(\mathbf{D}_i^*)$, $\lambda = 0.85$, and $V$ denotes valid ground-truth pixels within the evaluation range $[0.2\,\text{m}, 80.0\,\text{m}]$.
+
+\noindent\textbf{2. Global Scale Consistency Loss ($\mathcal{L}_{\text{scale}}$)}:
+To explicitly supervise global metric scale, we compute the batch-averaged absolute log-median error:
+\begin{equation}
+    \mathcal{L}_{\text{scale}} = \frac{1}{B} \sum_{b=1}^B \left| \log(\text{median}(\hat{\mathbf{D}}_b)) - \log(\text{median}(\mathbf{D}_b^*)) \right|
+\end{equation}
+This penalizes overall physical scale drift across trajectories without interfering with local depth gradients.
+
+\noindent\textbf{3. Relative Surface Regularizers}:
+To preserve sharp depth discontinuities and planar surface orientations, multi-scale Sobel edge gradient loss $\mathcal{L}_{\text{edge}}$, second-order image-aware smoothness $\mathcal{L}_{\text{smooth}}$, and surface normal planarity loss $\mathcal{L}_{\text{planar}}$ are applied on median-normalized predictions $\hat{\mathbf{D}}_{\text{norm}} = \hat{\mathbf{D}} \cdot (\text{median}(\mathbf{D}^*) / \text{median}(\hat{\mathbf{D}}))$.
+
+\noindent\textbf{4. Homoscedastic Uncertainty Weighting}:
+The total loss balances the four structural losses via homoscedastic uncertainty~\cite{kendall2018multi} plus the unweighted global scale penalty:
+\begin{equation}
+    \mathcal{L}_{\text{total}} = \sum_{k=1}^4 \left( \frac{1}{2\sigma_k^2} \mathcal{L}_k + \log(\sigma_k) \right) + w_{\text{scale}} \mathcal{L}_{\text{scale}}
+\end{equation}
+where $\mathcal{L}_1 = \mathcal{L}_{\text{SiLog}}$, $\mathcal{L}_2 = \mathcal{L}_{\text{edge}}$, $\mathcal{L}_3 = \mathcal{L}_{\text{smooth}}$, $\mathcal{L}_4 = \mathcal{L}_{\text{planar}}$, $\sigma_k$ are dynamically learned task variances, and $w_{\text{scale}} = 1.0$.
+
+\subsection{Dynamic Pinhole Crop Augmentation}
+\label{sec:dynamic_crop}
+In datasets captured with a single virtual or physical camera, such as TartanAir~\cite{wang2020tartanair}, the camera intrinsic matrix $\mathbf{K}$ is static across all trajectories. Under this degenerate setting, the optical unprojection ray vector $\hat{\mathbf{r}}(u, v)$ in Eq.~\eqref{eq:ray_unproject} reduces to a deterministic function of 2D pixel coordinates $(u, v)$—mathematically indistinguishable from a learned spatial positional embedding. Under fixed-$\mathbf{K}$ training, the model can bypass physical camera conditioning, leaving it vulnerable to optical scale errors when deployed on sensors with different focal lengths or fields of view.
+
+To enforce genuine camera-intrinsic equivariance, we introduce \textbf{Dynamic Pinhole Crop Augmentation}. During training, given an input frame with dimensions $W \times H$ and intrinsic matrix $\mathbf{K}$, we stochastically sample a square crop window of size $L$:
+\begin{equation}
+    L \sim \mathcal{U}(s_{\min} \cdot \min(W, H), \min(W, H)), \quad s_{\min} = 0.55
+\end{equation}
+with top-left corner $(x_0, y_0)$ sampled uniformly over the valid range $[0, W - L] \times [0, H - L]$. The cropped region is bilinearly resized to the network training resolution $W' \times H' = 224 \times 224$. 
+
+Under projective pinhole geometry, spatial scaling and translation of the sensor plane transform the intrinsic parameters as:
+\begin{equation}
+    f_x' = f_x \cdot \frac{W'}{L}, \quad f_y' = f_y \cdot \frac{H'}{L}, \quad c_x' = (c_x - x_0) \cdot \frac{W'}{L}, \quad c_y' = (c_y - y_0) \cdot \frac{H'}{L}
+    \label{eq:pinhole_transform}
+\end{equation}
+Because the cropped region represents a magnified sub-cone of the optical frustum, the effective horizontal field of view varies dynamically between $\approx 45.0^\circ$ and $73.7^\circ$. Crucially, the physical metric depth values $\mathbf{D}^*(u, v)$ in metres are invariant to sensor cropping. This transformation cleanly uncouples pixel positions $(u, v)$ from optical ray angles $\hat{\mathbf{r}}$, forcing the Trivision encoder and ARA attention bias to actively condition on the transformed intrinsic matrix $\mathbf{K}'$.
+

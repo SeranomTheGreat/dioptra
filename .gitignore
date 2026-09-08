@@ -1,0 +1,46 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Large model checkpoint binaries (host on GitHub Releases / Hugging Face)
+*.pt
+*.pth
+*.ckpt
+outputs/*.pt
+outputs/*.pth
+
+# Large 3D Meshes and point clouds
+*.ply
+*.obj
+*.mtl
+
+# Raw uncompressed depth arrays
+*.npy
+*depth.npy
+
+# Test dumps and transient outputs
+mac_outputs/
+test_outputs/
+test_samples/
+scratch/
+outputs/viz/
+outputs/candidates/
+outputs/eval_baseline/
+outputs/eval_stage2/
+
+# OS and IDE files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# Zip archives
+*.zip

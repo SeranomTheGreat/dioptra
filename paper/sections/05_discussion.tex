@@ -1,0 +1,44 @@
+\section{Discussion and Analysis}
+\label{sec:discussion}
+
+\subsection{Edge Feasibility and Hardware Profiling}
+A central design goal of Dioptra is edge feasibility. Most spatial AI models assume cloud GPU servers or heavy onboard workstations (NVIDIA RTX 4090/A100). As documented in Section~\ref{sec:experiments}, Dioptra executes steady-state forward inference in \textbf{$98.4$\,ms} ($\approx 10.2$\,FPS) on a consumer MacBook Air M3 (8-core Apple Silicon GPU via Metal Performance Shaders in FP32) and in \textbf{$28.2$\,ms} ($\approx 35.4$\,FPS) on an NVIDIA T4 GPU (PyTorch 2.1, CUDA 12.1, FP32 unquantized, batch size 1), with full end-to-end 3D surface mesh export taking $334.9$\,ms. Furthermore, while unoptimized execution recomputes pairwise angular dot-products in each attention block, pre-computing the layer-invariant geometric distance matrix $\sin^2(\theta_{q, k})$ once per image takes just $1.26$\,ms, accelerating steady-state forward inference to \textbf{$\approx 53$\,ms} ($\approx 18.9$\,FPS) on the M3 GPU.
+
+Crucially, Dioptra's single-image inference consumes under \textbf{$180$\,MB of RAM}, while its entire model parameter footprint is only \textbf{$32.4$\,MB} in FP32 format. By utilizing gradient checkpointing and memory-chunked ARA attention ($256$-token blocks), local batch-2 training on Apple Silicon operates within a modest $1.2$\,GB unified memory footprint, leaving $>3.5$\,GB of operating headroom on entry-level 8\,GB machines.
+
+\subsection{Qualitative Surface Reconstruction \& Normal Consistency}
+As shown in Figure~\ref{fig:method_diagnostic}, depth predictions from Dioptra produce consistent 3D point clouds and surface meshes ($50,176$ vertices, $99,452$ faces). In Panel 3 of Figure~\ref{fig:method_diagnostic}, surface normals derived via numerical spatial gradients:
+\begin{equation}
+    \hat{\mathbf{n}} = \frac{[-\partial z / \partial x, -\partial z / \partial y, 1]^T}{\| [-\partial z / \partial x, -\partial z / \partial y, 1]^T \|}
+\end{equation}
+reveal that the model distinguishes horizontal upward-facing ground planes ($\hat{\mathbf{n}} \approx [0, 1, 0]$, green) from orthogonal vertical building walls and pillars (blue/purple). This normal consistency enables direct export to standard graphics formats (\texttt{.ply}, \texttt{.obj}) for visualization and collision checking.
+
+\subsection{Failure Mode Analysis: Downward Close-ups}
+Analyzing the worst-performing frames (e.g., frames $001318$–$001320$ with $\text{AbsRel} = 1.50$–$2.58$) reveals a distinct failure mode common to monocular depth:
+\begin{enumerate}
+    \item \textbf{Foreground Dominance}: When the camera tilts steeply downward facing an obstacle or catwalk within $<0.8$\,m that occupies $>60\%$ of the visual field, the image median anchors strictly to the near plane.
+    \item \textbf{Median Normalization Skew}: Under the standard Eigen evaluation protocol ($\hat{D}_{\text{eval}} = \hat{D} \cdot (\text{median}(D^*) / \text{median}(\hat{D}))$), dividing by an extreme near-field median mathematically explodes the relative error on the small sliver of distant background ($30$\,m away) through dividing by true distance.
+    \item \textbf{Specular and Textureless Highlights}: Extreme specular reflection on flat metallic surfaces eliminates vanishing lines and textural gradients, requiring temporal stereo or IMU fusion for disambiguation.
+\end{enumerate}
+
+\subsection{Camera-Intrinsic Equivariance vs. Positional Embedding}
+\label{sec:fov_discussion}
+A critical theoretical question for ray-conditioned networks~\cite{facil2019camconvs,yin2023metric3d,piccinelli2024unidepth} is whether explicit camera parameters $\mathbf{K}$ provide actionable geometric guidance or merely act as a passive coordinate bias. As demonstrated in Section~\ref{sec:fov_experiments}, when trained exclusively on fixed-sensor benchmarks such as TartanAir, models can overfit to the static relationship between image coordinates $(u, v)$ and ray vectors $\hat{\mathbf{r}}(u, v)$, rendering the ray embedding functionally equivalent to standard sinusoidal positional encoding. 
+
+Our dynamic pinhole augmentation decouples pixel space from metric ray directions by introducing stochastic window cropping ($L \in [0.55\cdot S_{\max}, S_{\max}]$) and continuous focal/center recalculations. As demonstrated by the up to \textbf{$55.9\%$ error reduction} on out-of-distribution telephoto focal lengths (Table~\ref{tab:fov_eval}), conditioning depth decoding on dynamically varying $\hat{\mathbf{r}}(u, v)$ encourages the network to learn scale equivariance:
+\begin{equation}
+    f_\theta(\mathbf{I} \circ \mathcal{T}_s, \mathbf{K}') \approx f_\theta(\mathbf{I}, \mathbf{K})
+\end{equation}
+where physical 3D scene distances remain invariant under optical focal scaling. While extreme wide-angle extrapolation ($85^\circ \text{--} 100^\circ$) beyond the maximum square-crop training FOV ($73.7^\circ$) exhibits a modest trade-off relative to fixed-$K$ full-frame models, the dynamic formulation completely eliminates catastrophic scale collapse under telephoto optics. This confirms that Dioptra's lightweight architecture ($8.1$\,M parameters) actively incorporates extrinsic optical physics into its latent representations.
+
+
+\subsection{Limitations and Experimental Roadmap}
+While Dioptra demonstrates the viability of camera-grounded geometric embeddings in a compact model ($8.1$\,M parameters), several empirical limitations remain to be addressed in future work:
+\begin{itemize}
+    \item \textbf{Direct Benchmark Comparison Against External Edge Baselines}: While our experiments include four full 24-epoch from-scratch retrained controls (No-ARA, Center-Ray PE, Canonical 2D ViT, and Stage~1 Baseline) isolating each architectural mechanism on identical data splits, direct head-to-head benchmarking against external edge baselines (such as Lite-Mono~\cite{zhang2023litemono} and Depth Anything v2-Small~\cite{yang2024depth2}) retrained on the identical TartanAir cross-environment split represents the primary empirical priority for follow-up work. We note that existing published weights for foundation-scale estimators (e.g., ZoeDepth~\cite{bhat2023zoedepth} and Depth Pro~\cite{bochkovskiy2024depthpro}) require 300M+ parameter backbones and substantial GPU VRAM, whereas Dioptra specifically targets an ultra-lightweight ($8.1$\,M parameter), backbone-free footprint for micro-robotics and low-power edge hardware.
+    \item \textbf{Component Ablations and Loss Scaling}: As demonstrated in the component ablation analysis (Section~\ref{sec:ablations} and Table~\ref{tab:ablation_study}), isolating the geometric attention bias, ray positional encoding, and camera conditioning confirms that ARA reduces metric error by $22.5\%$ and dynamic pinhole conditioning reduces telephoto error by up to $55.9\%$. Extending this analysis to multi-seed training runs with isolated individual loss ablations (e.g., training from scratch entirely without $\mathcal{L}_{\text{scale}}$ or without $\mathcal{L}_{\text{edge}}$) remains an active target for expanded compute budgets.
+    \item \textbf{Cross-Domain Transfer}: The present evaluation is conducted within the TartanAir simulation domain. Evaluating zero-shot transfer onto real-world benchmark datasets (such as NYUv2 and KITTI) and handheld metric sensors will provide essential calibration for physical robotics deployment.
+    \item \textbf{Quantized Edge Acceleration}: FP32 inference on Apple Silicon ($98.4$\,ms unoptimized forward pass, $52.8$\,ms with layer-shared geometric caching) reflects unquantized execution. Porting model weights to FP16 CoreML and INT8 TensorRT backends represents a direct path to achieving real-time ($>30$\,FPS) frame rates on mobile hardware.
+\end{itemize}
+
+

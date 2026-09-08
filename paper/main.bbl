@@ -1,0 +1,113 @@
+\begin{thebibliography}{10}\itemsep=-1pt
+
+\bibitem{eigen2014depth}
+Eigen, David and Puhrsch, Christian and Fergus, Rob.
+\newblock Depth map prediction from a single image using a multi-scale deep network.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)}, 2014.
+
+\bibitem{godard2019digging}
+Godard, Cl{\'e}ment and Mac Aodha, Oisin and Firman, Michael and Brostow, Gabriel J.
+\newblock Digging into self-supervised monocular depth estimation.
+\newblock In {\em Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)}, pages 3828--3838, 2019.
+
+\bibitem{ranftl2020towards}
+Ranftl, Ren{\'e} and Lasinger, Katrin and Hafner, David and Schindler, Konrad and Koltun, Vladlen.
+\newblock Towards robust monocular depth estimation: Mixing datasets for zero-shot cross-dataset transfer.
+\newblock In {\em IEEE Transactions on Pattern Analysis and Machine Intelligence (TPAMI)}, pages 1623--1637, 2020.
+
+\bibitem{ranftl2021vision}
+Ranftl, Ren{\'e} and Bochkovskiy, Alexey and Koltun, Vladlen.
+\newblock Vision transformers for dense prediction.
+\newblock In {\em Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)}, pages 12179--12188, 2021.
+
+\bibitem{yang2024depth}
+Yang, Lihe and Kang, Bingyi and Huang, Zilong and Xu, Xiaogang and Feng, Jiashi and Zhao, Hengshuang.
+\newblock Depth Anything: Unleashing the power of large-scale unlabeled data.
+\newblock In {\em Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)}, pages 10368--10377, 2024.
+
+\bibitem{yang2024depth2}
+Yang, Lihe and Kang, Bingyi and Huang, Zilong and Zhao, Hengshuang.
+\newblock Depth Anything V2.
+\newblock In {\em arXiv preprint arXiv:2406.09414}, 2024.
+
+\bibitem{yin2023metric3d}
+Yin, Wei and Zhang, Chi and Chen, Hao and Cai, Zhipeng and Yu, Gang and Wang, Kaixuan and Chen, Xiaozhi and Shen, Chunhua.
+\newblock Metric3D: Towards Zero-Shot Metric 3D Prediction from a Single Image.
+\newblock In {\em Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)}, pages 10270--10280, 2023.
+
+\bibitem{bhat2021adabins}
+Bhat, Shariq Farooq and Alhashim, Ibraheem and Wonka, Peter.
+\newblock AdaBins: Depth estimation using adaptive bins.
+\newblock In {\em Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)}, pages 4009--4018, 2021.
+
+\bibitem{wang2020tartanair}
+Wang, Wenshan and Zhu, Delong and Wang, Xiangwei and Hu, Yaoyu and Qiu, Yuheng and Wang, Chen and Hu, Yafei and Kapoor, Ashish and Scherer, Sebastian.
+\newblock TartanAir: A dataset to push the limits of visual SLAM.
+\newblock In {\em IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)}, pages 4909--4916, 2020.
+
+\bibitem{vaswani2017attention}
+Vaswani, Ashish and Shazeer, Noam and Parmar, Niki and Uszkoreit, Jakob and Jones, Llion and Gomez, Aidan N and Kaiser, {\L}ukasz and Polosukhin, Illia.
+\newblock Attention is all you need.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)}, 2017.
+
+\bibitem{dosovitskiy2020image}
+Dosovitskiy, Alexey and Beyer, Lucas and Kolesnikov, Alexander and Weissenborn, Dirk and Zhai, Xiaohua and Unterthiner, Thomas and Dehghani, Mostafa and Minderer, Matthias and Heigold, Georg and Gelly, Sylvain and others.
+\newblock An image is worth 16x16 words: Transformers for image recognition at scale.
+\newblock In {\em International Conference on Learning Representations (ICLR)}, 2021.
+
+\bibitem{kendall2018multi}
+Kendall, Alex and Gal, Yarin and Cipolla, Roberto.
+\newblock Multi-task learning using uncertainty to weigh losses for scene geometry and semantics.
+\newblock In {\em Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)}, pages 7482--7491, 2018.
+
+\bibitem{touvron2021going}
+Touvron, Hugo and Cord, Matthieu and Sablayrolles, Alexandre and Synnaeve, Gabriel and J{\'e}gou, Herv{\'e}.
+\newblock Going deeper with image transformers.
+\newblock In {\em Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)}, pages 32--42, 2021.
+
+\bibitem{facil2019camconvs}
+Facil, Jose M and Ummenhofer, Benjamin and Zhou, Huizhong and Montesano, Luis and Forn{\'e}s, Alicia and Brox, Thomas.
+\newblock CamConvs: Camera-aware multi-scale convolutions for single-view depth.
+\newblock In {\em Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)}, pages 11826--11835, 2019.
+
+\bibitem{guizilini20203d}
+Guizilini, Vitor and Ambrus, Rares and Pillai, Sudeep and Raventos, Allan and Gaidon, Adrien.
+\newblock 3D packing for self-supervised monocular depth estimation.
+\newblock In {\em Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)}, pages 2485--2494, 2020.
+
+\bibitem{oquab2023dinov2}
+Oquab, Maxime and Darcet, Timoth{\'e}e and Moutakanni, Th{\'e}o and Vo, Huy and Szafraniec, Marc and Khalidov, Vasil and Fernandez, Pierre and Haziza, Daniel and Massa, Francisco and El-Nouby, Alaaeldin and others.
+\newblock DINOv2: Learning robust visual features without supervision.
+\newblock In {\em arXiv preprint arXiv:2304.07193}, 2024.
+
+\bibitem{piccinelli2024unidepth}
+Piccinelli, Luigi and Yang, Yung-Hsu and Sakaridis, Christos and Segu, Mattia and Li, Siyuan and Van Gool, Luc.
+\newblock UniDepth: Universal monocular metric depth estimation.
+\newblock In {\em Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)}, pages 10106--10116, 2024.
+
+\bibitem{zhang2023litemono}
+Zhang, Ning and Nex, Francesco and Vosselman, George and Kerle, Norman.
+\newblock Lite-Mono: A lightweight CNN and transformer architecture for self-supervised monocular depth estimation.
+\newblock In {\em Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)}, pages 18537--18546, 2023.
+
+\bibitem{wofk2019fastdepth}
+Wofk, Diana and Ma, Fangchang and Yang, Nan and Karaman, Sertac and Sze, Vivienne.
+\newblock FastDepth: Fast monocular depth estimation on embedded systems.
+\newblock In {\em IEEE International Conference on Robotics and Automation (ICRA)}, pages 6101--6108, 2019.
+
+\bibitem{zhao2022monovit}
+Zhao, Chaoqiang and Zhang, Youmin and Poggi, Matteo and Tosi, Fabio and Guo, Xianda and Zhu, Zheng and Huang, Guan and Mattoccia, Stefano.
+\newblock MonoViT: Self-supervised monocular depth estimation with a vision transformer.
+\newblock In {\em International Conference on 3D Vision (3DV)}, pages 668--678, 2022.
+
+\bibitem{bhat2023zoedepth}
+Bhat, Shariq Farooq and Birkl, Reiner and Wofk, Diana and Wonka, Peter and M{\"u}ller, Matthias.
+\newblock ZoeDepth: Zero-shot transfer by combining relative and metric depth.
+\newblock In {\em arXiv preprint arXiv:2302.12288}, 2023.
+
+\bibitem{bochkovskiy2024depthpro}
+Bochkovskiy, Aleksei and Kotovenko, Dmytro and Kovalenko, Serhii and Xiao, Tete and Koltun, Vladlen.
+\newblock Depth Pro: Sharp monocular metric depth in less than a second.
+\newblock In {\em arXiv preprint arXiv:2410.02073}, 2024.
+
+\end{thebibliography}

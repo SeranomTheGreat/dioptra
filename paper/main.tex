@@ -1,0 +1,57 @@
+\documentclass[10pt,twocolumn,letterpaper]{article}
+
+% --- Standard Universal Packages ---
+\usepackage[top=0.85in,bottom=0.85in,left=0.75in,right=0.75in]{geometry}
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{microtype}
+\usepackage{url}
+\usepackage{cite}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+% --- Hyperlink Setup ---
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!80!black,
+    citecolor=blue!80!black,
+    urlcolor=blue!80!black
+}
+
+% --- Title & Author Metadata ---
+\title{\Large\textbf{Dioptra: An Ultra-Lightweight Geometry-Aware Architecture\\for Monocular Metric Depth on Edge Devices}}
+
+\author{
+    \textbf{Yumnam Harryson Singh}\\[0.3em]
+    \normalsize Independent Researcher\\
+    \normalsize \texttt{harryson424242@gmail.com}\\[0.2em]
+    \normalsize \url{https://github.com/yumnamharryson/dioptra}
+}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\input{sections/00_abstract}
+
+% --- Sections ---
+\input{sections/01_introduction}
+\input{sections/02_related_work}
+\input{sections/03_method}
+\input{sections/04_experiments}
+\input{sections/05_discussion}
+\input{sections/06_conclusion}
+
+% --- References ---
+{\small
+\bibliographystyle{unsrt}
+\bibliography{references}
+}
+
+\end{document}
+

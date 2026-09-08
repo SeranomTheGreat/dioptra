@@ -1,0 +1,27 @@
+\section{Introduction}
+\label{sec:intro}
+
+Estimating metric depth and reconstructing 3D surface geometry from a single monocular image is a fundamental challenge in computer vision and autonomous robotics~\cite{eigen2014depth,godard2019digging,ranftl2020towards}. Precise depth maps serve as the sensory backbone for obstacle avoidance, visual-inertial odometry, 3D mapping, and augmented reality. While active sensors (LiDAR, structured light) provide accurate metric range, they introduce payload, power, and cost constraints that restrict their deployment on micro-aerial vehicles (MAVs), lightweight robotics, and wearable devices.
+
+In recent years, the paradigm of dense depth estimation has increasingly shifted toward large vision foundation models~\cite{ranftl2021vision,yang2024depth,yang2024depth2,yin2023metric3d}. Frameworks such as Depth Anything~\cite{yang2024depth} and Metric3D~\cite{yin2023metric3d} achieve strong visual representations by pairing massive transformer backbones ($>300$\,M parameters) with internet-scale synthetic and pseudo-labeled datasets. Concurrently, lightweight architectures such as Lite-Mono~\cite{zhang2023litemono}, FastDepth~\cite{wofk2019fastdepth}, and Depth Anything v2-Small~\cite{yang2024depth2} have demonstrated efficient inference on constrained hardware. However, several fundamental geometric challenges remain:
+\begin{enumerate}
+    \item \textbf{Decoupled Camera Geometry}: Standard vision transformers treat input images as uniform 2D grid tokens with 2D coordinate positional embeddings, ignoring the physical optical rays defined by the camera intrinsic calibration matrix $\mathbf{K}$~\cite{piccinelli2024unidepth}.
+    \item \textbf{Scale Ambiguity}: Monocular models trained without explicit scale regularization frequently collapse to predicting affine-invariant relative depth, requiring test-time scale alignment that precludes direct obstacle ranging in metres.
+    \item \textbf{Edge Memory Envelopes}: Embedded robotics platforms operate with tight unified memory budgets, where architectures requiring large intermediate activation buffers can induce out-of-memory faults.
+\end{enumerate}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\linewidth]{figures/fig_benchmark.png}
+    \caption{\textbf{Qualitative In-Domain Case Study on Raw Ground Truth Depth Array (Frame \texttt{000025}, Office Lobby) (Stage~1 Baseline Model, Canonical $\mathbf{K}$)}. From left to right: (1) Input RGB frame from the in-domain \textit{office} environment; (2) Ground truth metric depth; (3) Dioptra Stage~1 baseline prediction ($\text{AbsRel} = 0.2291$); (4) Absolute log-ratio error heatmap $|\log(\hat{D}) - \log(D)|$, showing consistent scale estimation across the continuous floor, ceiling, and deep receding corridor.}
+    \label{fig:teaser}
+\end{figure}
+
+Our primary contributions are summarized as follows:
+\begin{itemize}
+    \item \textbf{Trivision Ray Positional Encoding}: An optical ray triplet unprojection scheme that incorporates camera intrinsic calibration directly into transformer token space with horizontal reflection tracking.
+    \item \textbf{Angular Residual Attention (ARA)}: A geometric attention bias computing continuous 3D angular residuals $\sin^2(\theta_{q, k}) = 1 - (\hat{\mathbf{r}}_q \cdot \hat{\mathbf{r}}_k)^2$ to sharpen planar surfaces and object boundaries.
+    \item \textbf{Decoupled Metric Supervision}: A dual objective combining unnormalized raw metric losses with an explicit log-median scale consistency loss ($\mathcal{L}_{\text{scale}}$) and multi-task homoscedastic uncertainty weighting.
+    \item \textbf{Camera-Intrinsic Invariance via Dynamic Pinhole Training}: We demonstrate that fixed-camera training induces unprojection degeneracies, and show that dynamic pinhole crop augmentation empirically validates camera-intrinsic equivariance, reducing telephoto error by up to \textbf{$-55.9\%$} ($>2.2\times$ accuracy improvement) across multi-FOV sweeps ($50^\circ \text{--} 100^\circ$).
+    \item \textbf{Empirical Cross-Environment Evaluation}: Evaluating across $8,186$ held-out test frames, Dioptra Stage~1 baseline achieves an Aligned AbsRel of $0.3073$ ($\delta_1 = 51.74\%$) and unaligned Metric AbsRel of $0.9293$, while Stage~2 dynamic pinhole fine-tuning delivers our headline performance of \textbf{$0.2901$ Aligned AbsRel} and \textbf{$0.6043$ Metric AbsRel} ($35.0\%$ error reduction). Local validation demonstrates graceful domain transfer on 40 uncompressed ground-truth held-out test frames ($0.2290$ AbsRel in daylight industrial, $0.3291$–$0.5195$ AbsRel under night lighting, $0.6239$ domain mean outdoors with best-frame reaching $0.2663$, yielding an overall held-out mean of $0.5545$ AbsRel and $0.4577$ robust mean for the Stage~1 baseline, with Stage~2 achieving $\mathbf{0.7420}$ Metric AbsRel; Table~\ref{tab:ablation_study}) alongside sub-meter indoor fidelity on in-domain clinical corridors (best-frame $0.64$\,m RMSE, domain mean $3.22$\,m) with an $8.1$\,M model running within $180$\,MB peak RAM on Apple Silicon ($52.8$\,ms steady-state FP32 forward inference via layer-shared geometric caching, $\approx 18.9$\,FPS; $98.4$\,ms unoptimized baseline; $28.2$\,ms on NVIDIA T4; $334.9$\,ms full 3D mesh pipeline).
+\end{itemize}

@@ -1,0 +1,721 @@
+2026-09-04 13:44:45,945 WARNING __main__: OOM detected, halving batch_size: 8 → 4
+2026-09-04 13:44:45,945 WARNING __main__: OOM detected, halving batch_size: 4 → 2
+2026-09-04 13:44:45,945 WARNING __main__: OOM detected, halving batch_size: 2 → 2
+2026-09-04 13:44:45,945 WARNING __main__: OOM detected, halving batch_size: 3 → 2
+2026-09-04 13:44:49,841 INFO __main__: --train auto: mounted input(s): datasets/pandrii000/dasvo-tartanair-rgb-d-validation-split, datasets/yumnamharryson/ihopethisworks
+2026-09-04 13:44:49,860 INFO __main__: Dataset root resolved: auto -> /kaggle/input/datasets/pandrii000/dasvo-tartanair-rgb-d-validation-split/tartanair
+2026-09-04 13:44:49,952 WARNING __main__: cam_left.json not found for abandonedfactory/P011; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,033 WARNING __main__: cam_left.json not found for abandonedfactory/P011; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,055 WARNING __main__: cam_left.json not found for abandonedfactory_night/P013; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,218 WARNING __main__: cam_left.json not found for abandonedfactory_night/P014; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,233 WARNING __main__: cam_left.json not found for amusement/P007; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,252 WARNING __main__: cam_left.json not found for hospital/P036; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,265 WARNING __main__: cam_left.json not found for hospital/P049; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,276 WARNING __main__: cam_left.json not found for japanesealley/P005; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,291 WARNING __main__: cam_left.json not found for neighborhood/P021; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,317 WARNING __main__: cam_left.json not found for neighborhood/P017; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,338 WARNING __main__: cam_left.json not found for ocean/P013; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,355 WARNING __main__: cam_left.json not found for ocean/P009; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,370 WARNING __main__: cam_left.json not found for office/P007; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,396 WARNING __main__: cam_left.json not found for office2/P011; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,414 WARNING __main__: cam_left.json not found for office2/P010; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,433 WARNING __main__: cam_left.json not found for oldtown/P007; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,483 WARNING __main__: cam_left.json not found for oldtown/P008; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,512 WARNING __main__: cam_left.json not found for seasidetown/P009; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,536 WARNING __main__: cam_left.json not found for seasonsforest/P011; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,548 WARNING __main__: cam_left.json not found for seasonsforest_winter/P009; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,560 WARNING __main__: cam_left.json not found for seasonsforest_winter/P018; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,577 WARNING __main__: cam_left.json not found for soulcity/P012; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,596 WARNING __main__: cam_left.json not found for soulcity/P009; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,606 WARNING __main__: cam_left.json not found for westerndesert/P013; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,633 WARNING __main__: cam_left.json not found for westerndesert/P007; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,643 INFO __main__: TartanAirDataset: 22084 samples, difficulty=all, split=train
+2026-09-04 13:44:50,673 WARNING __main__: cam_left.json not found for amusement/P008; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,688 WARNING __main__: cam_left.json not found for carwelding/P007; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,698 WARNING __main__: cam_left.json not found for endofworld/P009; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,712 WARNING __main__: cam_left.json not found for gascola/P008; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,747 WARNING __main__: cam_left.json not found for gascola/P009; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,764 WARNING __main__: cam_left.json not found for japanesealley/P007; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,777 WARNING __main__: cam_left.json not found for seasonsforest/P006; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-04 13:44:50,785 INFO __main__: TartanAirDataset: 4566 samples, difficulty=all, split=val
+2026-09-04 13:44:51,021 INFO __main__: No checkpoint found at /kaggle/working/outputs/checkpoint.pt, starting from scratch
+2026-09-04 13:44:51,654 INFO __main__: Using nn.DataParallel on 2 GPUs
+2026-09-04 13:44:51,676 INFO __main__: ============================================================
+Tesseract v1 — Configuration Summary
+============================================================
+
+── Model ──
+  Image size:        224×224
+  Patch size:        8
+  Tokens:            784 (28×28)
+  Embed dim:         256
+  Heads:             8 (head_dim=32)
+  Layers:            10
+  MLP ratio:         3.0
+  Ray PE freqs:      6
+  Drop path max:     0.1
+  LayerScale init:   1e-05
+  Disp range:        [0.005, 10.0]
+  Depth range:       [0.1, 200.0]
+
+── Training ──
+  Batch size:        8
+  Accumulate:        6
+  Effective batch:   48
+  Base LR:           1.0e-04
+  Depth head LR:     5.0e-04
+  Weight decay:      0.05
+  Warmup:            1 epochs
+  Total epochs:      13
+  Patience:          3
+  Grad clip:         1.0
+
+── Loss ──
+  SiLog λ_w:         0.85
+  Edge threshold:    1.0
+  Smooth threshold:  0.5
+  Uncertainty tasks:  5
+
+── Data ──
+  Val batches:       200
+  Viz samples:       16
+============================================================
+2026-09-04 13:44:51,679 INFO __main__: Curriculum: epoch 0 → difficulty 'easy' (14090 samples)
+2026-09-04 13:45:34,095 INFO __main__: Step 50 | silog: 0.5701 | l1: 1.4481 | edge: 0.2048 | smoothness: 0.0188 | planarity: 0.0024 | total: 2.2442 | irer_gate: 0.0000
+2026-09-04 13:45:56,864 INFO __main__: Step 100 | silog: 0.5768 | l1: 1.4532 | edge: 0.1963 | smoothness: 0.0192 | planarity: 0.0013 | total: 2.2467 | irer_gate: 0.0000
+2026-09-04 13:46:19,704 INFO __main__: Step 150 | silog: 0.5773 | l1: 1.4077 | edge: 0.1945 | smoothness: 0.0188 | planarity: 0.0008 | total: 2.1988 | irer_gate: 0.0000
+2026-09-04 13:46:42,582 INFO __main__: Step 200 | silog: 0.5683 | l1: 1.4359 | edge: 0.1986 | smoothness: 0.0195 | planarity: 0.0006 | total: 2.2224 | irer_gate: 0.0000
+2026-09-04 13:47:05,550 INFO __main__: Step 250 | silog: 0.5640 | l1: 1.3967 | edge: 0.1961 | smoothness: 0.0183 | planarity: 0.0007 | total: 2.1752 | irer_gate: 0.0000
+2026-09-04 13:47:27,935 INFO __main__: Step 300 | silog: 0.5819 | l1: 1.4086 | edge: 0.1929 | smoothness: 0.0193 | planarity: 0.0008 | total: 2.2024 | irer_gate: 0.0000
+2026-09-04 13:47:50,772 INFO __main__: Step 350 | silog: 0.6035 | l1: 1.4141 | edge: 0.2002 | smoothness: 0.0207 | planarity: 0.0011 | total: 2.2384 | irer_gate: 0.0000
+2026-09-04 13:48:13,628 INFO __main__: Step 400 | silog: 0.5786 | l1: 1.3937 | edge: 0.1960 | smoothness: 0.0238 | planarity: 0.0014 | total: 2.1919 | irer_gate: 0.0000
+2026-09-04 13:48:36,445 INFO __main__: Step 450 | silog: 0.5703 | l1: 1.3515 | edge: 0.1944 | smoothness: 0.0281 | planarity: 0.0021 | total: 2.1445 | irer_gate: 0.0000
+2026-09-04 13:48:59,213 INFO __main__: Step 500 | silog: 0.5559 | l1: 1.2795 | edge: 0.1901 | smoothness: 0.0342 | planarity: 0.0037 | total: 2.0612 | irer_gate: 0.0000
+2026-09-04 13:49:22,625 INFO __main__: Step 550 | silog: 0.5670 | l1: 1.1906 | edge: 0.1986 | smoothness: 0.0382 | planarity: 0.0074 | total: 1.9993 | irer_gate: 0.0000
+2026-09-04 13:49:45,666 INFO __main__: Step 600 | silog: 0.5514 | l1: 1.0610 | edge: 0.1975 | smoothness: 0.0447 | planarity: 0.0127 | total: 1.8646 | irer_gate: 0.0000
+2026-09-04 13:50:08,525 INFO __main__: Step 650 | silog: 0.5275 | l1: 0.9056 | edge: 0.2039 | smoothness: 0.0508 | planarity: 0.0199 | total: 1.7048 | irer_gate: 0.0000
+2026-09-04 13:50:31,565 INFO __main__: Step 700 | silog: 0.5349 | l1: 0.7513 | edge: 0.2023 | smoothness: 0.0575 | planarity: 0.0274 | total: 1.5703 | irer_gate: 0.0000
+2026-09-04 13:50:54,446 INFO __main__: Step 750 | silog: 0.5371 | l1: 0.6786 | edge: 0.2106 | smoothness: 0.0647 | planarity: 0.0351 | total: 1.5226 | irer_gate: 0.0000
+2026-09-04 13:51:17,136 INFO __main__: Step 800 | silog: 0.5412 | l1: 0.6804 | edge: 0.2164 | smoothness: 0.0662 | planarity: 0.0372 | total: 1.5374 | irer_gate: 0.0000
+2026-09-04 13:51:39,743 INFO __main__: Step 850 | silog: 0.5314 | l1: 0.6763 | edge: 0.2167 | smoothness: 0.0699 | planarity: 0.0369 | total: 1.5264 | irer_gate: 0.0000
+2026-09-04 13:52:02,428 INFO __main__: Step 900 | silog: 0.5231 | l1: 0.6639 | edge: 0.2115 | smoothness: 0.0676 | planarity: 0.0362 | total: 1.4968 | irer_gate: 0.0000
+2026-09-04 13:52:25,089 INFO __main__: Step 950 | silog: 0.5267 | l1: 0.6732 | edge: 0.2077 | smoothness: 0.0663 | planarity: 0.0362 | total: 1.5038 | irer_gate: 0.0000
+2026-09-04 13:52:47,718 INFO __main__: Step 1000 | silog: 0.5424 | l1: 0.6394 | edge: 0.2117 | smoothness: 0.0693 | planarity: 0.0377 | total: 1.4933 | irer_gate: 0.0000
+2026-09-04 13:53:11,112 INFO __main__: Step 1050 | silog: 0.5441 | l1: 0.6677 | edge: 0.2173 | smoothness: 0.0681 | planarity: 0.0383 | total: 1.5273 | irer_gate: 0.0000
+2026-09-04 13:53:33,975 INFO __main__: Step 1100 | silog: 0.5260 | l1: 0.6186 | edge: 0.2112 | smoothness: 0.0667 | planarity: 0.0388 | total: 1.4521 | irer_gate: 0.0000
+2026-09-04 13:53:56,421 INFO __main__: Step 1150 | silog: 0.5282 | l1: 0.6441 | edge: 0.2123 | smoothness: 0.0700 | planarity: 0.0354 | total: 1.4798 | irer_gate: 0.0000
+2026-09-04 13:54:19,264 INFO __main__: Step 1200 | silog: 0.5178 | l1: 0.6250 | edge: 0.1957 | smoothness: 0.0641 | planarity: 0.0371 | total: 1.4281 | irer_gate: 0.0000
+2026-09-04 13:54:42,051 INFO __main__: Step 1250 | silog: 0.5343 | l1: 0.6412 | edge: 0.2104 | smoothness: 0.0707 | planarity: 0.0383 | total: 1.4823 | irer_gate: 0.0000
+2026-09-04 13:55:05,184 INFO __main__: Step 1300 | silog: 0.5172 | l1: 0.6171 | edge: 0.2015 | smoothness: 0.0620 | planarity: 0.0373 | total: 1.4214 | irer_gate: 0.0000
+2026-09-04 13:55:28,183 INFO __main__: Step 1350 | silog: 0.5032 | l1: 0.6227 | edge: 0.2176 | smoothness: 0.0764 | planarity: 0.0418 | total: 1.4469 | irer_gate: 0.0000
+2026-09-04 13:55:51,318 INFO __main__: Step 1400 | silog: 0.5148 | l1: 0.6268 | edge: 0.1952 | smoothness: 0.0595 | planarity: 0.0388 | total: 1.4190 | irer_gate: 0.0000
+2026-09-04 13:56:14,323 INFO __main__: Step 1450 | silog: 0.5126 | l1: 0.6151 | edge: 0.2093 | smoothness: 0.0709 | planarity: 0.0385 | total: 1.4292 | irer_gate: 0.0000
+2026-09-04 13:56:36,867 INFO __main__: Step 1500 | silog: 0.5259 | l1: 0.6332 | edge: 0.2106 | smoothness: 0.0662 | planarity: 0.0408 | total: 1.4587 | irer_gate: 0.0000
+2026-09-04 13:56:59,815 INFO __main__: Step 1550 | silog: 0.5150 | l1: 0.6267 | edge: 0.2071 | smoothness: 0.0639 | planarity: 0.0430 | total: 1.4364 | irer_gate: 0.0000
+2026-09-04 13:57:22,914 INFO __main__: Step 1600 | silog: 0.5245 | l1: 0.6215 | edge: 0.2091 | smoothness: 0.0714 | planarity: 0.0366 | total: 1.4426 | irer_gate: 0.0000
+2026-09-04 13:57:46,070 INFO __main__: Step 1650 | silog: 0.5249 | l1: 0.6303 | edge: 0.2093 | smoothness: 0.0684 | planarity: 0.0415 | total: 1.4527 | irer_gate: 0.0000
+2026-09-04 13:58:08,854 INFO __main__: Step 1700 | silog: 0.5021 | l1: 0.6168 | edge: 0.2080 | smoothness: 0.0646 | planarity: 0.0388 | total: 1.4071 | irer_gate: 0.0000
+2026-09-04 13:58:31,127 INFO __main__: Step 1750 | silog: 0.5031 | l1: 0.5774 | edge: 0.2081 | smoothness: 0.0692 | planarity: 0.0385 | total: 1.3714 | irer_gate: 0.0000
+2026-09-04 13:59:44,217 INFO __main__: Epoch 0/13 | Loss: 1.7068 | Val abs_rel: 0.4738 | IRER gate: 0.000 | Time: 892.5s
+2026-09-04 13:59:44,786 INFO __main__: Checkpoint saved: /kaggle/working/outputs/checkpoint.pt (epoch=1)
+2026-09-04 14:00:04,881 INFO __main__: Step 1800 | silog: 0.5111 | l1: 0.5740 | edge: 0.1913 | smoothness: 0.0622 | planarity: 0.0345 | total: 1.3466 | irer_gate: 0.0000
+2026-09-04 14:00:27,469 INFO __main__: Step 1850 | silog: 0.5012 | l1: 0.5780 | edge: 0.2111 | smoothness: 0.0707 | planarity: 0.0386 | total: 1.3718 | irer_gate: 0.0000
+2026-09-04 14:00:49,924 INFO __main__: Step 1900 | silog: 0.5032 | l1: 0.6205 | edge: 0.2105 | smoothness: 0.0651 | planarity: 0.0372 | total: 1.4075 | irer_gate: 0.0000
+2026-09-04 14:01:12,671 INFO __main__: Step 1950 | silog: 0.5096 | l1: 0.5815 | edge: 0.2027 | smoothness: 0.0660 | planarity: 0.0345 | total: 1.3637 | irer_gate: 0.0000
+2026-09-04 14:01:35,531 INFO __main__: Step 2000 | silog: 0.4963 | l1: 0.5671 | edge: 0.2055 | smoothness: 0.0671 | planarity: 0.0376 | total: 1.3414 | irer_gate: 0.0000
+2026-09-04 14:01:58,237 INFO __main__: Step 2050 | silog: 0.4877 | l1: 0.5430 | edge: 0.2044 | smoothness: 0.0698 | planarity: 0.0387 | total: 1.3097 | irer_gate: 0.0000
+2026-09-04 14:02:21,783 INFO __main__: Step 2100 | silog: 0.4884 | l1: 0.5549 | edge: 0.2056 | smoothness: 0.0638 | planarity: 0.0349 | total: 1.3122 | irer_gate: 0.0000
+2026-09-04 14:02:44,729 INFO __main__: Step 2150 | silog: 0.4865 | l1: 0.5718 | edge: 0.2058 | smoothness: 0.0672 | planarity: 0.0318 | total: 1.3265 | irer_gate: 0.0000
+2026-09-04 14:03:07,601 INFO __main__: Step 2200 | silog: 0.5140 | l1: 0.5731 | edge: 0.1976 | smoothness: 0.0605 | planarity: 0.0259 | total: 1.3332 | irer_gate: 0.0000
+2026-09-04 14:03:30,496 INFO __main__: Step 2250 | silog: 0.4838 | l1: 0.5515 | edge: 0.2049 | smoothness: 0.0633 | planarity: 0.0283 | total: 1.2920 | irer_gate: 0.0000
+2026-09-04 14:03:53,535 INFO __main__: Step 2300 | silog: 0.4983 | l1: 0.5909 | edge: 0.1982 | smoothness: 0.0637 | planarity: 0.0260 | total: 1.3362 | irer_gate: 0.0000
+2026-09-04 14:04:16,963 INFO __main__: Step 2350 | silog: 0.4694 | l1: 0.5241 | edge: 0.1878 | smoothness: 0.0605 | planarity: 0.0228 | total: 1.2210 | irer_gate: 0.0000
+2026-09-04 14:04:39,629 INFO __main__: Step 2400 | silog: 0.4780 | l1: 0.5278 | edge: 0.2084 | smoothness: 0.0680 | planarity: 0.0264 | total: 1.2642 | irer_gate: 0.0000
+2026-09-04 14:05:02,717 INFO __main__: Step 2450 | silog: 0.5052 | l1: 0.5565 | edge: 0.2095 | smoothness: 0.0649 | planarity: 0.0251 | total: 1.3157 | irer_gate: 0.0000
+2026-09-04 14:05:25,630 INFO __main__: Step 2500 | silog: 0.5050 | l1: 0.5619 | edge: 0.2087 | smoothness: 0.0695 | planarity: 0.0247 | total: 1.3227 | irer_gate: 0.0000
+2026-09-04 14:05:48,759 INFO __main__: Step 2550 | silog: 0.5022 | l1: 0.5613 | edge: 0.1978 | smoothness: 0.0589 | planarity: 0.0208 | total: 1.2921 | irer_gate: 0.0000
+2026-09-04 14:06:12,205 INFO __main__: Step 2600 | silog: 0.4838 | l1: 0.5164 | edge: 0.1948 | smoothness: 0.0634 | planarity: 0.0228 | total: 1.2298 | irer_gate: 0.0000
+2026-09-04 14:06:35,086 INFO __main__: Step 2650 | silog: 0.4794 | l1: 0.5298 | edge: 0.2015 | smoothness: 0.0639 | planarity: 0.0208 | total: 1.2426 | irer_gate: 0.0000
+2026-09-04 14:06:57,756 INFO __main__: Step 2700 | silog: 0.4818 | l1: 0.5177 | edge: 0.1947 | smoothness: 0.0603 | planarity: 0.0209 | total: 1.2204 | irer_gate: 0.0000
+2026-09-04 14:07:20,816 INFO __main__: Step 2750 | silog: 0.4935 | l1: 0.5423 | edge: 0.1984 | smoothness: 0.0663 | planarity: 0.0228 | total: 1.2670 | irer_gate: 0.0000
+2026-09-04 14:07:43,968 INFO __main__: Step 2800 | silog: 0.4909 | l1: 0.5377 | edge: 0.1938 | smoothness: 0.0602 | planarity: 0.0190 | total: 1.2431 | irer_gate: 0.0000
+2026-09-04 14:08:07,020 INFO __main__: Step 2850 | silog: 0.4829 | l1: 0.5212 | edge: 0.2075 | smoothness: 0.0651 | planarity: 0.0205 | total: 1.2369 | irer_gate: 0.0000
+2026-09-04 14:08:29,586 INFO __main__: Step 2900 | silog: 0.4591 | l1: 0.5214 | edge: 0.1953 | smoothness: 0.0642 | planarity: 0.0200 | total: 1.1971 | irer_gate: 0.0000
+2026-09-04 14:08:52,822 INFO __main__: Step 2950 | silog: 0.4676 | l1: 0.5024 | edge: 0.2065 | smoothness: 0.0663 | planarity: 0.0218 | total: 1.1998 | irer_gate: 0.0000
+2026-09-04 14:09:15,580 INFO __main__: Step 3000 | silog: 0.4827 | l1: 0.5146 | edge: 0.2089 | smoothness: 0.0698 | planarity: 0.0226 | total: 1.2324 | irer_gate: 0.0000
+2026-09-04 14:09:38,933 INFO __main__: Step 3050 | silog: 0.4866 | l1: 0.5560 | edge: 0.1897 | smoothness: 0.0615 | planarity: 0.0196 | total: 1.2456 | irer_gate: 0.0000
+2026-09-04 14:10:02,155 INFO __main__: Step 3100 | silog: 0.4623 | l1: 0.5308 | edge: 0.2013 | smoothness: 0.0662 | planarity: 0.0217 | total: 1.2124 | irer_gate: 0.0000
+2026-09-04 14:10:25,443 INFO __main__: Step 3150 | silog: 0.4827 | l1: 0.5326 | edge: 0.2130 | smoothness: 0.0651 | planarity: 0.0197 | total: 1.2421 | irer_gate: 0.0000
+2026-09-04 14:10:49,387 INFO __main__: Step 3200 | silog: 0.4680 | l1: 0.5253 | edge: 0.1859 | smoothness: 0.0586 | planarity: 0.0188 | total: 1.1830 | irer_gate: 0.0000
+2026-09-04 14:11:13,100 INFO __main__: Step 3250 | silog: 0.4565 | l1: 0.5070 | edge: 0.1946 | smoothness: 0.0661 | planarity: 0.0209 | total: 1.1696 | irer_gate: 0.0000
+2026-09-04 14:11:36,417 INFO __main__: Step 3300 | silog: 0.4724 | l1: 0.5083 | edge: 0.2074 | smoothness: 0.0708 | planarity: 0.0208 | total: 1.2033 | irer_gate: 0.0000
+2026-09-04 14:11:59,734 INFO __main__: Step 3350 | silog: 0.4490 | l1: 0.4848 | edge: 0.1929 | smoothness: 0.0629 | planarity: 0.0195 | total: 1.1292 | irer_gate: 0.0000
+2026-09-04 14:12:23,172 INFO __main__: Step 3400 | silog: 0.4581 | l1: 0.4745 | edge: 0.2035 | smoothness: 0.0662 | planarity: 0.0220 | total: 1.1424 | irer_gate: 0.0000
+2026-09-04 14:12:46,720 INFO __main__: Step 3450 | silog: 0.5040 | l1: 0.5388 | edge: 0.2028 | smoothness: 0.0602 | planarity: 0.0186 | total: 1.2430 | irer_gate: 0.0000
+2026-09-04 14:13:10,749 INFO __main__: Step 3500 | silog: 0.4770 | l1: 0.5091 | edge: 0.1995 | smoothness: 0.0611 | planarity: 0.0177 | total: 1.1799 | irer_gate: 0.0000
+2026-09-04 14:13:18,971 INFO __main__: Epoch 1/13 | Loss: 1.2596 | Val abs_rel: 0.4738 | IRER gate: 0.000 | Time: 814.2s
+2026-09-04 14:13:19,541 INFO __main__: Checkpoint saved: /kaggle/working/outputs/checkpoint.pt (epoch=2)
+2026-09-04 14:13:43,513 INFO __main__: Step 3550 | silog: 0.4429 | l1: 0.4869 | edge: 0.1908 | smoothness: 0.0650 | planarity: 0.0165 | total: 1.1139 | irer_gate: 0.1244
+2026-09-04 14:14:21,889 INFO __main__: Step 3600 | silog: 0.4633 | l1: 0.4929 | edge: 0.1881 | smoothness: 0.0591 | planarity: 0.0144 | total: 1.1280 | irer_gate: 0.2222
+2026-09-04 14:15:01,185 INFO __main__: Step 3650 | silog: 0.4468 | l1: 0.4909 | edge: 0.1996 | smoothness: 0.0667 | planarity: 0.0150 | total: 1.1272 | irer_gate: 0.2222
+2026-09-04 14:15:39,821 INFO __main__: Step 3700 | silog: 0.4430 | l1: 0.4588 | edge: 0.1915 | smoothness: 0.0644 | planarity: 0.0161 | total: 1.0789 | irer_gate: 0.2222
+2026-09-04 14:16:18,396 INFO __main__: Step 3750 | silog: 0.4705 | l1: 0.4904 | edge: 0.2045 | smoothness: 0.0714 | planarity: 0.0166 | total: 1.1584 | irer_gate: 0.2222
+2026-09-04 14:16:56,175 INFO __main__: Step 3800 | silog: 0.4290 | l1: 0.4519 | edge: 0.1921 | smoothness: 0.0637 | planarity: 0.0149 | total: 1.0520 | irer_gate: 0.2222
+2026-09-04 14:17:34,864 INFO __main__: Step 3850 | silog: 0.4492 | l1: 0.4878 | edge: 0.2168 | smoothness: 0.0740 | planarity: 0.0164 | total: 1.1450 | irer_gate: 0.2222
+2026-09-04 14:18:13,587 INFO __main__: Step 3900 | silog: 0.4855 | l1: 0.5012 | edge: 0.1999 | smoothness: 0.0622 | planarity: 0.0150 | total: 1.1634 | irer_gate: 0.2222
+2026-09-04 14:18:52,371 INFO __main__: Step 3950 | silog: 0.4614 | l1: 0.5067 | edge: 0.1984 | smoothness: 0.0668 | planarity: 0.0152 | total: 1.1458 | irer_gate: 0.2222
+2026-09-04 14:19:31,306 INFO __main__: Step 4000 | silog: 0.4420 | l1: 0.4689 | edge: 0.2004 | smoothness: 0.0699 | planarity: 0.0158 | total: 1.0907 | irer_gate: 0.2222
+2026-09-04 14:20:11,206 INFO __main__: Step 4050 | silog: 0.4547 | l1: 0.4567 | edge: 0.2094 | smoothness: 0.0708 | planarity: 0.0153 | total: 1.0991 | irer_gate: 0.2222
+2026-09-04 14:20:49,930 INFO __main__: Step 4100 | silog: 0.4538 | l1: 0.4964 | edge: 0.1970 | smoothness: 0.0655 | planarity: 0.0159 | total: 1.1195 | irer_gate: 0.2222
+2026-09-04 14:21:28,960 INFO __main__: Step 4150 | silog: 0.4490 | l1: 0.4734 | edge: 0.1964 | smoothness: 0.0698 | planarity: 0.0144 | total: 1.0915 | irer_gate: 0.2222
+2026-09-04 14:22:08,283 INFO __main__: Step 4200 | silog: 0.4502 | l1: 0.4682 | edge: 0.2069 | smoothness: 0.0675 | planarity: 0.0162 | total: 1.0956 | irer_gate: 0.2222
+2026-09-04 14:22:47,869 INFO __main__: Step 4250 | silog: 0.4747 | l1: 0.5209 | edge: 0.2108 | smoothness: 0.0718 | planarity: 0.0181 | total: 1.1837 | irer_gate: 0.2222
+2026-09-04 14:23:26,884 INFO __main__: Step 4300 | silog: 0.4440 | l1: 0.4683 | edge: 0.1921 | smoothness: 0.0649 | planarity: 0.0135 | total: 1.0648 | irer_gate: 0.2222
+2026-09-04 14:24:05,658 INFO __main__: Step 4350 | silog: 0.4523 | l1: 0.4691 | edge: 0.1986 | smoothness: 0.0665 | planarity: 0.0142 | total: 1.0812 | irer_gate: 0.2222
+2026-09-04 14:24:44,224 INFO __main__: Step 4400 | silog: 0.4256 | l1: 0.4420 | edge: 0.1985 | smoothness: 0.0711 | planarity: 0.0152 | total: 1.0290 | irer_gate: 0.2222
+2026-09-04 14:25:23,455 INFO __main__: Step 4450 | silog: 0.4197 | l1: 0.4359 | edge: 0.1823 | smoothness: 0.0596 | planarity: 0.0139 | total: 0.9844 | irer_gate: 0.2222
+2026-09-04 14:26:02,592 INFO __main__: Step 4500 | silog: 0.4267 | l1: 0.4500 | edge: 0.1947 | smoothness: 0.0685 | planarity: 0.0145 | total: 1.0268 | irer_gate: 0.2222
+2026-09-04 14:26:41,734 INFO __main__: Step 4550 | silog: 0.4277 | l1: 0.4712 | edge: 0.1974 | smoothness: 0.0704 | planarity: 0.0146 | total: 1.0525 | irer_gate: 0.2222
+2026-09-04 14:27:20,829 INFO __main__: Step 4600 | silog: 0.4400 | l1: 0.4993 | edge: 0.1940 | smoothness: 0.0664 | planarity: 0.0174 | total: 1.0876 | irer_gate: 0.2222
+2026-09-04 14:27:59,339 INFO __main__: Step 4650 | silog: 0.4341 | l1: 0.4853 | edge: 0.1950 | smoothness: 0.0627 | planarity: 0.0142 | total: 1.0592 | irer_gate: 0.2222
+2026-09-04 14:28:38,242 INFO __main__: Step 4700 | silog: 0.4450 | l1: 0.4551 | edge: 0.1946 | smoothness: 0.0662 | planarity: 0.0142 | total: 1.0406 | irer_gate: 0.2222
+2026-09-04 14:29:16,744 INFO __main__: Step 4750 | silog: 0.4432 | l1: 0.4537 | edge: 0.1980 | smoothness: 0.0718 | planarity: 0.0150 | total: 1.0454 | irer_gate: 0.2222
+2026-09-04 14:29:56,100 INFO __main__: Step 4800 | silog: 0.4460 | l1: 0.4617 | edge: 0.1901 | smoothness: 0.0706 | planarity: 0.0136 | total: 1.0438 | irer_gate: 0.2222
+2026-09-04 14:30:36,040 INFO __main__: Step 4850 | silog: 0.4235 | l1: 0.4330 | edge: 0.1948 | smoothness: 0.0722 | planarity: 0.0140 | total: 0.9954 | irer_gate: 0.2222
+2026-09-04 14:31:15,106 INFO __main__: Step 4900 | silog: 0.4452 | l1: 0.4507 | edge: 0.2036 | smoothness: 0.0701 | planarity: 0.0147 | total: 1.0416 | irer_gate: 0.2222
+2026-09-04 14:31:54,160 INFO __main__: Step 4950 | silog: 0.4461 | l1: 0.4548 | edge: 0.1974 | smoothness: 0.0715 | planarity: 0.0136 | total: 1.0382 | irer_gate: 0.2222
+2026-09-04 14:32:33,466 INFO __main__: Step 5000 | silog: 0.4356 | l1: 0.4521 | edge: 0.1889 | smoothness: 0.0665 | planarity: 0.0140 | total: 1.0086 | irer_gate: 0.2222
+2026-09-04 14:33:12,906 INFO __main__: Step 5050 | silog: 0.4357 | l1: 0.4464 | edge: 0.1969 | smoothness: 0.0687 | planarity: 0.0135 | total: 1.0108 | irer_gate: 0.2222
+2026-09-04 14:33:52,407 INFO __main__: Step 5100 | silog: 0.4334 | l1: 0.4687 | edge: 0.1866 | smoothness: 0.0652 | planarity: 0.0138 | total: 1.0156 | irer_gate: 0.2222
+2026-09-04 14:34:31,980 INFO __main__: Step 5150 | silog: 0.4269 | l1: 0.4305 | edge: 0.1926 | smoothness: 0.0671 | planarity: 0.0144 | total: 0.9758 | irer_gate: 0.2222
+2026-09-04 14:35:11,665 INFO __main__: Step 5200 | silog: 0.4242 | l1: 0.4543 | edge: 0.1905 | smoothness: 0.0677 | planarity: 0.0135 | total: 0.9933 | irer_gate: 0.2222
+2026-09-04 14:35:51,567 INFO __main__: Step 5250 | silog: 0.4335 | l1: 0.4625 | edge: 0.2032 | smoothness: 0.0735 | planarity: 0.0155 | total: 1.0310 | irer_gate: 0.2222
+2026-09-04 14:37:42,498 INFO __main__: Epoch 2/13 | Loss: 1.0679 | Val abs_rel: 0.4926 | IRER gate: 0.222 | Time: 1463.0s
+2026-09-04 14:37:43,078 INFO __main__: Checkpoint saved: /kaggle/working/outputs/checkpoint.pt (epoch=3)
+2026-09-04 14:37:58,613 INFO __main__: Step 5300 | silog: 0.4409 | l1: 0.4846 | edge: 0.2020 | smoothness: 0.0712 | planarity: 0.0158 | total: 1.0561 | irer_gate: 0.4111
+2026-09-04 14:38:37,606 INFO __main__: Step 5350 | silog: 0.4242 | l1: 0.4257 | edge: 0.1961 | smoothness: 0.0707 | planarity: 0.0152 | total: 0.9678 | irer_gate: 0.7778
+2026-09-04 14:39:16,516 INFO __main__: Step 5400 | silog: 0.4216 | l1: 0.4122 | edge: 0.1964 | smoothness: 0.0686 | planarity: 0.0137 | total: 0.9452 | irer_gate: 0.7778
+2026-09-04 14:39:55,646 INFO __main__: Step 5450 | silog: 0.4229 | l1: 0.4202 | edge: 0.1795 | smoothness: 0.0656 | planarity: 0.0133 | total: 0.9314 | irer_gate: 0.7778
+2026-09-04 14:40:34,409 INFO __main__: Step 5500 | silog: 0.4005 | l1: 0.4182 | edge: 0.1837 | smoothness: 0.0688 | planarity: 0.0129 | total: 0.9106 | irer_gate: 0.7778
+2026-09-04 14:41:13,778 INFO __main__: Step 5550 | silog: 0.4125 | l1: 0.4159 | edge: 0.1892 | smoothness: 0.0732 | planarity: 0.0139 | total: 0.9299 | irer_gate: 0.7778
+2026-09-04 14:41:52,616 INFO __main__: Step 5600 | silog: 0.3956 | l1: 0.3973 | edge: 0.1933 | smoothness: 0.0694 | planarity: 0.0139 | total: 0.8906 | irer_gate: 0.7778
+2026-09-04 14:42:31,951 INFO __main__: Step 5650 | silog: 0.4147 | l1: 0.4247 | edge: 0.1893 | smoothness: 0.0702 | planarity: 0.0131 | total: 0.9330 | irer_gate: 0.7778
+2026-09-04 14:43:11,497 INFO __main__: Step 5700 | silog: 0.4354 | l1: 0.4473 | edge: 0.1980 | smoothness: 0.0725 | planarity: 0.0148 | total: 0.9898 | irer_gate: 0.7778
+2026-09-04 14:43:50,510 INFO __main__: Step 5750 | silog: 0.4471 | l1: 0.4420 | edge: 0.1998 | smoothness: 0.0686 | planarity: 0.0150 | total: 0.9926 | irer_gate: 0.7778
+2026-09-04 14:44:30,106 INFO __main__: Step 5800 | silog: 0.4392 | l1: 0.4407 | edge: 0.1897 | smoothness: 0.0707 | planarity: 0.0136 | total: 0.9712 | irer_gate: 0.7778
+2026-09-04 14:45:10,220 INFO __main__: Step 5850 | silog: 0.4306 | l1: 0.4290 | edge: 0.2014 | smoothness: 0.0706 | planarity: 0.0142 | total: 0.9605 | irer_gate: 0.7778
+2026-09-04 14:45:50,844 INFO __main__: Step 5900 | silog: 0.4018 | l1: 0.3845 | edge: 0.1912 | smoothness: 0.0711 | planarity: 0.0134 | total: 0.8700 | irer_gate: 0.7778
+2026-09-04 14:46:29,631 INFO __main__: Step 5950 | silog: 0.4174 | l1: 0.4243 | edge: 0.1904 | smoothness: 0.0672 | planarity: 0.0129 | total: 0.9205 | irer_gate: 0.7778
+2026-09-04 14:47:08,943 INFO __main__: Step 6000 | silog: 0.4279 | l1: 0.4335 | edge: 0.1966 | smoothness: 0.0720 | planarity: 0.0140 | total: 0.9519 | irer_gate: 0.7778
+2026-09-04 14:47:48,310 INFO __main__: Step 6050 | silog: 0.4237 | l1: 0.4196 | edge: 0.2005 | smoothness: 0.0750 | planarity: 0.0162 | total: 0.9403 | irer_gate: 0.7778
+2026-09-04 14:48:27,586 INFO __main__: Step 6100 | silog: 0.4190 | l1: 0.4316 | edge: 0.1950 | smoothness: 0.0772 | planarity: 0.0168 | total: 0.9435 | irer_gate: 0.7778
+2026-09-04 14:49:06,985 INFO __main__: Step 6150 | silog: 0.4048 | l1: 0.4374 | edge: 0.2035 | smoothness: 0.0795 | planarity: 0.0168 | total: 0.9444 | irer_gate: 0.7778
+2026-09-04 14:49:47,334 INFO __main__: Step 6200 | silog: 0.4069 | l1: 0.4115 | edge: 0.1993 | smoothness: 0.0752 | planarity: 0.0152 | total: 0.9068 | irer_gate: 0.7778
+2026-09-04 14:50:27,816 INFO __main__: Step 6250 | silog: 0.4293 | l1: 0.4346 | edge: 0.1887 | smoothness: 0.0689 | planarity: 0.0148 | total: 0.9347 | irer_gate: 0.7778
+2026-09-04 14:51:06,797 INFO __main__: Step 6300 | silog: 0.4263 | l1: 0.4195 | edge: 0.1947 | smoothness: 0.0714 | planarity: 0.0138 | total: 0.9217 | irer_gate: 0.7778
+2026-09-04 14:51:46,655 INFO __main__: Step 6350 | silog: 0.4168 | l1: 0.4181 | edge: 0.1964 | smoothness: 0.0735 | planarity: 0.0146 | total: 0.9130 | irer_gate: 0.7778
+2026-09-04 14:52:26,016 INFO __main__: Step 6400 | silog: 0.4141 | l1: 0.4154 | edge: 0.1852 | smoothness: 0.0707 | planarity: 0.0140 | total: 0.8899 | irer_gate: 0.7778
+2026-09-04 14:53:05,292 INFO __main__: Step 6450 | silog: 0.4101 | l1: 0.4350 | edge: 0.1986 | smoothness: 0.0726 | planarity: 0.0144 | total: 0.9212 | irer_gate: 0.7778
+2026-09-04 14:53:45,130 INFO __main__: Step 6500 | silog: 0.4178 | l1: 0.4262 | edge: 0.1893 | smoothness: 0.0698 | planarity: 0.0132 | total: 0.9040 | irer_gate: 0.7778
+2026-09-04 14:54:24,670 INFO __main__: Step 6550 | silog: 0.4103 | l1: 0.4302 | edge: 0.1922 | smoothness: 0.0694 | planarity: 0.0138 | total: 0.9016 | irer_gate: 0.7778
+2026-09-04 14:55:04,191 INFO __main__: Step 6600 | silog: 0.4031 | l1: 0.4193 | edge: 0.1839 | smoothness: 0.0666 | planarity: 0.0140 | total: 0.8691 | irer_gate: 0.7778
+2026-09-04 14:55:43,939 INFO __main__: Step 6650 | silog: 0.4185 | l1: 0.4109 | edge: 0.1968 | smoothness: 0.0714 | planarity: 0.0130 | total: 0.8919 | irer_gate: 0.7778
+2026-09-04 14:56:23,040 INFO __main__: Step 6700 | silog: 0.4161 | l1: 0.4049 | edge: 0.1969 | smoothness: 0.0736 | planarity: 0.0140 | total: 0.8841 | irer_gate: 0.7778
+2026-09-04 14:57:02,366 INFO __main__: Step 6750 | silog: 0.4034 | l1: 0.3949 | edge: 0.1911 | smoothness: 0.0744 | planarity: 0.0152 | total: 0.8534 | irer_gate: 0.7778
+2026-09-04 14:57:41,023 INFO __main__: Step 6800 | silog: 0.3959 | l1: 0.4081 | edge: 0.1966 | smoothness: 0.0706 | planarity: 0.0135 | total: 0.8570 | irer_gate: 0.7778
+2026-09-04 14:58:20,157 INFO __main__: Step 6850 | silog: 0.4106 | l1: 0.4035 | edge: 0.1903 | smoothness: 0.0709 | planarity: 0.0140 | total: 0.8597 | irer_gate: 0.7778
+2026-09-04 14:58:59,462 INFO __main__: Step 6900 | silog: 0.4074 | l1: 0.4135 | edge: 0.1992 | smoothness: 0.0726 | planarity: 0.0154 | total: 0.8775 | irer_gate: 0.7778
+2026-09-04 14:59:39,057 INFO __main__: Step 6950 | silog: 0.4012 | l1: 0.4012 | edge: 0.1922 | smoothness: 0.0733 | planarity: 0.0143 | total: 0.8478 | irer_gate: 0.7778
+2026-09-04 15:00:18,437 INFO __main__: Step 7000 | silog: 0.4119 | l1: 0.4091 | edge: 0.1956 | smoothness: 0.0722 | planarity: 0.0135 | total: 0.8672 | irer_gate: 0.7778
+2026-09-04 15:00:50,945 INFO __main__: Epoch 3/13 | Loss: 0.9147 | Val abs_rel: 0.4926 | IRER gate: 0.778 | Time: 1387.9s
+2026-09-04 15:00:51,512 INFO __main__: Checkpoint saved: /kaggle/working/outputs/checkpoint.pt (epoch=4)
+2026-09-04 15:00:51,611 INFO __main__: Curriculum: no 'Medium' samples available; using full dataset
+2026-09-04 15:01:00,794 INFO __main__: Step 7050 | silog: 0.4043 | l1: 0.4070 | edge: 0.1947 | smoothness: 0.0743 | planarity: 0.0146 | total: 0.8569 | irer_gate: 0.8044
+2026-09-04 15:01:40,573 INFO __main__: Step 7100 | silog: 0.4671 | l1: 0.5042 | edge: 0.1951 | smoothness: 0.0684 | planarity: 0.0140 | total: 1.0198 | irer_gate: 1.0000
+2026-09-04 15:02:20,780 INFO __main__: Step 7150 | silog: 0.4621 | l1: 0.4553 | edge: 0.1989 | smoothness: 0.0697 | planarity: 0.0145 | total: 0.9663 | irer_gate: 1.0000
+2026-09-04 15:03:00,809 INFO __main__: Step 7200 | silog: 0.4705 | l1: 0.4906 | edge: 0.2081 | smoothness: 0.0788 | planarity: 0.0152 | total: 1.0314 | irer_gate: 1.0000
+2026-09-04 15:03:39,774 INFO __main__: Step 7250 | silog: 0.4458 | l1: 0.4836 | edge: 0.2062 | smoothness: 0.0753 | planarity: 0.0148 | total: 0.9895 | irer_gate: 1.0000
+2026-09-04 15:04:19,143 INFO __main__: Step 7300 | silog: 0.4474 | l1: 0.4611 | edge: 0.1956 | smoothness: 0.0730 | planarity: 0.0149 | total: 0.9516 | irer_gate: 1.0000
+2026-09-04 15:04:58,136 INFO __main__: Step 7350 | silog: 0.4526 | l1: 0.4668 | edge: 0.1934 | smoothness: 0.0695 | planarity: 0.0138 | total: 0.9542 | irer_gate: 1.0000
+2026-09-04 15:05:37,777 INFO __main__: Step 7400 | silog: 0.4434 | l1: 0.4528 | edge: 0.1932 | smoothness: 0.0702 | planarity: 0.0139 | total: 0.9282 | irer_gate: 1.0000
+2026-09-04 15:06:17,358 INFO __main__: Step 7450 | silog: 0.4481 | l1: 0.4542 | edge: 0.1985 | smoothness: 0.0688 | planarity: 0.0140 | total: 0.9373 | irer_gate: 1.0000
+2026-09-04 15:06:57,316 INFO __main__: Step 7500 | silog: 0.4421 | l1: 0.4675 | edge: 0.1876 | smoothness: 0.0707 | planarity: 0.0149 | total: 0.9349 | irer_gate: 1.0000
+2026-09-04 15:07:36,621 INFO __main__: Step 7550 | silog: 0.4561 | l1: 0.4735 | edge: 0.2041 | smoothness: 0.0729 | planarity: 0.0149 | total: 0.9744 | irer_gate: 1.0000
+2026-09-04 15:08:15,695 INFO __main__: Step 7600 | silog: 0.4534 | l1: 0.4731 | edge: 0.2053 | smoothness: 0.0774 | planarity: 0.0160 | total: 0.9764 | irer_gate: 1.0000
+2026-09-04 15:08:54,716 INFO __main__: Step 7650 | silog: 0.4239 | l1: 0.4255 | edge: 0.1908 | smoothness: 0.0735 | planarity: 0.0138 | total: 0.8696 | irer_gate: 1.0000
+2026-09-04 15:09:33,745 INFO __main__: Step 7700 | silog: 0.4277 | l1: 0.4412 | edge: 0.2007 | smoothness: 0.0777 | planarity: 0.0157 | total: 0.9056 | irer_gate: 1.0000
+2026-09-04 15:10:13,142 INFO __main__: Step 7750 | silog: 0.4201 | l1: 0.4303 | edge: 0.1909 | smoothness: 0.0734 | planarity: 0.0133 | total: 0.8661 | irer_gate: 1.0000
+2026-09-04 15:10:52,818 INFO __main__: Step 7800 | silog: 0.4349 | l1: 0.4391 | edge: 0.1980 | smoothness: 0.0713 | planarity: 0.0138 | total: 0.8954 | irer_gate: 1.0000
+2026-09-04 15:11:31,671 INFO __main__: Step 7850 | silog: 0.4211 | l1: 0.4380 | edge: 0.2053 | smoothness: 0.0793 | planarity: 0.0155 | total: 0.8955 | irer_gate: 1.0000
+2026-09-04 15:12:11,109 INFO __main__: Step 7900 | silog: 0.4572 | l1: 0.4485 | edge: 0.2026 | smoothness: 0.0702 | planarity: 0.0139 | total: 0.9296 | irer_gate: 1.0000
+2026-09-04 15:12:50,508 INFO __main__: Step 7950 | silog: 0.4455 | l1: 0.4507 | edge: 0.2055 | smoothness: 0.0801 | planarity: 0.0158 | total: 0.9330 | irer_gate: 1.0000
+2026-09-04 15:13:30,051 INFO __main__: Step 8000 | silog: 0.4418 | l1: 0.4363 | edge: 0.1995 | smoothness: 0.0745 | planarity: 0.0147 | total: 0.8981 | irer_gate: 1.0000
+2026-09-04 15:14:10,142 INFO __main__: Step 8050 | silog: 0.4347 | l1: 0.4416 | edge: 0.2039 | smoothness: 0.0786 | planarity: 0.0158 | total: 0.9046 | irer_gate: 1.0000
+2026-09-04 15:14:50,425 INFO __main__: Step 8100 | silog: 0.4380 | l1: 0.4276 | edge: 0.2003 | smoothness: 0.0729 | planarity: 0.0137 | total: 0.8790 | irer_gate: 1.0000
+2026-09-04 15:15:29,990 INFO __main__: Step 8150 | silog: 0.4445 | l1: 0.4493 | edge: 0.2008 | smoothness: 0.0774 | planarity: 0.0157 | total: 0.9154 | irer_gate: 1.0000
+2026-09-04 15:16:09,742 INFO __main__: Step 8200 | silog: 0.4530 | l1: 0.4555 | edge: 0.1897 | smoothness: 0.0702 | planarity: 0.0136 | total: 0.9078 | irer_gate: 1.0000
+2026-09-04 15:16:49,312 INFO __main__: Step 8250 | silog: 0.4379 | l1: 0.4416 | edge: 0.1950 | smoothness: 0.0711 | planarity: 0.0141 | total: 0.8819 | irer_gate: 1.0000
+2026-09-04 15:17:28,729 INFO __main__: Step 8300 | silog: 0.4299 | l1: 0.4248 | edge: 0.1932 | smoothness: 0.0731 | planarity: 0.0139 | total: 0.8535 | irer_gate: 1.0000
+2026-09-04 15:18:08,585 INFO __main__: Step 8350 | silog: 0.4486 | l1: 0.4485 | edge: 0.2038 | smoothness: 0.0778 | planarity: 0.0154 | total: 0.9155 | irer_gate: 1.0000
+2026-09-04 15:18:47,764 INFO __main__: Step 8400 | silog: 0.4516 | l1: 0.4550 | edge: 0.2040 | smoothness: 0.0742 | planarity: 0.0151 | total: 0.9200 | irer_gate: 1.0000
+2026-09-04 15:19:27,101 INFO __main__: Step 8450 | silog: 0.4485 | l1: 0.4306 | edge: 0.2106 | smoothness: 0.0793 | planarity: 0.0146 | total: 0.9004 | irer_gate: 1.0000
+2026-09-04 15:20:06,180 INFO __main__: Step 8500 | silog: 0.4273 | l1: 0.4239 | edge: 0.2036 | smoothness: 0.0762 | planarity: 0.0148 | total: 0.8576 | irer_gate: 1.0000
+2026-09-04 15:20:45,464 INFO __main__: Step 8550 | silog: 0.4252 | l1: 0.4184 | edge: 0.1974 | smoothness: 0.0752 | planarity: 0.0138 | total: 0.8386 | irer_gate: 1.0000
+2026-09-04 15:21:25,043 INFO __main__: Step 8600 | silog: 0.4327 | l1: 0.4365 | edge: 0.2013 | smoothness: 0.0748 | planarity: 0.0149 | total: 0.8697 | irer_gate: 1.0000
+2026-09-04 15:22:05,137 INFO __main__: Step 8650 | silog: 0.4304 | l1: 0.4438 | edge: 0.1997 | smoothness: 0.0775 | planarity: 0.0155 | total: 0.8751 | irer_gate: 1.0000
+2026-09-04 15:22:44,764 INFO __main__: Step 8700 | silog: 0.4380 | l1: 0.4456 | edge: 0.1973 | smoothness: 0.0772 | planarity: 0.0152 | total: 0.8800 | irer_gate: 1.0000
+2026-09-04 15:23:24,092 INFO __main__: Step 8750 | silog: 0.4210 | l1: 0.4193 | edge: 0.2005 | smoothness: 0.0774 | planarity: 0.0161 | total: 0.8354 | irer_gate: 1.0000
+2026-09-04 15:24:03,425 INFO __main__: Step 8800 | silog: 0.4585 | l1: 0.4368 | edge: 0.2051 | smoothness: 0.0777 | planarity: 0.0150 | total: 0.8976 | irer_gate: 1.0000
+2026-09-04 15:24:42,856 INFO __main__: Step 8850 | silog: 0.4477 | l1: 0.4229 | edge: 0.2043 | smoothness: 0.0780 | planarity: 0.0162 | total: 0.8695 | irer_gate: 1.0000
+2026-09-04 15:25:22,166 INFO __main__: Step 8900 | silog: 0.4293 | l1: 0.4387 | edge: 0.2010 | smoothness: 0.0763 | planarity: 0.0152 | total: 0.8583 | irer_gate: 1.0000
+2026-09-04 15:26:01,549 INFO __main__: Step 8950 | silog: 0.4228 | l1: 0.4417 | edge: 0.2065 | smoothness: 0.0845 | planarity: 0.0161 | total: 0.8685 | irer_gate: 1.0000
+2026-09-04 15:26:41,285 INFO __main__: Step 9000 | silog: 0.4307 | l1: 0.4253 | edge: 0.1957 | smoothness: 0.0742 | planarity: 0.0147 | total: 0.8334 | irer_gate: 1.0000
+2026-09-04 15:27:20,188 INFO __main__: Step 9050 | silog: 0.4293 | l1: 0.4205 | edge: 0.2068 | smoothness: 0.0824 | planarity: 0.0152 | total: 0.8467 | irer_gate: 1.0000
+2026-09-04 15:27:59,013 INFO __main__: Step 9100 | silog: 0.4505 | l1: 0.4263 | edge: 0.2021 | smoothness: 0.0783 | planarity: 0.0156 | total: 0.8650 | irer_gate: 1.0000
+2026-09-04 15:28:38,651 INFO __main__: Step 9150 | silog: 0.4263 | l1: 0.4312 | edge: 0.2054 | smoothness: 0.0803 | planarity: 0.0152 | total: 0.8472 | irer_gate: 1.0000
+2026-09-04 15:29:18,545 INFO __main__: Step 9200 | silog: 0.4573 | l1: 0.4328 | edge: 0.2038 | smoothness: 0.0754 | planarity: 0.0147 | total: 0.8733 | irer_gate: 1.0000
+2026-09-04 15:29:58,362 INFO __main__: Step 9250 | silog: 0.4306 | l1: 0.4087 | edge: 0.1918 | smoothness: 0.0766 | planarity: 0.0149 | total: 0.8045 | irer_gate: 1.0000
+2026-09-04 15:30:38,918 INFO __main__: Step 9300 | silog: 0.4376 | l1: 0.4201 | edge: 0.1983 | smoothness: 0.0770 | planarity: 0.0145 | total: 0.8301 | irer_gate: 1.0000
+2026-09-04 15:31:19,302 INFO __main__: Step 9350 | silog: 0.4402 | l1: 0.4223 | edge: 0.1975 | smoothness: 0.0746 | planarity: 0.0142 | total: 0.8298 | irer_gate: 1.0000
+2026-09-04 15:31:58,310 INFO __main__: Step 9400 | silog: 0.4257 | l1: 0.3985 | edge: 0.1950 | smoothness: 0.0788 | planarity: 0.0141 | total: 0.7879 | irer_gate: 1.0000
+2026-09-04 15:32:37,935 INFO __main__: Step 9450 | silog: 0.4441 | l1: 0.4403 | edge: 0.1890 | smoothness: 0.0727 | planarity: 0.0137 | total: 0.8382 | irer_gate: 1.0000
+2026-09-04 15:33:17,324 INFO __main__: Step 9500 | silog: 0.4352 | l1: 0.4262 | edge: 0.1933 | smoothness: 0.0722 | planarity: 0.0140 | total: 0.8157 | irer_gate: 1.0000
+2026-09-04 15:33:56,959 INFO __main__: Step 9550 | silog: 0.4430 | l1: 0.4221 | edge: 0.1998 | smoothness: 0.0821 | planarity: 0.0151 | total: 0.8368 | irer_gate: 1.0000
+2026-09-04 15:34:37,011 INFO __main__: Step 9600 | silog: 0.4387 | l1: 0.4614 | edge: 0.1992 | smoothness: 0.0792 | planarity: 0.0156 | total: 0.8703 | irer_gate: 1.0000
+2026-09-04 15:35:16,304 INFO __main__: Step 9650 | silog: 0.4282 | l1: 0.4517 | edge: 0.1958 | smoothness: 0.0761 | planarity: 0.0143 | total: 0.8380 | irer_gate: 1.0000
+2026-09-04 15:35:55,527 INFO __main__: Step 9700 | silog: 0.4428 | l1: 0.4353 | edge: 0.2016 | smoothness: 0.0830 | planarity: 0.0146 | total: 0.8487 | irer_gate: 1.0000
+2026-09-04 15:36:35,178 INFO __main__: Step 9750 | silog: 0.4164 | l1: 0.4236 | edge: 0.1983 | smoothness: 0.0820 | planarity: 0.0149 | total: 0.8008 | irer_gate: 1.0000
+2026-09-04 15:37:12,639 INFO __main__: Step 9800 | silog: 0.4273 | l1: 0.4044 | edge: 0.1980 | smoothness: 0.0763 | planarity: 0.0154 | total: 0.7839 | irer_gate: 1.0000
+2026-09-04 15:38:42,266 INFO __main__: Epoch 4/13 | Loss: 0.8857 | Val abs_rel: 0.4272 | IRER gate: 1.000 | Time: 2270.7s
+2026-09-04 15:38:42,871 INFO __main__: Checkpoint saved: /kaggle/working/outputs/checkpoint.pt (epoch=5)
+2026-09-04 15:38:43,199 INFO __main__: Curriculum: epoch 5 → difficulty 'easy' (14090 samples)
+2026-09-04 15:39:23,808 INFO __main__: Step 9850 | silog: 0.3768 | l1: 0.3674 | edge: 0.1792 | smoothness: 0.0708 | planarity: 0.0127 | total: 0.6563 | irer_gate: 1.0000
+2026-09-04 15:40:02,854 INFO __main__: Step 9900 | silog: 0.3878 | l1: 0.3642 | edge: 0.1892 | smoothness: 0.0747 | planarity: 0.0133 | total: 0.6787 | irer_gate: 1.0000
+2026-09-04 15:40:42,276 INFO __main__: Step 9950 | silog: 0.3912 | l1: 0.3802 | edge: 0.1830 | smoothness: 0.0756 | planarity: 0.0131 | total: 0.6920 | irer_gate: 1.0000
+2026-09-04 15:41:22,706 INFO __main__: Step 10000 | silog: 0.3949 | l1: 0.3969 | edge: 0.1879 | smoothness: 0.0714 | planarity: 0.0136 | total: 0.7139 | irer_gate: 1.0000
+2026-09-04 15:42:02,234 INFO __main__: Step 10050 | silog: 0.3989 | l1: 0.4450 | edge: 0.1864 | smoothness: 0.0720 | planarity: 0.0151 | total: 0.7702 | irer_gate: 1.0000
+2026-09-04 15:42:41,628 INFO __main__: Step 10100 | silog: 0.3885 | l1: 0.3658 | edge: 0.1747 | smoothness: 0.0719 | planarity: 0.0129 | total: 0.6540 | irer_gate: 1.0000
+2026-09-04 15:43:21,892 INFO __main__: Step 10150 | silog: 0.3982 | l1: 0.3817 | edge: 0.1847 | smoothness: 0.0702 | planarity: 0.0125 | total: 0.6890 | irer_gate: 1.0000
+2026-09-04 15:44:00,753 INFO __main__: Step 10200 | silog: 0.3926 | l1: 0.3807 | edge: 0.1958 | smoothness: 0.0808 | planarity: 0.0147 | total: 0.7058 | irer_gate: 1.0000
+2026-09-04 15:44:40,707 INFO __main__: Step 10250 | silog: 0.3834 | l1: 0.3703 | edge: 0.1873 | smoothness: 0.0759 | planarity: 0.0145 | total: 0.6671 | irer_gate: 1.0000
+2026-09-04 15:45:20,622 INFO __main__: Step 10300 | silog: 0.3927 | l1: 0.3773 | edge: 0.1813 | smoothness: 0.0687 | planarity: 0.0122 | total: 0.6661 | irer_gate: 1.0000
+2026-09-04 15:45:59,887 INFO __main__: Step 10350 | silog: 0.3943 | l1: 0.3670 | edge: 0.1857 | smoothness: 0.0728 | planarity: 0.0126 | total: 0.6644 | irer_gate: 1.0000
+2026-09-04 15:46:39,209 INFO __main__: Step 10400 | silog: 0.3750 | l1: 0.3431 | edge: 0.1792 | smoothness: 0.0702 | planarity: 0.0123 | total: 0.6040 | irer_gate: 1.0000
+2026-09-04 15:47:18,652 INFO __main__: Step 10450 | silog: 0.3773 | l1: 0.3743 | edge: 0.1767 | smoothness: 0.0714 | planarity: 0.0125 | total: 0.6377 | irer_gate: 1.0000
+2026-09-04 15:47:59,667 INFO __main__: Step 10500 | silog: 0.3888 | l1: 0.3790 | edge: 0.1839 | smoothness: 0.0733 | planarity: 0.0141 | total: 0.6655 | irer_gate: 1.0000
+2026-09-04 15:48:39,407 INFO __main__: Step 10550 | silog: 0.3668 | l1: 0.3566 | edge: 0.1704 | smoothness: 0.0701 | planarity: 0.0121 | total: 0.5939 | irer_gate: 1.0000
+2026-09-04 15:49:19,586 INFO __main__: Step 10600 | silog: 0.3770 | l1: 0.3583 | edge: 0.1880 | smoothness: 0.0735 | planarity: 0.0137 | total: 0.6301 | irer_gate: 1.0000
+2026-09-04 15:49:59,822 INFO __main__: Step 10650 | silog: 0.3843 | l1: 0.3478 | edge: 0.1932 | smoothness: 0.0759 | planarity: 0.0138 | total: 0.6328 | irer_gate: 1.0000
+2026-09-04 15:50:40,210 INFO __main__: Step 10700 | silog: 0.3692 | l1: 0.3482 | edge: 0.1883 | smoothness: 0.0781 | planarity: 0.0138 | total: 0.6116 | irer_gate: 1.0000
+2026-09-04 15:51:19,886 INFO __main__: Step 10750 | silog: 0.3625 | l1: 0.3379 | edge: 0.1895 | smoothness: 0.0780 | planarity: 0.0134 | total: 0.5915 | irer_gate: 1.0000
+2026-09-04 15:51:59,384 INFO __main__: Step 10800 | silog: 0.3720 | l1: 0.3567 | edge: 0.1881 | smoothness: 0.0737 | planarity: 0.0138 | total: 0.6152 | irer_gate: 1.0000
+2026-09-04 15:52:39,455 INFO __main__: Step 10850 | silog: 0.3877 | l1: 0.3750 | edge: 0.1837 | smoothness: 0.0770 | planarity: 0.0147 | total: 0.6509 | irer_gate: 1.0000
+2026-09-04 15:53:19,115 INFO __main__: Step 10900 | silog: 0.3847 | l1: 0.3519 | edge: 0.1857 | smoothness: 0.0752 | planarity: 0.0135 | total: 0.6188 | irer_gate: 1.0000
+2026-09-04 15:53:58,710 INFO __main__: Step 10950 | silog: 0.3655 | l1: 0.3469 | edge: 0.1824 | smoothness: 0.0743 | planarity: 0.0129 | total: 0.5848 | irer_gate: 1.0000
+2026-09-04 15:54:38,689 INFO __main__: Step 11000 | silog: 0.3716 | l1: 0.3539 | edge: 0.1823 | smoothness: 0.0759 | planarity: 0.0135 | total: 0.5997 | irer_gate: 1.0000
+2026-09-04 15:55:18,968 INFO __main__: Step 11050 | silog: 0.3702 | l1: 0.3549 | edge: 0.1867 | smoothness: 0.0759 | planarity: 0.0134 | total: 0.6019 | irer_gate: 1.0000
+2026-09-04 15:55:58,485 INFO __main__: Step 11100 | silog: 0.3586 | l1: 0.3459 | edge: 0.1804 | smoothness: 0.0696 | planarity: 0.0128 | total: 0.5625 | irer_gate: 1.0000
+2026-09-04 15:56:38,167 INFO __main__: Step 11150 | silog: 0.3622 | l1: 0.3336 | edge: 0.1878 | smoothness: 0.0750 | planarity: 0.0135 | total: 0.5656 | irer_gate: 1.0000
+2026-09-04 15:57:17,791 INFO __main__: Step 11200 | silog: 0.3908 | l1: 0.3612 | edge: 0.1934 | smoothness: 0.0776 | planarity: 0.0139 | total: 0.6359 | irer_gate: 1.0000
+2026-09-04 15:57:57,557 INFO __main__: Step 11250 | silog: 0.3778 | l1: 0.3553 | edge: 0.1865 | smoothness: 0.0782 | planarity: 0.0140 | total: 0.6059 | irer_gate: 1.0000
+2026-09-04 15:58:37,760 INFO __main__: Step 11300 | silog: 0.3951 | l1: 0.3826 | edge: 0.1875 | smoothness: 0.0735 | planarity: 0.0132 | total: 0.6488 | irer_gate: 1.0000
+2026-09-04 15:59:18,259 INFO __main__: Step 11350 | silog: 0.3663 | l1: 0.3590 | edge: 0.1810 | smoothness: 0.0754 | planarity: 0.0134 | total: 0.5835 | irer_gate: 1.0000
+2026-09-04 15:59:57,678 INFO __main__: Step 11400 | silog: 0.3847 | l1: 0.3517 | edge: 0.1840 | smoothness: 0.0757 | planarity: 0.0138 | total: 0.5979 | irer_gate: 1.0000
+2026-09-04 16:00:37,836 INFO __main__: Step 11450 | silog: 0.3778 | l1: 0.3486 | edge: 0.1798 | smoothness: 0.0739 | planarity: 0.0127 | total: 0.5771 | irer_gate: 1.0000
+2026-09-04 16:01:17,979 INFO __main__: Step 11500 | silog: 0.3596 | l1: 0.3280 | edge: 0.1798 | smoothness: 0.0736 | planarity: 0.0125 | total: 0.5310 | irer_gate: 1.0000
+2026-09-04 16:01:57,131 INFO __main__: Step 11550 | silog: 0.3615 | l1: 0.3242 | edge: 0.1788 | smoothness: 0.0768 | planarity: 0.0131 | total: 0.5297 | irer_gate: 1.0000
+2026-09-04 16:02:06,799 INFO __main__: Epoch 5/13 | Loss: 0.6288 | Val abs_rel: 0.4272 | IRER gate: 1.000 | Time: 1403.6s
+2026-09-04 16:02:07,390 INFO __main__: Checkpoint saved: /kaggle/working/outputs/checkpoint.pt (epoch=6)
+2026-09-04 16:02:07,802 INFO __main__: Curriculum: epoch 6 → difficulty 'hard' (7994 samples)
+2026-09-04 16:02:40,276 INFO __main__: Step 11600 | silog: 0.4571 | l1: 0.4682 | edge: 0.2031 | smoothness: 0.0781 | planarity: 0.0146 | total: 0.8270 | irer_gate: 1.0000
+2026-09-04 16:03:20,310 INFO __main__: Step 11650 | silog: 0.4892 | l1: 0.4707 | edge: 0.2331 | smoothness: 0.0931 | planarity: 0.0178 | total: 0.9179 | irer_gate: 1.0000
+2026-09-04 16:04:00,300 INFO __main__: Step 11700 | silog: 0.4898 | l1: 0.4476 | edge: 0.2063 | smoothness: 0.0865 | planarity: 0.0149 | total: 0.8510 | irer_gate: 1.0000
+2026-09-04 16:04:41,093 INFO __main__: Step 11750 | silog: 0.4605 | l1: 0.4453 | edge: 0.2111 | smoothness: 0.0853 | planarity: 0.0161 | total: 0.8196 | irer_gate: 1.0000
+2026-09-04 16:05:21,492 INFO __main__: Step 11800 | silog: 0.4697 | l1: 0.4464 | edge: 0.2125 | smoothness: 0.0882 | planarity: 0.0177 | total: 0.8365 | irer_gate: 1.0000
+2026-09-04 16:06:01,559 INFO __main__: Step 11850 | silog: 0.4788 | l1: 0.4519 | edge: 0.2121 | smoothness: 0.0877 | planarity: 0.0163 | total: 0.8490 | irer_gate: 1.0000
+2026-09-04 16:06:41,735 INFO __main__: Step 11900 | silog: 0.4601 | l1: 0.4296 | edge: 0.2069 | smoothness: 0.0848 | planarity: 0.0157 | total: 0.7920 | irer_gate: 1.0000
+2026-09-04 16:07:21,317 INFO __main__: Step 11950 | silog: 0.4626 | l1: 0.4229 | edge: 0.2128 | smoothness: 0.0949 | planarity: 0.0172 | total: 0.8057 | irer_gate: 1.0000
+2026-09-04 16:08:00,976 INFO __main__: Step 12000 | silog: 0.4738 | l1: 0.4377 | edge: 0.2097 | smoothness: 0.0906 | planarity: 0.0165 | total: 0.8250 | irer_gate: 1.0000
+2026-09-04 16:08:41,744 INFO __main__: Step 12050 | silog: 0.4587 | l1: 0.4276 | edge: 0.2077 | smoothness: 0.0890 | planarity: 0.0159 | total: 0.7907 | irer_gate: 1.0000
+2026-09-04 16:09:22,006 INFO __main__: Step 12100 | silog: 0.4498 | l1: 0.4019 | edge: 0.2031 | smoothness: 0.0896 | planarity: 0.0160 | total: 0.7461 | irer_gate: 1.0000
+2026-09-04 16:10:02,001 INFO __main__: Step 12150 | silog: 0.4606 | l1: 0.4203 | edge: 0.2130 | smoothness: 0.0911 | planarity: 0.0164 | total: 0.7909 | irer_gate: 1.0000
+2026-09-04 16:10:41,424 INFO __main__: Step 12200 | silog: 0.4589 | l1: 0.4088 | edge: 0.2128 | smoothness: 0.0981 | planarity: 0.0163 | total: 0.7820 | irer_gate: 1.0000
+2026-09-04 16:11:20,768 INFO __main__: Step 12250 | silog: 0.4622 | l1: 0.4099 | edge: 0.2085 | smoothness: 0.0981 | planarity: 0.0163 | total: 0.7809 | irer_gate: 1.0000
+2026-09-04 16:12:00,402 INFO __main__: Step 12300 | silog: 0.4583 | l1: 0.4112 | edge: 0.2129 | smoothness: 0.0848 | planarity: 0.0164 | total: 0.7670 | irer_gate: 1.0000
+2026-09-04 16:12:39,786 INFO __main__: Step 12350 | silog: 0.4613 | l1: 0.4154 | edge: 0.2228 | smoothness: 0.0978 | planarity: 0.0184 | total: 0.8016 | irer_gate: 1.0000
+2026-09-04 16:13:19,170 INFO __main__: Step 12400 | silog: 0.4503 | l1: 0.3915 | edge: 0.2179 | smoothness: 0.0934 | planarity: 0.0166 | total: 0.7487 | irer_gate: 1.0000
+2026-09-04 16:13:58,718 INFO __main__: Step 12450 | silog: 0.4433 | l1: 0.3933 | edge: 0.1996 | smoothness: 0.0869 | planarity: 0.0157 | total: 0.7128 | irer_gate: 1.0000
+2026-09-04 16:14:38,086 INFO __main__: Step 12500 | silog: 0.4361 | l1: 0.4064 | edge: 0.2040 | smoothness: 0.0873 | planarity: 0.0167 | total: 0.7245 | irer_gate: 1.0000
+2026-09-04 16:15:17,294 INFO __main__: Step 12550 | silog: 0.4275 | l1: 0.3835 | edge: 0.2073 | smoothness: 0.0938 | planarity: 0.0173 | total: 0.6993 | irer_gate: 1.0000
+2026-09-04 16:16:54,682 INFO __main__: Epoch 6/13 | Loss: 0.7960 | Val abs_rel: 0.4253 | IRER gate: 1.000 | Time: 886.9s
+2026-09-04 16:16:55,246 INFO __main__: Checkpoint saved: /kaggle/working/outputs/checkpoint.pt (epoch=7)
+2026-09-04 16:16:55,732 INFO __main__: Curriculum: epoch 7 → difficulty 'easy' (14090 samples)
+2026-09-04 16:17:28,208 INFO __main__: Step 12600 | silog: 0.3974 | l1: 0.3910 | edge: 0.1907 | smoothness: 0.0784 | planarity: 0.0148 | total: 0.6337 | irer_gate: 1.0000
+2026-09-04 16:18:08,123 INFO __main__: Step 12650 | silog: 0.3845 | l1: 0.3676 | edge: 0.1827 | smoothness: 0.0722 | planarity: 0.0125 | total: 0.5729 | irer_gate: 1.0000
+2026-09-04 16:18:48,203 INFO __main__: Step 12700 | silog: 0.3924 | l1: 0.3629 | edge: 0.1882 | smoothness: 0.0728 | planarity: 0.0131 | total: 0.5825 | irer_gate: 1.0000
+2026-09-04 16:19:28,245 INFO __main__: Step 12750 | silog: 0.3936 | l1: 0.3739 | edge: 0.1852 | smoothness: 0.0682 | planarity: 0.0129 | total: 0.5856 | irer_gate: 1.0000
+2026-09-04 16:20:08,191 INFO __main__: Step 12800 | silog: 0.3831 | l1: 0.3599 | edge: 0.1856 | smoothness: 0.0772 | planarity: 0.0127 | total: 0.5666 | irer_gate: 1.0000
+2026-09-04 16:20:48,022 INFO __main__: Step 12850 | silog: 0.3730 | l1: 0.3535 | edge: 0.1787 | smoothness: 0.0669 | planarity: 0.0121 | total: 0.5263 | irer_gate: 1.0000
+2026-09-04 16:21:28,186 INFO __main__: Step 12900 | silog: 0.3686 | l1: 0.3536 | edge: 0.1886 | smoothness: 0.0825 | planarity: 0.0145 | total: 0.5510 | irer_gate: 1.0000
+2026-09-04 16:22:07,249 INFO __main__: Step 12950 | silog: 0.3776 | l1: 0.3400 | edge: 0.1861 | smoothness: 0.0794 | planarity: 0.0137 | total: 0.5370 | irer_gate: 1.0000
+2026-09-04 16:22:46,849 INFO __main__: Step 13000 | silog: 0.3683 | l1: 0.3359 | edge: 0.1798 | smoothness: 0.0743 | planarity: 0.0134 | total: 0.5067 | irer_gate: 1.0000
+2026-09-04 16:23:27,078 INFO __main__: Step 13050 | silog: 0.3756 | l1: 0.3486 | edge: 0.1916 | smoothness: 0.0796 | planarity: 0.0142 | total: 0.5478 | irer_gate: 1.0000
+2026-09-04 16:24:06,633 INFO __main__: Step 13100 | silog: 0.3668 | l1: 0.3494 | edge: 0.1757 | smoothness: 0.0739 | planarity: 0.0128 | total: 0.5112 | irer_gate: 1.0000
+2026-09-04 16:24:46,154 INFO __main__: Step 13150 | silog: 0.3653 | l1: 0.3361 | edge: 0.1789 | smoothness: 0.0684 | planarity: 0.0122 | total: 0.4896 | irer_gate: 1.0000
+2026-09-04 16:25:25,851 INFO __main__: Step 13200 | silog: 0.3556 | l1: 0.3278 | edge: 0.1811 | smoothness: 0.0760 | planarity: 0.0127 | total: 0.4789 | irer_gate: 1.0000
+2026-09-04 16:26:04,838 INFO __main__: Step 13250 | silog: 0.3663 | l1: 0.3419 | edge: 0.1869 | smoothness: 0.0757 | planarity: 0.0130 | total: 0.5118 | irer_gate: 1.0000
+2026-09-04 16:26:44,519 INFO __main__: Step 13300 | silog: 0.3770 | l1: 0.3464 | edge: 0.1888 | smoothness: 0.0731 | planarity: 0.0136 | total: 0.5275 | irer_gate: 1.0000
+2026-09-04 16:27:23,690 INFO __main__: Step 13350 | silog: 0.3642 | l1: 0.3416 | edge: 0.1827 | smoothness: 0.0829 | planarity: 0.0138 | total: 0.5106 | irer_gate: 1.0000
+2026-09-04 16:28:03,544 INFO __main__: Step 13400 | silog: 0.3804 | l1: 0.3414 | edge: 0.1818 | smoothness: 0.0805 | planarity: 0.0155 | total: 0.5255 | irer_gate: 1.0000
+2026-09-04 16:28:42,733 INFO __main__: Step 13450 | silog: 0.3736 | l1: 0.3373 | edge: 0.1760 | smoothness: 0.0742 | planarity: 0.0128 | total: 0.4950 | irer_gate: 1.0000
+2026-09-04 16:29:22,652 INFO __main__: Step 13500 | silog: 0.3716 | l1: 0.3582 | edge: 0.1787 | smoothness: 0.0763 | planarity: 0.0136 | total: 0.5213 | irer_gate: 1.0000
+2026-09-04 16:30:02,473 INFO __main__: Step 13550 | silog: 0.3722 | l1: 0.3546 | edge: 0.1944 | smoothness: 0.0800 | planarity: 0.0177 | total: 0.5430 | irer_gate: 1.0000
+2026-09-04 16:30:41,754 INFO __main__: Step 13600 | silog: 0.3720 | l1: 0.3295 | edge: 0.1795 | smoothness: 0.0746 | planarity: 0.0127 | total: 0.4844 | irer_gate: 1.0000
+2026-09-04 16:31:21,418 INFO __main__: Step 13650 | silog: 0.3606 | l1: 0.3316 | edge: 0.1795 | smoothness: 0.0768 | planarity: 0.0133 | total: 0.4757 | irer_gate: 1.0000
+2026-09-04 16:32:00,901 INFO __main__: Step 13700 | silog: 0.3573 | l1: 0.3162 | edge: 0.1754 | smoothness: 0.0758 | planarity: 0.0130 | total: 0.4464 | irer_gate: 1.0000
+2026-09-04 16:32:40,634 INFO __main__: Step 13750 | silog: 0.3474 | l1: 0.3175 | edge: 0.1752 | smoothness: 0.0759 | planarity: 0.0127 | total: 0.4348 | irer_gate: 1.0000
+2026-09-04 16:33:20,124 INFO __main__: Step 13800 | silog: 0.3591 | l1: 0.3356 | edge: 0.1838 | smoothness: 0.0769 | planarity: 0.0159 | total: 0.4819 | irer_gate: 1.0000
+2026-09-04 16:34:00,489 INFO __main__: Step 13850 | silog: 0.3720 | l1: 0.3346 | edge: 0.1871 | smoothness: 0.0831 | planarity: 0.0147 | total: 0.5032 | irer_gate: 1.0000
+2026-09-04 16:34:40,092 INFO __main__: Step 13900 | silog: 0.3544 | l1: 0.3294 | edge: 0.1721 | smoothness: 0.0755 | planarity: 0.0155 | total: 0.4511 | irer_gate: 1.0000
+2026-09-04 16:35:19,878 INFO __main__: Step 13950 | silog: 0.3521 | l1: 0.3266 | edge: 0.1895 | smoothness: 0.0810 | planarity: 0.0144 | total: 0.4683 | irer_gate: 1.0000
+2026-09-04 16:35:59,314 INFO __main__: Step 14000 | silog: 0.3639 | l1: 0.3318 | edge: 0.1744 | smoothness: 0.0735 | planarity: 0.0131 | total: 0.4594 | irer_gate: 1.0000
+2026-09-04 16:36:38,666 INFO __main__: Step 14050 | silog: 0.3589 | l1: 0.3313 | edge: 0.1777 | smoothness: 0.0737 | planarity: 0.0145 | total: 0.4570 | irer_gate: 1.0000
+2026-09-04 16:37:17,997 INFO __main__: Step 14100 | silog: 0.3461 | l1: 0.3141 | edge: 0.1773 | smoothness: 0.0766 | planarity: 0.0127 | total: 0.4217 | irer_gate: 1.0000
+2026-09-04 16:37:57,617 INFO __main__: Step 14150 | silog: 0.3367 | l1: 0.3089 | edge: 0.1724 | smoothness: 0.0733 | planarity: 0.0154 | total: 0.3972 | irer_gate: 1.0000
+2026-09-04 16:38:37,398 INFO __main__: Step 14200 | silog: 0.3551 | l1: 0.3251 | edge: 0.1824 | smoothness: 0.0768 | planarity: 0.0131 | total: 0.4476 | irer_gate: 1.0000
+2026-09-04 16:39:16,713 INFO __main__: Step 14250 | silog: 0.3613 | l1: 0.3258 | edge: 0.1852 | smoothness: 0.0821 | planarity: 0.0145 | total: 0.4647 | irer_gate: 1.0000
+2026-09-04 16:39:56,088 INFO __main__: Step 14300 | silog: 0.3616 | l1: 0.3281 | edge: 0.1657 | smoothness: 0.0664 | planarity: 0.0111 | total: 0.4226 | irer_gate: 1.0000
+2026-09-04 16:40:13,518 INFO __main__: Epoch 7/13 | Loss: 0.4992 | Val abs_rel: 0.4253 | IRER gate: 1.000 | Time: 1397.8s
+2026-09-04 16:40:14,102 INFO __main__: Checkpoint saved: /kaggle/working/outputs/checkpoint.pt (epoch=8)
+2026-09-04 16:40:36,371 INFO __main__: Step 14350 | silog: 0.3706 | l1: 0.3268 | edge: 0.1870 | smoothness: 0.0770 | planarity: 0.0134 | total: 0.4686 | irer_gate: 1.0000
+2026-09-04 16:41:16,114 INFO __main__: Step 14400 | silog: 0.3721 | l1: 0.3387 | edge: 0.1807 | smoothness: 0.0789 | planarity: 0.0158 | total: 0.4803 | irer_gate: 1.0000
+2026-09-04 16:41:55,922 INFO __main__: Step 14450 | silog: 0.3724 | l1: 0.3355 | edge: 0.1811 | smoothness: 0.0790 | planarity: 0.0134 | total: 0.4736 | irer_gate: 1.0000
+2026-09-04 16:42:35,181 INFO __main__: Step 14500 | silog: 0.3611 | l1: 0.3180 | edge: 0.1823 | smoothness: 0.0776 | planarity: 0.0145 | total: 0.4400 | irer_gate: 1.0000
+2026-09-04 16:43:13,974 INFO __main__: Step 14550 | silog: 0.3690 | l1: 0.3370 | edge: 0.1788 | smoothness: 0.0789 | planarity: 0.0129 | total: 0.4655 | irer_gate: 1.0000
+2026-09-04 16:43:53,424 INFO __main__: Step 14600 | silog: 0.3581 | l1: 0.3178 | edge: 0.1772 | smoothness: 0.0740 | planarity: 0.0162 | total: 0.4256 | irer_gate: 1.0000
+2026-09-04 16:44:33,081 INFO __main__: Step 14650 | silog: 0.3370 | l1: 0.3057 | edge: 0.1798 | smoothness: 0.0772 | planarity: 0.0156 | total: 0.3921 | irer_gate: 1.0000
+2026-09-04 16:45:13,004 INFO __main__: Step 14700 | silog: 0.3675 | l1: 0.3275 | edge: 0.1825 | smoothness: 0.0769 | planarity: 0.0136 | total: 0.4514 | irer_gate: 1.0000
+2026-09-04 16:45:52,301 INFO __main__: Step 14750 | silog: 0.3455 | l1: 0.3050 | edge: 0.1839 | smoothness: 0.0799 | planarity: 0.0130 | total: 0.4033 | irer_gate: 1.0000
+2026-09-04 16:46:32,198 INFO __main__: Step 14800 | silog: 0.3614 | l1: 0.3296 | edge: 0.1885 | smoothness: 0.0772 | planarity: 0.0155 | total: 0.4535 | irer_gate: 1.0000
+2026-09-04 16:47:12,554 INFO __main__: Step 14850 | silog: 0.3576 | l1: 0.3274 | edge: 0.1826 | smoothness: 0.0829 | planarity: 0.0162 | total: 0.4461 | irer_gate: 1.0000
+2026-09-04 16:47:52,944 INFO __main__: Step 14900 | silog: 0.3620 | l1: 0.3289 | edge: 0.1857 | smoothness: 0.0802 | planarity: 0.0147 | total: 0.4502 | irer_gate: 1.0000
+2026-09-04 16:48:32,288 INFO __main__: Step 14950 | silog: 0.3576 | l1: 0.3276 | edge: 0.1821 | smoothness: 0.0769 | planarity: 0.0151 | total: 0.4352 | irer_gate: 1.0000
+2026-09-04 16:49:11,872 INFO __main__: Step 15000 | silog: 0.3362 | l1: 0.3053 | edge: 0.1766 | smoothness: 0.0777 | planarity: 0.0133 | total: 0.3763 | irer_gate: 1.0000
+2026-09-04 16:49:50,725 INFO __main__: Step 15050 | silog: 0.3522 | l1: 0.3226 | edge: 0.1827 | smoothness: 0.0813 | planarity: 0.0135 | total: 0.4247 | irer_gate: 1.0000
+2026-09-04 16:50:30,419 INFO __main__: Step 15100 | silog: 0.3651 | l1: 0.3189 | edge: 0.1843 | smoothness: 0.0801 | planarity: 0.0150 | total: 0.4360 | irer_gate: 1.0000
+2026-09-04 16:51:10,170 INFO __main__: Step 15150 | silog: 0.3418 | l1: 0.3192 | edge: 0.1791 | smoothness: 0.0784 | planarity: 0.0139 | total: 0.3991 | irer_gate: 1.0000
+2026-09-04 16:51:49,450 INFO __main__: Step 15200 | silog: 0.3568 | l1: 0.3184 | edge: 0.1896 | smoothness: 0.0828 | planarity: 0.0148 | total: 0.4322 | irer_gate: 1.0000
+2026-09-04 16:52:28,479 INFO __main__: Step 15250 | silog: 0.3461 | l1: 0.3137 | edge: 0.1765 | smoothness: 0.0795 | planarity: 0.0144 | total: 0.3941 | irer_gate: 1.0000
+2026-09-04 16:53:07,347 INFO __main__: Step 15300 | silog: 0.3587 | l1: 0.3198 | edge: 0.1936 | smoothness: 0.0843 | planarity: 0.0151 | total: 0.4401 | irer_gate: 1.0000
+2026-09-04 16:53:46,946 INFO __main__: Step 15350 | silog: 0.3503 | l1: 0.3143 | edge: 0.1747 | smoothness: 0.0734 | planarity: 0.0124 | total: 0.3857 | irer_gate: 1.0000
+2026-09-04 16:54:26,425 INFO __main__: Step 15400 | silog: 0.3505 | l1: 0.3047 | edge: 0.1804 | smoothness: 0.0780 | planarity: 0.0128 | total: 0.3857 | irer_gate: 1.0000
+2026-09-04 16:55:05,814 INFO __main__: Step 15450 | silog: 0.3556 | l1: 0.3111 | edge: 0.1797 | smoothness: 0.0790 | planarity: 0.0131 | total: 0.3985 | irer_gate: 1.0000
+2026-09-04 16:55:45,039 INFO __main__: Step 15500 | silog: 0.3712 | l1: 0.3270 | edge: 0.1864 | smoothness: 0.0761 | planarity: 0.0138 | total: 0.4391 | irer_gate: 1.0000
+2026-09-04 16:56:24,281 INFO __main__: Step 15550 | silog: 0.3413 | l1: 0.3126 | edge: 0.1739 | smoothness: 0.0776 | planarity: 0.0129 | total: 0.3732 | irer_gate: 1.0000
+2026-09-04 16:57:04,087 INFO __main__: Step 15600 | silog: 0.3490 | l1: 0.3107 | edge: 0.1833 | smoothness: 0.0782 | planarity: 0.0133 | total: 0.3904 | irer_gate: 1.0000
+2026-09-04 16:57:43,650 INFO __main__: Step 15650 | silog: 0.3554 | l1: 0.3270 | edge: 0.1813 | smoothness: 0.0758 | planarity: 0.0133 | total: 0.4107 | irer_gate: 1.0000
+2026-09-04 16:58:24,009 INFO __main__: Step 15700 | silog: 0.3309 | l1: 0.2928 | edge: 0.1720 | smoothness: 0.0734 | planarity: 0.0127 | total: 0.3276 | irer_gate: 1.0000
+2026-09-04 16:59:04,186 INFO __main__: Step 15750 | silog: 0.3284 | l1: 0.2936 | edge: 0.1703 | smoothness: 0.0793 | planarity: 0.0128 | total: 0.3295 | irer_gate: 1.0000
+2026-09-04 16:59:44,605 INFO __main__: Step 15800 | silog: 0.3460 | l1: 0.3041 | edge: 0.1709 | smoothness: 0.0773 | planarity: 0.0121 | total: 0.3587 | irer_gate: 1.0000
+2026-09-04 17:00:24,909 INFO __main__: Step 15850 | silog: 0.3428 | l1: 0.2907 | edge: 0.1863 | smoothness: 0.0805 | planarity: 0.0134 | total: 0.3608 | irer_gate: 1.0000
+2026-09-04 17:01:04,972 INFO __main__: Step 15900 | silog: 0.3389 | l1: 0.2919 | edge: 0.1712 | smoothness: 0.0750 | planarity: 0.0124 | total: 0.3318 | irer_gate: 1.0000
+2026-09-04 17:01:45,044 INFO __main__: Step 15950 | silog: 0.3458 | l1: 0.3023 | edge: 0.1772 | smoothness: 0.0733 | planarity: 0.0125 | total: 0.3557 | irer_gate: 1.0000
+2026-09-04 17:02:24,836 INFO __main__: Step 16000 | silog: 0.3557 | l1: 0.3107 | edge: 0.1799 | smoothness: 0.0780 | planarity: 0.0130 | total: 0.3847 | irer_gate: 1.0000
+2026-09-04 17:03:04,524 INFO __main__: Step 16050 | silog: 0.3676 | l1: 0.3176 | edge: 0.1830 | smoothness: 0.0812 | planarity: 0.0130 | total: 0.4127 | irer_gate: 1.0000
+2026-09-04 17:04:58,042 INFO __main__: Epoch 8/13 | Loss: 0.4067 | Val abs_rel: 0.4496 | IRER gate: 1.000 | Time: 1483.9s
+2026-09-04 17:04:58,608 INFO __main__: Checkpoint saved: /kaggle/working/outputs/checkpoint.pt (epoch=9)
+2026-09-04 17:05:11,940 INFO __main__: Step 16100 | silog: 0.3510 | l1: 0.2990 | edge: 0.1761 | smoothness: 0.0744 | planarity: 0.0123 | total: 0.3542 | irer_gate: 1.0000
+2026-09-04 17:05:51,207 INFO __main__: Step 16150 | silog: 0.3572 | l1: 0.3018 | edge: 0.1845 | smoothness: 0.0804 | planarity: 0.0136 | total: 0.3816 | irer_gate: 1.0000
+2026-09-04 17:06:30,827 INFO __main__: Step 16200 | silog: 0.3294 | l1: 0.2869 | edge: 0.1789 | smoothness: 0.0752 | planarity: 0.0126 | total: 0.3173 | irer_gate: 1.0000
+2026-09-04 17:07:10,614 INFO __main__: Step 16250 | silog: 0.3313 | l1: 0.3051 | edge: 0.1686 | smoothness: 0.0745 | planarity: 0.0123 | total: 0.3268 | irer_gate: 1.0000
+2026-09-04 17:07:50,574 INFO __main__: Step 16300 | silog: 0.3321 | l1: 0.2912 | edge: 0.1713 | smoothness: 0.0790 | planarity: 0.0129 | total: 0.3193 | irer_gate: 1.0000
+2026-09-04 17:08:30,452 INFO __main__: Step 16350 | silog: 0.3548 | l1: 0.3135 | edge: 0.1798 | smoothness: 0.0812 | planarity: 0.0130 | total: 0.3830 | irer_gate: 1.0000
+2026-09-04 17:09:10,236 INFO __main__: Step 16400 | silog: 0.3534 | l1: 0.3020 | edge: 0.1816 | smoothness: 0.0758 | planarity: 0.0127 | total: 0.3625 | irer_gate: 1.0000
+2026-09-04 17:09:49,471 INFO __main__: Step 16450 | silog: 0.3554 | l1: 0.3038 | edge: 0.1850 | smoothness: 0.0809 | planarity: 0.0131 | total: 0.3763 | irer_gate: 1.0000
+2026-09-04 17:10:28,886 INFO __main__: Step 16500 | silog: 0.3391 | l1: 0.2886 | edge: 0.1739 | smoothness: 0.0790 | planarity: 0.0128 | total: 0.3233 | irer_gate: 1.0000
+2026-09-04 17:11:08,540 INFO __main__: Step 16550 | silog: 0.3450 | l1: 0.3003 | edge: 0.1805 | smoothness: 0.0820 | planarity: 0.0134 | total: 0.3545 | irer_gate: 1.0000
+2026-09-04 17:11:48,697 INFO __main__: Step 16600 | silog: 0.3476 | l1: 0.2988 | edge: 0.1788 | smoothness: 0.0806 | planarity: 0.0131 | total: 0.3507 | irer_gate: 1.0000
+2026-09-04 17:12:28,137 INFO __main__: Step 16650 | silog: 0.3343 | l1: 0.2950 | edge: 0.1685 | smoothness: 0.0754 | planarity: 0.0121 | total: 0.3108 | irer_gate: 1.0000
+2026-09-04 17:13:07,611 INFO __main__: Step 16700 | silog: 0.3496 | l1: 0.3021 | edge: 0.1735 | smoothness: 0.0736 | planarity: 0.0121 | total: 0.3397 | irer_gate: 1.0000
+2026-09-04 17:13:47,416 INFO __main__: Step 16750 | silog: 0.3545 | l1: 0.3095 | edge: 0.1751 | smoothness: 0.0799 | planarity: 0.0128 | total: 0.3628 | irer_gate: 1.0000
+2026-09-04 17:14:27,278 INFO __main__: Step 16800 | silog: 0.3400 | l1: 0.2896 | edge: 0.1753 | smoothness: 0.0811 | planarity: 0.0139 | total: 0.3246 | irer_gate: 1.0000
+2026-09-04 17:15:07,062 INFO __main__: Step 16850 | silog: 0.3349 | l1: 0.2912 | edge: 0.1777 | smoothness: 0.0768 | planarity: 0.0131 | total: 0.3164 | irer_gate: 1.0000
+2026-09-04 17:15:46,740 INFO __main__: Step 16900 | silog: 0.3277 | l1: 0.2889 | edge: 0.1705 | smoothness: 0.0777 | planarity: 0.0132 | total: 0.2973 | irer_gate: 1.0000
+2026-09-04 17:16:26,526 INFO __main__: Step 16950 | silog: 0.3564 | l1: 0.3133 | edge: 0.1860 | smoothness: 0.0845 | planarity: 0.0143 | total: 0.3853 | irer_gate: 1.0000
+2026-09-04 17:17:06,441 INFO __main__: Step 17000 | silog: 0.3335 | l1: 0.2893 | edge: 0.1699 | smoothness: 0.0778 | planarity: 0.0130 | total: 0.3020 | irer_gate: 1.0000
+2026-09-04 17:17:46,221 INFO __main__: Step 17050 | silog: 0.3528 | l1: 0.3040 | edge: 0.1825 | smoothness: 0.0794 | planarity: 0.0139 | total: 0.3582 | irer_gate: 1.0000
+2026-09-04 17:18:26,144 INFO __main__: Step 17100 | silog: 0.3371 | l1: 0.3095 | edge: 0.1774 | smoothness: 0.0803 | planarity: 0.0135 | total: 0.3401 | irer_gate: 1.0000
+2026-09-04 17:19:05,397 INFO __main__: Step 17150 | silog: 0.3344 | l1: 0.3029 | edge: 0.1775 | smoothness: 0.0815 | planarity: 0.0140 | total: 0.3307 | irer_gate: 1.0000
+2026-09-04 17:19:44,809 INFO __main__: Step 17200 | silog: 0.3382 | l1: 0.2880 | edge: 0.1702 | smoothness: 0.0750 | planarity: 0.0124 | total: 0.2991 | irer_gate: 1.0000
+2026-09-04 17:20:24,595 INFO __main__: Step 17250 | silog: 0.3367 | l1: 0.2841 | edge: 0.1842 | smoothness: 0.0836 | planarity: 0.0141 | total: 0.3201 | irer_gate: 1.0000
+2026-09-04 17:21:04,118 INFO __main__: Step 17300 | silog: 0.3358 | l1: 0.2889 | edge: 0.1814 | smoothness: 0.0795 | planarity: 0.0131 | total: 0.3148 | irer_gate: 1.0000
+2026-09-04 17:21:43,819 INFO __main__: Step 17350 | silog: 0.3406 | l1: 0.2986 | edge: 0.1849 | smoothness: 0.0799 | planarity: 0.0134 | total: 0.3356 | irer_gate: 1.0000
+2026-09-04 17:22:23,489 INFO __main__: Step 17400 | silog: 0.3424 | l1: 0.2946 | edge: 0.1774 | smoothness: 0.0797 | planarity: 0.0132 | total: 0.3232 | irer_gate: 1.0000
+2026-09-04 17:23:03,108 INFO __main__: Step 17450 | silog: 0.3581 | l1: 0.3140 | edge: 0.1836 | smoothness: 0.0843 | planarity: 0.0138 | total: 0.3765 | irer_gate: 1.0000
+2026-09-04 17:23:42,650 INFO __main__: Step 17500 | silog: 0.3537 | l1: 0.3071 | edge: 0.1824 | smoothness: 0.0849 | planarity: 0.0142 | total: 0.3623 | irer_gate: 1.0000
+2026-09-04 17:24:21,890 INFO __main__: Step 17550 | silog: 0.3521 | l1: 0.3026 | edge: 0.1805 | smoothness: 0.0764 | planarity: 0.0135 | total: 0.3415 | irer_gate: 1.0000
+2026-09-04 17:25:01,482 INFO __main__: Step 17600 | silog: 0.3549 | l1: 0.2965 | edge: 0.1844 | smoothness: 0.0817 | planarity: 0.0138 | total: 0.3478 | irer_gate: 1.0000
+2026-09-04 17:25:41,073 INFO __main__: Step 17650 | silog: 0.3319 | l1: 0.2858 | edge: 0.1667 | smoothness: 0.0753 | planarity: 0.0125 | total: 0.2784 | irer_gate: 1.0000
+2026-09-04 17:26:20,639 INFO __main__: Step 17700 | silog: 0.3379 | l1: 0.2939 | edge: 0.1787 | smoothness: 0.0763 | planarity: 0.0131 | total: 0.3098 | irer_gate: 1.0000
+2026-09-04 17:27:00,207 INFO __main__: Step 17750 | silog: 0.3345 | l1: 0.2845 | edge: 0.1725 | smoothness: 0.0765 | planarity: 0.0127 | total: 0.2867 | irer_gate: 1.0000
+2026-09-04 17:27:40,335 INFO __main__: Step 17800 | silog: 0.3446 | l1: 0.2905 | edge: 0.1782 | smoothness: 0.0778 | planarity: 0.0128 | total: 0.3131 | irer_gate: 1.0000
+2026-09-04 17:28:15,288 INFO __main__: Epoch 9/13 | Loss: 0.3351 | Val abs_rel: 0.4496 | IRER gate: 1.000 | Time: 1396.7s
+2026-09-04 17:28:15,875 INFO __main__: Checkpoint saved: /kaggle/working/outputs/checkpoint.pt (epoch=10)
+2026-09-04 17:28:20,872 INFO __main__: Step 17850 | silog: 0.3402 | l1: 0.2970 | edge: 0.1862 | smoothness: 0.0831 | planarity: 0.0138 | total: 0.3313 | irer_gate: 1.0000
+2026-09-04 17:29:00,150 INFO __main__: Step 17900 | silog: 0.3383 | l1: 0.2853 | edge: 0.1837 | smoothness: 0.0804 | planarity: 0.0139 | total: 0.3089 | irer_gate: 1.0000
+2026-09-04 17:29:39,358 INFO __main__: Step 17950 | silog: 0.3374 | l1: 0.2911 | edge: 0.1749 | smoothness: 0.0797 | planarity: 0.0127 | total: 0.3016 | irer_gate: 1.0000
+2026-09-04 17:30:18,863 INFO __main__: Step 18000 | silog: 0.3358 | l1: 0.2847 | edge: 0.1645 | smoothness: 0.0773 | planarity: 0.0127 | total: 0.2767 | irer_gate: 1.0000
+2026-09-04 17:30:58,173 INFO __main__: Step 18050 | silog: 0.3433 | l1: 0.2957 | edge: 0.1807 | smoothness: 0.0809 | planarity: 0.0139 | total: 0.3220 | irer_gate: 1.0000
+2026-09-04 17:31:37,881 INFO __main__: Step 18100 | silog: 0.3519 | l1: 0.2988 | edge: 0.1845 | smoothness: 0.0804 | planarity: 0.0136 | total: 0.3381 | irer_gate: 1.0000
+2026-09-04 17:32:17,395 INFO __main__: Step 18150 | silog: 0.3478 | l1: 0.3045 | edge: 0.1808 | smoothness: 0.0817 | planarity: 0.0134 | total: 0.3365 | irer_gate: 1.0000
+2026-09-04 17:32:56,844 INFO __main__: Step 18200 | silog: 0.3390 | l1: 0.2836 | edge: 0.1776 | smoothness: 0.0817 | planarity: 0.0134 | total: 0.2973 | irer_gate: 1.0000
+2026-09-04 17:33:35,807 INFO __main__: Step 18250 | silog: 0.3483 | l1: 0.2968 | edge: 0.1751 | smoothness: 0.0781 | planarity: 0.0130 | total: 0.3155 | irer_gate: 1.0000
+2026-09-04 17:34:15,454 INFO __main__: Step 18300 | silog: 0.3408 | l1: 0.2759 | edge: 0.1735 | smoothness: 0.0802 | planarity: 0.0130 | total: 0.2821 | irer_gate: 1.0000
+2026-09-04 17:34:55,277 INFO __main__: Step 18350 | silog: 0.3318 | l1: 0.2951 | edge: 0.1767 | smoothness: 0.0789 | planarity: 0.0138 | total: 0.2968 | irer_gate: 1.0000
+2026-09-04 17:35:34,756 INFO __main__: Step 18400 | silog: 0.3506 | l1: 0.2997 | edge: 0.1863 | smoothness: 0.0806 | planarity: 0.0138 | total: 0.3367 | irer_gate: 1.0000
+2026-09-04 17:36:13,925 INFO __main__: Step 18450 | silog: 0.3345 | l1: 0.2912 | edge: 0.1755 | smoothness: 0.0800 | planarity: 0.0134 | total: 0.2937 | irer_gate: 1.0000
+2026-09-04 17:36:53,602 INFO __main__: Step 18500 | silog: 0.3213 | l1: 0.2836 | edge: 0.1684 | smoothness: 0.0745 | planarity: 0.0124 | total: 0.2531 | irer_gate: 1.0000
+2026-09-04 17:37:32,909 INFO __main__: Step 18550 | silog: 0.3396 | l1: 0.2827 | edge: 0.1785 | smoothness: 0.0811 | planarity: 0.0140 | total: 0.2939 | irer_gate: 1.0000
+2026-09-04 17:38:12,148 INFO __main__: Step 18600 | silog: 0.3471 | l1: 0.2911 | edge: 0.1844 | smoothness: 0.0799 | planarity: 0.0136 | total: 0.3172 | irer_gate: 1.0000
+2026-09-04 17:38:51,463 INFO __main__: Step 18650 | silog: 0.3387 | l1: 0.2853 | edge: 0.1763 | smoothness: 0.0783 | planarity: 0.0133 | total: 0.2883 | irer_gate: 1.0000
+2026-09-04 17:39:31,126 INFO __main__: Step 18700 | silog: 0.3331 | l1: 0.2855 | edge: 0.1737 | smoothness: 0.0771 | planarity: 0.0126 | total: 0.2762 | irer_gate: 1.0000
+2026-09-04 17:40:10,585 INFO __main__: Step 18750 | silog: 0.3305 | l1: 0.2763 | edge: 0.1741 | smoothness: 0.0770 | planarity: 0.0127 | total: 0.2620 | irer_gate: 1.0000
+2026-09-04 17:40:50,775 INFO __main__: Step 18800 | silog: 0.3448 | l1: 0.2881 | edge: 0.1798 | smoothness: 0.0827 | planarity: 0.0139 | total: 0.3069 | irer_gate: 1.0000
+2026-09-04 17:41:30,305 INFO __main__: Step 18850 | silog: 0.3221 | l1: 0.2679 | edge: 0.1755 | smoothness: 0.0827 | planarity: 0.0133 | total: 0.2503 | irer_gate: 1.0000
+2026-09-04 17:42:09,934 INFO __main__: Step 18900 | silog: 0.3389 | l1: 0.2857 | edge: 0.1738 | smoothness: 0.0795 | planarity: 0.0128 | total: 0.2841 | irer_gate: 1.0000
+2026-09-04 17:42:49,992 INFO __main__: Step 18950 | silog: 0.3297 | l1: 0.2849 | edge: 0.1830 | smoothness: 0.0817 | planarity: 0.0132 | total: 0.2856 | irer_gate: 1.0000
+2026-09-04 17:43:29,947 INFO __main__: Step 19000 | silog: 0.3275 | l1: 0.2789 | edge: 0.1808 | smoothness: 0.0843 | planarity: 0.0143 | total: 0.2770 | irer_gate: 1.0000
+2026-09-04 17:44:09,502 INFO __main__: Step 19050 | silog: 0.3403 | l1: 0.2826 | edge: 0.1737 | smoothness: 0.0789 | planarity: 0.0131 | total: 0.2800 | irer_gate: 1.0000
+2026-09-04 17:44:49,592 INFO __main__: Step 19100 | silog: 0.3337 | l1: 0.2923 | edge: 0.1735 | smoothness: 0.0789 | planarity: 0.0134 | total: 0.2831 | irer_gate: 1.0000
+2026-09-04 17:45:29,321 INFO __main__: Step 19150 | silog: 0.3252 | l1: 0.2632 | edge: 0.1765 | smoothness: 0.0809 | planarity: 0.0134 | total: 0.2441 | irer_gate: 1.0000
+2026-09-04 17:46:08,839 INFO __main__: Step 19200 | silog: 0.3421 | l1: 0.2913 | edge: 0.1892 | smoothness: 0.0864 | planarity: 0.0143 | total: 0.3188 | irer_gate: 1.0000
+2026-09-04 17:46:48,284 INFO __main__: Step 19250 | silog: 0.3447 | l1: 0.2834 | edge: 0.1745 | smoothness: 0.0772 | planarity: 0.0131 | total: 0.2830 | irer_gate: 1.0000
+2026-09-04 17:47:27,987 INFO __main__: Step 19300 | silog: 0.3481 | l1: 0.2908 | edge: 0.1792 | smoothness: 0.0841 | planarity: 0.0133 | total: 0.3090 | irer_gate: 1.0000
+2026-09-04 17:48:07,841 INFO __main__: Step 19350 | silog: 0.3217 | l1: 0.2720 | edge: 0.1748 | smoothness: 0.0802 | planarity: 0.0132 | total: 0.2456 | irer_gate: 1.0000
+2026-09-04 17:48:47,587 INFO __main__: Step 19400 | silog: 0.3243 | l1: 0.2709 | edge: 0.1693 | smoothness: 0.0795 | planarity: 0.0130 | total: 0.2394 | irer_gate: 1.0000
+2026-09-04 17:49:27,223 INFO __main__: Step 19450 | silog: 0.3263 | l1: 0.2748 | edge: 0.1788 | smoothness: 0.0786 | planarity: 0.0132 | total: 0.2559 | irer_gate: 1.0000
+2026-09-04 17:50:06,792 INFO __main__: Step 19500 | silog: 0.3484 | l1: 0.2939 | edge: 0.1700 | smoothness: 0.0726 | planarity: 0.0123 | total: 0.2857 | irer_gate: 1.0000
+2026-09-04 17:50:46,530 INFO __main__: Step 19550 | silog: 0.3184 | l1: 0.2645 | edge: 0.1788 | smoothness: 0.0822 | planarity: 0.0138 | total: 0.2385 | irer_gate: 1.0000
+2026-09-04 17:51:25,023 INFO __main__: Step 19600 | silog: 0.3428 | l1: 0.2839 | edge: 0.1723 | smoothness: 0.0811 | planarity: 0.0130 | total: 0.2799 | irer_gate: 1.0000
+2026-09-04 17:52:57,233 INFO __main__: Epoch 10/13 | Loss: 0.2878 | Val abs_rel: 0.4815 | IRER gate: 1.000 | Time: 1481.4s
+2026-09-04 17:52:57,817 INFO __main__: Checkpoint saved: /kaggle/working/outputs/checkpoint.pt (epoch=11)
+2026-09-04 17:52:58,359 INFO __main__: Curriculum: no 'Medium' samples available; using full dataset
+2026-09-04 17:53:36,664 INFO __main__: Step 19650 | silog: 0.3838 | l1: 0.3464 | edge: 0.2026 | smoothness: 0.0919 | planarity: 0.0152 | total: 0.4515 | irer_gate: 1.0000
+2026-09-04 17:54:16,310 INFO __main__: Step 19700 | silog: 0.4031 | l1: 0.3519 | edge: 0.1906 | smoothness: 0.0793 | planarity: 0.0135 | total: 0.4498 | irer_gate: 1.0000
+2026-09-04 17:54:56,543 INFO __main__: Step 19750 | silog: 0.3871 | l1: 0.3524 | edge: 0.1912 | smoothness: 0.0888 | planarity: 0.0148 | total: 0.4446 | irer_gate: 1.0000
+2026-09-04 17:55:36,198 INFO __main__: Step 19800 | silog: 0.3889 | l1: 0.3392 | edge: 0.1851 | smoothness: 0.0846 | planarity: 0.0141 | total: 0.4178 | irer_gate: 1.0000
+2026-09-04 17:56:16,781 INFO __main__: Step 19850 | silog: 0.3749 | l1: 0.3272 | edge: 0.1865 | smoothness: 0.0818 | planarity: 0.0133 | total: 0.3842 | irer_gate: 1.0000
+2026-09-04 17:56:56,525 INFO __main__: Step 19900 | silog: 0.3784 | l1: 0.3253 | edge: 0.1858 | smoothness: 0.0796 | planarity: 0.0137 | total: 0.3830 | irer_gate: 1.0000
+2026-09-04 17:57:36,537 INFO __main__: Step 19950 | silog: 0.3724 | l1: 0.3302 | edge: 0.1846 | smoothness: 0.0848 | planarity: 0.0142 | total: 0.3866 | irer_gate: 1.0000
+2026-09-04 17:58:16,478 INFO __main__: Step 20000 | silog: 0.3619 | l1: 0.3154 | edge: 0.1780 | smoothness: 0.0802 | planarity: 0.0134 | total: 0.3425 | irer_gate: 1.0000
+2026-09-04 17:58:56,646 INFO __main__: Step 20050 | silog: 0.3994 | l1: 0.3530 | edge: 0.2039 | smoothness: 0.0894 | planarity: 0.0150 | total: 0.4734 | irer_gate: 1.0000
+2026-09-04 17:59:37,224 INFO __main__: Step 20100 | silog: 0.3714 | l1: 0.3261 | edge: 0.1937 | smoothness: 0.0871 | planarity: 0.0144 | total: 0.3931 | irer_gate: 1.0000
+2026-09-04 18:00:17,730 INFO __main__: Step 20150 | silog: 0.3827 | l1: 0.3298 | edge: 0.1894 | smoothness: 0.0860 | planarity: 0.0144 | total: 0.4042 | irer_gate: 1.0000
+2026-09-04 18:00:58,230 INFO __main__: Step 20200 | silog: 0.3823 | l1: 0.3409 | edge: 0.1826 | smoothness: 0.0806 | planarity: 0.0150 | total: 0.4031 | irer_gate: 1.0000
+2026-09-04 18:01:38,436 INFO __main__: Step 20250 | silog: 0.3679 | l1: 0.3229 | edge: 0.1784 | smoothness: 0.0863 | planarity: 0.0141 | total: 0.3654 | irer_gate: 1.0000
+2026-09-04 18:02:18,710 INFO __main__: Step 20300 | silog: 0.3642 | l1: 0.3166 | edge: 0.1797 | smoothness: 0.0797 | planarity: 0.0139 | total: 0.3468 | irer_gate: 1.0000
+2026-09-04 18:02:59,703 INFO __main__: Step 20350 | silog: 0.3712 | l1: 0.3277 | edge: 0.1933 | smoothness: 0.0872 | planarity: 0.0149 | total: 0.3937 | irer_gate: 1.0000
+2026-09-04 18:03:39,727 INFO __main__: Step 20400 | silog: 0.3664 | l1: 0.3117 | edge: 0.1778 | smoothness: 0.0809 | planarity: 0.0131 | total: 0.3413 | irer_gate: 1.0000
+2026-09-04 18:04:19,682 INFO __main__: Step 20450 | silog: 0.3812 | l1: 0.3300 | edge: 0.1920 | smoothness: 0.0889 | planarity: 0.0165 | total: 0.4097 | irer_gate: 1.0000
+2026-09-04 18:05:00,070 INFO __main__: Step 20500 | silog: 0.3807 | l1: 0.3300 | edge: 0.1762 | smoothness: 0.0780 | planarity: 0.0136 | total: 0.3746 | irer_gate: 1.0000
+2026-09-04 18:05:39,838 INFO __main__: Step 20550 | silog: 0.3591 | l1: 0.3185 | edge: 0.1881 | smoothness: 0.0887 | planarity: 0.0142 | total: 0.3621 | irer_gate: 1.0000
+2026-09-04 18:06:19,461 INFO __main__: Step 20600 | silog: 0.3713 | l1: 0.3202 | edge: 0.1852 | smoothness: 0.0870 | planarity: 0.0143 | total: 0.3729 | irer_gate: 1.0000
+2026-09-04 18:06:59,652 INFO __main__: Step 20650 | silog: 0.3837 | l1: 0.3315 | edge: 0.1906 | smoothness: 0.0874 | planarity: 0.0146 | total: 0.4077 | irer_gate: 1.0000
+2026-09-04 18:07:39,654 INFO __main__: Step 20700 | silog: 0.3855 | l1: 0.3342 | edge: 0.2056 | smoothness: 0.0946 | planarity: 0.0164 | total: 0.4405 | irer_gate: 1.0000
+2026-09-04 18:08:19,151 INFO __main__: Step 20750 | silog: 0.3847 | l1: 0.3429 | edge: 0.1861 | smoothness: 0.0810 | planarity: 0.0136 | total: 0.4082 | irer_gate: 1.0000
+2026-09-04 18:08:59,356 INFO __main__: Step 20800 | silog: 0.3762 | l1: 0.3286 | edge: 0.1909 | smoothness: 0.0846 | planarity: 0.0146 | total: 0.3919 | irer_gate: 1.0000
+2026-09-04 18:09:39,160 INFO __main__: Step 20850 | silog: 0.3800 | l1: 0.3292 | edge: 0.1902 | smoothness: 0.0851 | planarity: 0.0142 | total: 0.3961 | irer_gate: 1.0000
+2026-09-04 18:10:19,589 INFO __main__: Step 20900 | silog: 0.3756 | l1: 0.3188 | edge: 0.1862 | smoothness: 0.0833 | planarity: 0.0137 | total: 0.3709 | irer_gate: 1.0000
+2026-09-04 18:10:59,861 INFO __main__: Step 20950 | silog: 0.3806 | l1: 0.3196 | edge: 0.1870 | smoothness: 0.0846 | planarity: 0.0137 | total: 0.3801 | irer_gate: 1.0000
+2026-09-04 18:11:40,132 INFO __main__: Step 21000 | silog: 0.3871 | l1: 0.3387 | edge: 0.1942 | smoothness: 0.0902 | planarity: 0.0153 | total: 0.4270 | irer_gate: 1.0000
+2026-09-04 18:12:19,774 INFO __main__: Step 21050 | silog: 0.3555 | l1: 0.2978 | edge: 0.1755 | smoothness: 0.0844 | planarity: 0.0135 | total: 0.3107 | irer_gate: 1.0000
+2026-09-04 18:12:59,596 INFO __main__: Step 21100 | silog: 0.3828 | l1: 0.3257 | edge: 0.1922 | smoothness: 0.0891 | planarity: 0.0148 | total: 0.4018 | irer_gate: 1.0000
+2026-09-04 18:13:39,109 INFO __main__: Step 21150 | silog: 0.3794 | l1: 0.3297 | edge: 0.1863 | smoothness: 0.0868 | planarity: 0.0140 | total: 0.3919 | irer_gate: 1.0000
+2026-09-04 18:14:19,019 INFO __main__: Step 21200 | silog: 0.3790 | l1: 0.3187 | edge: 0.1979 | smoothness: 0.0924 | planarity: 0.0150 | total: 0.3993 | irer_gate: 1.0000
+2026-09-04 18:14:58,867 INFO __main__: Step 21250 | silog: 0.3884 | l1: 0.3315 | edge: 0.1959 | smoothness: 0.0887 | planarity: 0.0151 | total: 0.4188 | irer_gate: 1.0000
+2026-09-04 18:15:38,912 INFO __main__: Step 21300 | silog: 0.3741 | l1: 0.3325 | edge: 0.1960 | smoothness: 0.0866 | planarity: 0.0152 | total: 0.4009 | irer_gate: 1.0000
+2026-09-04 18:16:18,132 INFO __main__: Step 21350 | silog: 0.3830 | l1: 0.3265 | edge: 0.1842 | smoothness: 0.0791 | planarity: 0.0130 | total: 0.3789 | irer_gate: 1.0000
+2026-09-04 18:16:58,281 INFO __main__: Step 21400 | silog: 0.3567 | l1: 0.3142 | edge: 0.1781 | smoothness: 0.0819 | planarity: 0.0137 | total: 0.3303 | irer_gate: 1.0000
+2026-09-04 18:17:38,186 INFO __main__: Step 21450 | silog: 0.3527 | l1: 0.3133 | edge: 0.1845 | smoothness: 0.0847 | planarity: 0.0145 | total: 0.3359 | irer_gate: 1.0000
+2026-09-04 18:18:17,927 INFO __main__: Step 21500 | silog: 0.3718 | l1: 0.3148 | edge: 0.1832 | smoothness: 0.0837 | planarity: 0.0136 | total: 0.3563 | irer_gate: 1.0000
+2026-09-04 18:18:57,760 INFO __main__: Step 21550 | silog: 0.3697 | l1: 0.3167 | edge: 0.1903 | smoothness: 0.0900 | planarity: 0.0145 | total: 0.3724 | irer_gate: 1.0000
+2026-09-04 18:19:37,955 INFO __main__: Step 21600 | silog: 0.3821 | l1: 0.3261 | edge: 0.1902 | smoothness: 0.0854 | planarity: 0.0142 | total: 0.3922 | irer_gate: 1.0000
+2026-09-04 18:20:17,147 INFO __main__: Step 21650 | silog: 0.3802 | l1: 0.3340 | edge: 0.1957 | smoothness: 0.0885 | planarity: 0.0149 | total: 0.4099 | irer_gate: 1.0000
+2026-09-04 18:20:57,444 INFO __main__: Step 21700 | silog: 0.3647 | l1: 0.3136 | edge: 0.1835 | smoothness: 0.0851 | planarity: 0.0140 | total: 0.3481 | irer_gate: 1.0000
+2026-09-04 18:21:37,483 INFO __main__: Step 21750 | silog: 0.3614 | l1: 0.3110 | edge: 0.1825 | smoothness: 0.0760 | planarity: 0.0128 | total: 0.3279 | irer_gate: 1.0000
+2026-09-04 18:22:17,596 INFO __main__: Step 21800 | silog: 0.3717 | l1: 0.3146 | edge: 0.1865 | smoothness: 0.0874 | planarity: 0.0143 | total: 0.3637 | irer_gate: 1.0000
+2026-09-04 18:22:57,580 INFO __main__: Step 21850 | silog: 0.3813 | l1: 0.3194 | edge: 0.1888 | smoothness: 0.0856 | planarity: 0.0143 | total: 0.3811 | irer_gate: 1.0000
+2026-09-04 18:23:37,725 INFO __main__: Step 21900 | silog: 0.3733 | l1: 0.3197 | edge: 0.1861 | smoothness: 0.0827 | planarity: 0.0135 | total: 0.3646 | irer_gate: 1.0000
+2026-09-04 18:24:17,611 INFO __main__: Step 21950 | silog: 0.3740 | l1: 0.3185 | edge: 0.1767 | smoothness: 0.0830 | planarity: 0.0128 | total: 0.3522 | irer_gate: 1.0000
+2026-09-04 18:24:57,320 INFO __main__: Step 22000 | silog: 0.3602 | l1: 0.3122 | edge: 0.1858 | smoothness: 0.0850 | planarity: 0.0140 | total: 0.3427 | irer_gate: 1.0000
+2026-09-04 18:25:37,317 INFO __main__: Step 22050 | silog: 0.3890 | l1: 0.3256 | edge: 0.1887 | smoothness: 0.0889 | planarity: 0.0145 | total: 0.4008 | irer_gate: 1.0000
+2026-09-04 18:26:17,205 INFO __main__: Step 22100 | silog: 0.3563 | l1: 0.3008 | edge: 0.1824 | smoothness: 0.0872 | planarity: 0.0142 | total: 0.3232 | irer_gate: 1.0000
+2026-09-04 18:26:57,022 INFO __main__: Step 22150 | silog: 0.3813 | l1: 0.3183 | edge: 0.1821 | smoothness: 0.0828 | planarity: 0.0132 | total: 0.3667 | irer_gate: 1.0000
+2026-09-04 18:27:37,022 INFO __main__: Step 22200 | silog: 0.3864 | l1: 0.3207 | edge: 0.1856 | smoothness: 0.0856 | planarity: 0.0141 | total: 0.3835 | irer_gate: 1.0000
+2026-09-04 18:28:17,029 INFO __main__: Step 22250 | silog: 0.3831 | l1: 0.3274 | edge: 0.1887 | smoothness: 0.0831 | planarity: 0.0131 | total: 0.3871 | irer_gate: 1.0000
+2026-09-04 18:28:57,225 INFO __main__: Step 22300 | silog: 0.3608 | l1: 0.3150 | edge: 0.1811 | smoothness: 0.0837 | planarity: 0.0141 | total: 0.3390 | irer_gate: 1.0000
+2026-09-04 18:29:37,326 INFO __main__: Step 22350 | silog: 0.3832 | l1: 0.3223 | edge: 0.1942 | smoothness: 0.0912 | planarity: 0.0150 | total: 0.3990 | irer_gate: 1.0000
+2026-09-04 18:29:49,685 INFO __main__: Epoch 11/13 | Loss: 0.3837 | Val abs_rel: 0.4815 | IRER gate: 1.000 | Time: 2211.3s
+2026-09-04 18:29:50,358 INFO __main__: Checkpoint saved: /kaggle/working/outputs/checkpoint.pt (epoch=12)
+2026-09-04 18:29:51,076 INFO __main__: Curriculum: epoch 12 → difficulty 'easy' (14090 samples)
+2026-09-04 18:30:21,953 INFO __main__: Step 22400 | silog: 0.3473 | l1: 0.2762 | edge: 0.1781 | smoothness: 0.0808 | planarity: 0.0131 | total: 0.2690 | irer_gate: 1.0000
+2026-09-04 18:31:02,083 INFO __main__: Step 22450 | silog: 0.3365 | l1: 0.2723 | edge: 0.1760 | smoothness: 0.0778 | planarity: 0.0126 | total: 0.2449 | irer_gate: 1.0000
+2026-09-04 18:31:42,212 INFO __main__: Step 22500 | silog: 0.3391 | l1: 0.2844 | edge: 0.1817 | smoothness: 0.0813 | planarity: 0.0133 | total: 0.2738 | irer_gate: 1.0000
+2026-09-04 18:32:22,585 INFO __main__: Step 22550 | silog: 0.3337 | l1: 0.2767 | edge: 0.1718 | smoothness: 0.0783 | planarity: 0.0125 | total: 0.2422 | irer_gate: 1.0000
+2026-09-04 18:33:03,688 INFO __main__: Step 22600 | silog: 0.3408 | l1: 0.2788 | edge: 0.1734 | smoothness: 0.0805 | planarity: 0.0131 | total: 0.2581 | irer_gate: 1.0000
+2026-09-04 18:33:44,191 INFO __main__: Step 22650 | silog: 0.3301 | l1: 0.2720 | edge: 0.1740 | smoothness: 0.0826 | planarity: 0.0136 | total: 0.2410 | irer_gate: 1.0000
+2026-09-04 18:34:24,795 INFO __main__: Step 22700 | silog: 0.3343 | l1: 0.2709 | edge: 0.1751 | smoothness: 0.0801 | planarity: 0.0130 | total: 0.2420 | irer_gate: 1.0000
+2026-09-04 18:35:04,186 INFO __main__: Step 22750 | silog: 0.3226 | l1: 0.2655 | edge: 0.1703 | smoothness: 0.0771 | planarity: 0.0128 | total: 0.2125 | irer_gate: 1.0000
+2026-09-04 18:35:44,008 INFO __main__: Step 22800 | silog: 0.3276 | l1: 0.2732 | edge: 0.1693 | smoothness: 0.0811 | planarity: 0.0135 | total: 0.2318 | irer_gate: 1.0000
+2026-09-04 18:36:23,696 INFO __main__: Step 22850 | silog: 0.3348 | l1: 0.2711 | edge: 0.1710 | smoothness: 0.0779 | planarity: 0.0125 | total: 0.2347 | irer_gate: 1.0000
+2026-09-04 18:37:03,634 INFO __main__: Step 22900 | silog: 0.3287 | l1: 0.2660 | edge: 0.1750 | smoothness: 0.0812 | planarity: 0.0129 | total: 0.2302 | irer_gate: 1.0000
+2026-09-04 18:37:43,475 INFO __main__: Step 22950 | silog: 0.3195 | l1: 0.2652 | edge: 0.1724 | smoothness: 0.0848 | planarity: 0.0136 | total: 0.2202 | irer_gate: 1.0000
+2026-09-04 18:38:23,406 INFO __main__: Step 23000 | silog: 0.3297 | l1: 0.2771 | edge: 0.1807 | smoothness: 0.0842 | planarity: 0.0136 | total: 0.2553 | irer_gate: 1.0000
+2026-09-04 18:39:03,287 INFO __main__: Step 23050 | silog: 0.3296 | l1: 0.2726 | edge: 0.1777 | smoothness: 0.0808 | planarity: 0.0135 | total: 0.2423 | irer_gate: 1.0000
+2026-09-04 18:39:43,529 INFO __main__: Step 23100 | silog: 0.3231 | l1: 0.2660 | edge: 0.1654 | smoothness: 0.0788 | planarity: 0.0128 | total: 0.2092 | irer_gate: 1.0000
+2026-09-04 18:40:23,177 INFO __main__: Step 23150 | silog: 0.3265 | l1: 0.2763 | edge: 0.1782 | smoothness: 0.0791 | planarity: 0.0131 | total: 0.2409 | irer_gate: 1.0000
+2026-09-04 18:41:02,940 INFO __main__: Step 23200 | silog: 0.3144 | l1: 0.2510 | edge: 0.1734 | smoothness: 0.0805 | planarity: 0.0131 | total: 0.1926 | irer_gate: 1.0000
+2026-09-04 18:41:42,655 INFO __main__: Step 23250 | silog: 0.3304 | l1: 0.2603 | edge: 0.1778 | smoothness: 0.0786 | planarity: 0.0133 | total: 0.2256 | irer_gate: 1.0000
+2026-09-04 18:42:22,217 INFO __main__: Step 23300 | silog: 0.3359 | l1: 0.2908 | edge: 0.1781 | smoothness: 0.0832 | planarity: 0.0139 | total: 0.2745 | irer_gate: 1.0000
+2026-09-04 18:43:01,641 INFO __main__: Step 23350 | silog: 0.3462 | l1: 0.2793 | edge: 0.1767 | smoothness: 0.0833 | planarity: 0.0133 | total: 0.2707 | irer_gate: 1.0000
+2026-09-04 18:43:41,432 INFO __main__: Step 23400 | silog: 0.3335 | l1: 0.2717 | edge: 0.1783 | smoothness: 0.0818 | planarity: 0.0132 | total: 0.2468 | irer_gate: 1.0000
+2026-09-04 18:44:21,402 INFO __main__: Step 23450 | silog: 0.3330 | l1: 0.2588 | edge: 0.1777 | smoothness: 0.0786 | planarity: 0.0129 | total: 0.2259 | irer_gate: 1.0000
+2026-09-04 18:45:00,883 INFO __main__: Step 23500 | silog: 0.3291 | l1: 0.2698 | edge: 0.1783 | smoothness: 0.0848 | planarity: 0.0136 | total: 0.2432 | irer_gate: 1.0000
+2026-09-04 18:45:40,279 INFO __main__: Step 23550 | silog: 0.3341 | l1: 0.2736 | edge: 0.1767 | smoothness: 0.0788 | planarity: 0.0129 | total: 0.2437 | irer_gate: 1.0000
+2026-09-04 18:46:19,777 INFO __main__: Step 23600 | silog: 0.3358 | l1: 0.2810 | edge: 0.1663 | smoothness: 0.0790 | planarity: 0.0127 | total: 0.2425 | irer_gate: 1.0000
+2026-09-04 18:46:59,974 INFO __main__: Step 23650 | silog: 0.3292 | l1: 0.2738 | edge: 0.1748 | smoothness: 0.0788 | planarity: 0.0131 | total: 0.2363 | irer_gate: 1.0000
+2026-09-04 18:47:39,820 INFO __main__: Step 23700 | silog: 0.3302 | l1: 0.2709 | edge: 0.1784 | smoothness: 0.0814 | planarity: 0.0138 | total: 0.2418 | irer_gate: 1.0000
+2026-09-04 18:48:19,877 INFO __main__: Step 23750 | silog: 0.3282 | l1: 0.2745 | edge: 0.1760 | smoothness: 0.0834 | planarity: 0.0139 | total: 0.2433 | irer_gate: 1.0000
+2026-09-04 18:48:59,791 INFO __main__: Step 23800 | silog: 0.3340 | l1: 0.2756 | edge: 0.1822 | smoothness: 0.0861 | planarity: 0.0138 | total: 0.2616 | irer_gate: 1.0000
+2026-09-04 18:49:38,780 INFO __main__: Step 23850 | silog: 0.3282 | l1: 0.2752 | edge: 0.1755 | smoothness: 0.0811 | planarity: 0.0137 | total: 0.2405 | irer_gate: 1.0000
+2026-09-04 18:50:19,103 INFO __main__: Step 23900 | silog: 0.3171 | l1: 0.2577 | edge: 0.1630 | smoothness: 0.0751 | planarity: 0.0119 | total: 0.1831 | irer_gate: 1.0000
+2026-09-04 18:50:58,803 INFO __main__: Step 23950 | silog: 0.3205 | l1: 0.2695 | edge: 0.1766 | smoothness: 0.0836 | planarity: 0.0137 | total: 0.2288 | irer_gate: 1.0000
+2026-09-04 18:51:38,842 INFO __main__: Step 24000 | silog: 0.3255 | l1: 0.2676 | edge: 0.1779 | smoothness: 0.0820 | planarity: 0.0135 | total: 0.2318 | irer_gate: 1.0000
+2026-09-04 18:52:18,253 INFO __main__: Step 24050 | silog: 0.3362 | l1: 0.2671 | edge: 0.1785 | smoothness: 0.0857 | planarity: 0.0137 | total: 0.2489 | irer_gate: 1.0000
+2026-09-04 18:52:57,633 INFO __main__: Step 24100 | silog: 0.3260 | l1: 0.2644 | edge: 0.1753 | smoothness: 0.0784 | planarity: 0.0130 | total: 0.2207 | irer_gate: 1.0000
+2026-09-04 18:54:45,602 INFO __main__: Epoch 12/13 | Loss: 0.2380 | Val abs_rel: 0.4357 | IRER gate: 1.000 | Time: 1494.5s
+2026-09-04 18:54:46,193 INFO __main__: Checkpoint saved: /kaggle/working/outputs/checkpoint.pt (epoch=13)
+2026-09-04 18:54:46,194 INFO __main__: Early stopping at epoch 12 (best abs_rel: 0.4253)
+2026-09-04 18:54:46,194 INFO __main__: Training complete. Best val abs_rel: 0.4253
+2026-09-05 06:08:51,420 WARNING __main__: OOM detected, halving batch_size: 8 → 4
+2026-09-05 06:08:51,420 WARNING __main__: OOM detected, halving batch_size: 4 → 2
+2026-09-05 06:08:51,421 WARNING __main__: OOM detected, halving batch_size: 2 → 2
+2026-09-05 06:08:51,421 WARNING __main__: OOM detected, halving batch_size: 3 → 2
+2026-09-05 18:11:25,145 WARNING __main__: OOM detected, halving batch_size: 8 → 4
+2026-09-05 18:11:25,146 WARNING __main__: OOM detected, halving batch_size: 4 → 2
+2026-09-05 18:11:25,146 WARNING __main__: OOM detected, halving batch_size: 2 → 2
+2026-09-05 18:11:25,146 WARNING __main__: OOM detected, halving batch_size: 3 → 2
+2026-09-05 18:19:21,509 WARNING __main__: OOM detected, halving batch_size: 8 → 4
+2026-09-05 18:19:21,510 WARNING __main__: OOM detected, halving batch_size: 4 → 2
+2026-09-05 18:19:21,510 WARNING __main__: OOM detected, halving batch_size: 2 → 2
+2026-09-05 18:19:21,510 WARNING __main__: OOM detected, halving batch_size: 3 → 2
+2026-09-05 18:23:46,138 WARNING __main__: OOM detected, halving batch_size: 8 → 4
+2026-09-05 18:23:46,138 WARNING __main__: OOM detected, halving batch_size: 4 → 2
+2026-09-05 18:23:46,138 WARNING __main__: OOM detected, halving batch_size: 2 → 2
+2026-09-05 18:23:46,138 WARNING __main__: OOM detected, halving batch_size: 3 → 2
+2026-09-05 18:24:08,954 WARNING __main__: OOM detected, halving batch_size: 8 → 4
+2026-09-05 18:24:08,955 WARNING __main__: OOM detected, halving batch_size: 4 → 2
+2026-09-05 18:24:08,955 WARNING __main__: OOM detected, halving batch_size: 2 → 2
+2026-09-05 18:24:08,955 WARNING __main__: OOM detected, halving batch_size: 3 → 2
+2026-09-05 18:24:22,693 WARNING __main__: OOM detected, halving batch_size: 8 → 4
+2026-09-05 18:24:22,693 WARNING __main__: OOM detected, halving batch_size: 4 → 2
+2026-09-05 18:24:22,693 WARNING __main__: OOM detected, halving batch_size: 2 → 2
+2026-09-05 18:24:22,693 WARNING __main__: OOM detected, halving batch_size: 3 → 2
+2026-09-05 18:54:09,854 WARNING __main__: OOM detected, halving batch_size: 8 → 4
+2026-09-05 18:54:09,855 WARNING __main__: OOM detected, halving batch_size: 4 → 2
+2026-09-05 18:54:09,855 WARNING __main__: OOM detected, halving batch_size: 2 → 2
+2026-09-05 18:54:09,855 WARNING __main__: OOM detected, halving batch_size: 3 → 2
+2026-09-05 18:58:25,347 WARNING __main__: OOM detected, halving batch_size: 8 → 4
+2026-09-05 18:58:25,347 WARNING __main__: OOM detected, halving batch_size: 4 → 2
+2026-09-05 18:58:25,347 WARNING __main__: OOM detected, halving batch_size: 2 → 2
+2026-09-05 18:58:25,347 WARNING __main__: OOM detected, halving batch_size: 3 → 2
+2026-09-05 19:01:20,531 WARNING __main__: OOM detected, halving batch_size: 8 → 4
+2026-09-05 19:01:20,531 WARNING __main__: OOM detected, halving batch_size: 4 → 2
+2026-09-05 19:01:20,532 WARNING __main__: OOM detected, halving batch_size: 2 → 2
+2026-09-05 19:01:20,532 WARNING __main__: OOM detected, halving batch_size: 3 → 2
+2026-09-06 05:50:48,521 WARNING __main__: OOM detected, halving batch_size: 8 → 4
+2026-09-06 05:50:48,521 WARNING __main__: OOM detected, halving batch_size: 4 → 2
+2026-09-06 05:50:48,521 WARNING __main__: OOM detected, halving batch_size: 2 → 2
+2026-09-06 05:50:48,521 WARNING __main__: OOM detected, halving batch_size: 3 → 2
+2026-09-06 05:51:01,916 WARNING __main__: OOM detected, halving batch_size: 8 → 4
+2026-09-06 05:51:01,916 WARNING __main__: OOM detected, halving batch_size: 4 → 2
+2026-09-06 05:51:01,916 WARNING __main__: OOM detected, halving batch_size: 2 → 2
+2026-09-06 05:51:01,916 WARNING __main__: OOM detected, halving batch_size: 3 → 2
+2026-09-06 05:51:02,098 WARNING __main__: cam_left.json not found for carwelding/P000; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-06 05:51:02,098 INFO __main__: TartanAirDataset: 1 samples, difficulty=easy, split=train
+2026-09-06 13:46:11,224 WARNING __main__: OOM detected, halving batch_size: 8 → 4
+2026-09-06 13:46:11,226 WARNING __main__: OOM detected, halving batch_size: 4 → 2
+2026-09-06 13:46:11,226 WARNING __main__: OOM detected, halving batch_size: 2 → 2
+2026-09-06 13:46:11,226 WARNING __main__: OOM detected, halving batch_size: 3 → 2
+2026-09-06 13:46:11,515 WARNING __main__: cam_left.json not found for carwelding/P000; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-06 13:46:11,515 INFO __main__: TartanAirDataset: 1 samples, difficulty=easy, split=train
+2026-09-06 13:46:19,292 WARNING __main__: OOM detected, halving batch_size: 8 → 4
+2026-09-06 13:46:19,292 WARNING __main__: OOM detected, halving batch_size: 4 → 2
+2026-09-06 13:46:19,292 WARNING __main__: OOM detected, halving batch_size: 2 → 2
+2026-09-06 13:46:19,292 WARNING __main__: OOM detected, halving batch_size: 3 → 2
+2026-09-06 13:46:19,522 WARNING __main__: cam_left.json not found for carwelding/P000; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-06 13:46:19,523 INFO __main__: TartanAirDataset: 1 samples, difficulty=easy, split=train
+2026-09-06 14:01:33,156 WARNING __main__: OOM detected, halving batch_size: 8 → 4
+2026-09-06 14:01:33,156 WARNING __main__: OOM detected, halving batch_size: 4 → 2
+2026-09-06 14:01:33,156 WARNING __main__: OOM detected, halving batch_size: 2 → 2
+2026-09-06 14:01:33,156 WARNING __main__: OOM detected, halving batch_size: 3 → 2
+2026-09-06 14:01:33,392 WARNING __main__: cam_left.json not found for carwelding/P000; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-06 14:01:33,392 INFO __main__: TartanAirDataset: 1 samples, difficulty=easy, split=train
+2026-09-06 14:01:34,781 WARNING __main__: OOM detected, halving batch_size: 8 → 4
+2026-09-06 14:01:34,782 WARNING __main__: OOM detected, halving batch_size: 4 → 2
+2026-09-06 14:01:34,782 WARNING __main__: OOM detected, halving batch_size: 2 → 2
+2026-09-06 14:01:34,782 WARNING __main__: OOM detected, halving batch_size: 3 → 2
+2026-09-06 14:01:34,954 WARNING __main__: cam_left.json not found for carwelding/P000; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-06 14:01:34,955 INFO __main__: TartanAirDataset: 1 samples, difficulty=easy, split=train
+2026-09-06 18:37:25,772 WARNING __main__: OOM detected, halving batch_size: 8 → 4
+2026-09-06 18:37:25,772 WARNING __main__: OOM detected, halving batch_size: 4 → 2
+2026-09-06 18:37:25,773 WARNING __main__: OOM detected, halving batch_size: 2 → 2
+2026-09-06 18:37:25,773 WARNING __main__: OOM detected, halving batch_size: 3 → 2
+2026-09-06 18:37:25,980 WARNING __main__: cam_left.json not found for carwelding/P000; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-06 18:37:25,980 INFO __main__: TartanAirDataset: 1 samples, difficulty=easy, split=train
+2026-09-06 18:38:10,666 WARNING __main__: OOM detected, halving batch_size: 8 → 4
+2026-09-06 18:38:10,666 WARNING __main__: OOM detected, halving batch_size: 4 → 2
+2026-09-06 18:38:10,666 WARNING __main__: OOM detected, halving batch_size: 2 → 2
+2026-09-06 18:38:10,666 WARNING __main__: OOM detected, halving batch_size: 3 → 2
+2026-09-06 18:38:10,842 WARNING __main__: cam_left.json not found for carwelding/P000; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-06 18:38:10,842 INFO __main__: TartanAirDataset: 1 samples, difficulty=easy, split=train
+2026-09-06 18:43:37,650 WARNING __main__: OOM detected, halving batch_size: 8 → 4
+2026-09-06 18:43:37,651 WARNING __main__: OOM detected, halving batch_size: 4 → 2
+2026-09-06 18:43:37,651 WARNING __main__: OOM detected, halving batch_size: 2 → 2
+2026-09-06 18:43:37,651 WARNING __main__: OOM detected, halving batch_size: 3 → 2
+2026-09-06 18:43:37,898 WARNING __main__: cam_left.json not found for carwelding/P000; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-06 18:43:37,898 INFO __main__: TartanAirDataset: 1 samples, difficulty=easy, split=train
+2026-09-06 18:44:05,104 INFO __main__: Stage 2 Pretrained weights loaded: outputs/checkpoint.pt (epoch 24, missing=0, unexpected=0)
+2026-09-06 18:44:13,995 INFO __main__: Stage 2 Pretrained weights loaded: outputs/checkpoint.pt (epoch 24, missing=0, unexpected=0)
+2026-09-06 18:45:34,942 INFO __main__: Stage 2 Pretrained weights loaded: outputs/checkpoint.pt (epoch 24, missing=0, unexpected=0)
+2026-09-06 18:45:43,476 INFO __main__: Stage 2 Pretrained weights loaded: outputs/checkpoint.pt (epoch 24, missing=0, unexpected=0)
+2026-09-06 18:47:40,928 WARNING __main__: OOM detected, halving batch_size: 8 → 4
+2026-09-06 18:47:40,928 WARNING __main__: OOM detected, halving batch_size: 4 → 2
+2026-09-06 18:47:40,929 WARNING __main__: OOM detected, halving batch_size: 2 → 2
+2026-09-06 18:47:40,929 WARNING __main__: OOM detected, halving batch_size: 3 → 2
+2026-09-06 18:47:41,146 WARNING __main__: cam_left.json not found for carwelding/P000; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-06 18:47:41,146 INFO __main__: TartanAirDataset: 1 samples, difficulty=easy, split=train
+2026-09-06 19:13:35,077 WARNING __main__: OOM detected, halving batch_size: 8 → 4
+2026-09-06 19:13:35,077 WARNING __main__: OOM detected, halving batch_size: 4 → 2
+2026-09-06 19:13:35,077 WARNING __main__: OOM detected, halving batch_size: 2 → 2
+2026-09-06 19:13:35,077 WARNING __main__: OOM detected, halving batch_size: 3 → 2
+2026-09-06 19:13:35,283 WARNING __main__: cam_left.json not found for carwelding/P000; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-06 19:13:35,284 INFO __main__: TartanAirDataset: 1 samples, difficulty=easy, split=train
+2026-09-08 05:36:50,368 WARNING __main__: OOM detected, halving batch_size: 8 → 4
+2026-09-08 05:36:50,369 WARNING __main__: OOM detected, halving batch_size: 4 → 2
+2026-09-08 05:36:50,369 WARNING __main__: OOM detected, halving batch_size: 2 → 2
+2026-09-08 05:36:50,369 WARNING __main__: OOM detected, halving batch_size: 3 → 2
+2026-09-08 05:36:50,633 WARNING __main__: cam_left.json not found for carwelding/P000; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-08 05:36:50,633 INFO __main__: TartanAirDataset: 1 samples, difficulty=easy, split=train
+2026-09-08 05:37:51,563 WARNING __main__: OOM detected, halving batch_size: 8 → 4
+2026-09-08 05:37:51,563 WARNING __main__: OOM detected, halving batch_size: 4 → 2
+2026-09-08 05:37:51,563 WARNING __main__: OOM detected, halving batch_size: 2 → 2
+2026-09-08 05:37:51,563 WARNING __main__: OOM detected, halving batch_size: 3 → 2
+2026-09-08 05:37:51,913 WARNING __main__: cam_left.json not found for carwelding/P000; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-08 05:37:51,913 INFO __main__: TartanAirDataset: 1 samples, difficulty=easy, split=train
+2026-09-08 05:45:35,672 WARNING tesseract: OOM detected, halving batch_size: 8 → 4
+2026-09-08 05:45:35,672 WARNING tesseract: OOM detected, halving batch_size: 4 → 2
+2026-09-08 05:45:35,672 WARNING tesseract: OOM detected, halving batch_size: 2 → 2
+2026-09-08 05:45:35,672 WARNING tesseract: OOM detected, halving batch_size: 3 → 2
+2026-09-08 05:45:35,927 WARNING tesseract: cam_left.json not found for carwelding/P000; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-08 05:45:35,927 INFO tesseract: TartanAirDataset: 1 samples, difficulty=easy, split=train

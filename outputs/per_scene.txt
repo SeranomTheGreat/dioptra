@@ -1,0 +1,16 @@
+Per-Scene Breakdown (sorted by abs_rel)
+============================================================
+
+Top-5 Best Scenes:
+  endofworld/P009/000474_left: abs_rel=0.1140
+  endofworld/P009/000421_left: abs_rel=0.1170
+  endofworld/P009/000480_left: abs_rel=0.1171
+  endofworld/P009/000420_left: abs_rel=0.1183
+  endofworld/P009/000473_left: abs_rel=0.1183
+
+Top-5 Worst Scenes:
+  carwelding/P007/000102_left: abs_rel=1.3155
+  amusement/P008/000000_left: abs_rel=1.4367
+  endofworld/P009/000178_left: abs_rel=2.0851
+  endofworld/P009/000177_left: abs_rel=3.4725
+  endofworld/P009/000176_left: abs_rel=4.1139
