@@ -319,17 +319,19 @@ class TrivisionRayModulation(nn.Module):
             self.film_mlp[-1].bias[:self.embed_dim].fill_(1.0)
 
     def _unproject_rays(
-        self, intrinsics: Tensor, is_flipped: Optional[Tensor] = None
+        self, intrinsics: Tensor, is_flipped: Optional[Tensor] = None, num_tokens: Optional[int] = None
     ) -> Tuple[Tensor, Tensor]:
-        """Unproject ray triplets for each of the 256 patch tokens.
+        """Unproject ray triplets dynamically for any patch token count.
 
         Returns:
-            ray_features: Sinusoidal embeddings [B, 256, 108]
-            unit_rays_center: Normalized center ray directions [B, 256, 3]
+            ray_features: Sinusoidal embeddings [B, N, 108]
+            unit_rays_center: Normalized center ray directions [B, N, 3]
         """
         B = intrinsics.shape[0]
         device = intrinsics.device
         dtype = intrinsics.dtype
+
+        grid_size = int(math.isqrt(num_tokens)) if num_tokens is not None else self.grid_size
 
         # Analytic closed-form pinhole inversion
         fx = intrinsics[:, 0, 0].clamp(min=1e-5)
@@ -337,15 +339,15 @@ class TrivisionRayModulation(nn.Module):
         cx = intrinsics[:, 0, 2]
         cy = intrinsics[:, 1, 2]
 
-        # Patch center coordinates on 224x224 grid
+        # Patch center coordinates
         half_p = self.patch_size / 2.0
-        ys = (torch.arange(self.grid_size, device=device, dtype=dtype) + 0.5) * self.patch_size
-        xs = (torch.arange(self.grid_size, device=device, dtype=dtype) + 0.5) * self.patch_size
+        ys = (torch.arange(grid_size, device=device, dtype=dtype) + 0.5) * self.patch_size
+        xs = (torch.arange(grid_size, device=device, dtype=dtype) + 0.5) * self.patch_size
         grid_y, grid_x = torch.meshgrid(ys, xs, indexing="ij")
-        grid_x = grid_x.reshape(-1)  # [256]
-        grid_y = grid_y.reshape(-1)  # [256]
+        grid_x = grid_x.reshape(-1)
+        grid_y = grid_y.reshape(-1)
 
-        # Corner ray offsets expanded to [B, 256]
+        # Corner ray offsets expanded to [B, N]
         c1_x = (grid_x - half_p).unsqueeze(0).expand(B, -1).clone()  # Top-left
         c1_y = (grid_y - half_p).unsqueeze(0).expand(B, -1).clone()
         c2_x = (grid_x + half_p).unsqueeze(0).expand(B, -1).clone()  # Bottom-right
@@ -371,22 +373,21 @@ class TrivisionRayModulation(nn.Module):
             rx = (px - cx.unsqueeze(1)) / fx.unsqueeze(1)
             ry = (py - cy.unsqueeze(1)) / fy.unsqueeze(1)
             rz = torch.ones_like(rx)
-            rays = torch.stack([rx, ry, rz], dim=-1)  # [B, 256, 3]
+            rays = torch.stack([rx, ry, rz], dim=-1)
             norm = torch.norm(rays, dim=-1, keepdim=True).clamp(min=1e-8)
             return rays / norm
 
-        rc = to_unit_rays(grid_x_b, grid_y_b)  # Center rays [B, 256, 3]
-        r1 = to_unit_rays(c1_x, c1_y)          # Corner 1 rays [B, 256, 3]
-        r2 = to_unit_rays(c2_x, c2_y)          # Corner 2 rays [B, 256, 3]
+        rc = to_unit_rays(grid_x_b, grid_y_b)  # Center rays [B, N, 3]
+        r1 = to_unit_rays(c1_x, c1_y)          # Corner 1 rays [B, N, 3]
+        r2 = to_unit_rays(c2_x, c2_y)          # Corner 2 rays [B, N, 3]
 
         # Multi-scale Fourier features across 6 frequencies
-        all_rays = torch.cat([rc, r1, r2], dim=-1)  # [B, 256, 9]
+        all_rays = torch.cat([rc, r1, r2], dim=-1)  # [B, N, 9]
         freq_bands = 2.0 ** torch.arange(self.num_freqs, device=device, dtype=dtype) * math.pi
-        # all_rays: [B, 256, 9, 1] * freq_bands: [1, 1, 1, 6] -> [B, 256, 9, 6]
         prod = all_rays.unsqueeze(-1) * freq_bands.view(1, 1, 1, -1)
         sin_feat = torch.sin(prod)
         cos_feat = torch.cos(prod)
-        fourier_feat = torch.cat([sin_feat, cos_feat], dim=-1).flatten(2)  # [B, 256, 108]
+        fourier_feat = torch.cat([sin_feat, cos_feat], dim=-1).flatten(2)  # [B, N, 108]
 
         return fourier_feat, rc
 
@@ -396,16 +397,16 @@ class TrivisionRayModulation(nn.Module):
         """Modulate tokens with camera ray geometry.
 
         Args:
-            tokens: Visual tokens [B, 256, 384]
+            tokens: Visual tokens [B, N, 384]
             intrinsics: Camera calibration matrix [B, 3, 3]
             is_flipped: Optional boolean tensor [B] indicating horizontal flip augmentation.
 
         Returns:
-            modulated_tokens: [B, 256, 384]
-            unit_center_rays: [B, 256, 3] (passed to ARA attention bias)
+            modulated_tokens: [B, N, 384]
+            unit_center_rays: [B, N, 3] (passed to ARA attention bias)
         """
-        fourier_rays, unit_rays_center = self._unproject_rays(intrinsics, is_flipped)
-        film_params = self.film_mlp(fourier_rays)  # [B, 256, 768]
+        fourier_rays, unit_rays_center = self._unproject_rays(intrinsics, is_flipped, num_tokens=tokens.shape[1])
+        film_params = self.film_mlp(fourier_rays)  # [B, N, 768]
         gamma = film_params[:, :, :self.embed_dim]  # Scale
         beta = film_params[:, :, self.embed_dim:]   # Shift
 
@@ -559,29 +560,29 @@ class DPTReassemblyHead(nn.Module):
         self.disp_head[-1].weight.data.mul_(0.01)
 
     def forward(self, features: List[Tensor]) -> Tensor:
-        """Fuse multi-scale features [L3, L6, L9, L12] into metric depth map [B, 1, 224, 224]."""
-        # Reshape tokens [B, 256, 384] to spatial feature maps [B, 384, 16, 16]
-        B = features[0].shape[0]
-        H = W = self.cfg.grid_size  # 16
+        """Fuse multi-scale features [L3, L6, L9, L12] into metric depth map."""
+        B, N, C = features[0].shape
+        H = W = int(math.isqrt(N))
+        out_img_size = H * self.cfg.patch_size
 
-        f1 = features[0].transpose(1, 2).contiguous().reshape(B, -1, H, W)  # [B, 384, 16, 16]
+        f1 = features[0].transpose(1, 2).contiguous().reshape(B, -1, H, W)
         f2 = features[1].transpose(1, 2).contiguous().reshape(B, -1, H, W)
         f3 = features[2].transpose(1, 2).contiguous().reshape(B, -1, H, W)
         f4 = features[3].transpose(1, 2).contiguous().reshape(B, -1, H, W)
 
-        p1 = self.proj1(self.reasm1(f1))  # [B, 128, 64, 64]
-        p2 = self.proj2(self.reasm2(f2))  # [B, 128, 32, 32]
-        p3 = self.proj3(self.reasm3(f3))  # [B, 128, 16, 16]
-        p4 = self.proj4(self.reasm4(f4))  # [B, 128, 8, 8]
+        p1 = self.proj1(self.reasm1(f1))
+        p2 = self.proj2(self.reasm2(f2))
+        p3 = self.proj3(self.reasm3(f3))
+        p4 = self.proj4(self.reasm4(f4))
 
-        x4 = self.fuse4(p4)                # 8x8 -> 16x16
-        x3 = self.fuse3(x4, p3)            # 16x16 -> 32x32
-        x2 = self.fuse2(x3, p2)            # 32x32 -> 64x64
-        x1 = self.fuse1(x2, p1)            # 64x64 -> 128x128
+        x4 = self.fuse4(p4)
+        x3 = self.fuse3(x4, p3)
+        x2 = self.fuse2(x3, p2)
+        x1 = self.fuse1(x2, p1)
 
-        # Final 2x upsample to native 224x224
-        x_full = F.interpolate(x1, size=(self.cfg.image_size, self.cfg.image_size), mode="bilinear", align_corners=False)
-        raw_disp = self.disp_head(x_full)  # [B, 1, 224, 224]
+        # Upsample to full input image resolution
+        x_full = F.interpolate(x1, size=(out_img_size, out_img_size), mode="bilinear", align_corners=False)
+        raw_disp = self.disp_head(x_full)
 
         # Convert disparity to true metric depth in metres: D = 1 / (softplus(d) + 1/D_max)
         metric_depth = 1.0 / (F.softplus(raw_disp) + 1.0 / self.cfg.max_depth)
@@ -702,8 +703,86 @@ class DioptraDINOLoss(nn.Module):
         loss_x = torch.mean(torch.abs(dx_pred[mask_x] - dx_target[mask_x]))
         return loss_y + loss_x
 
+    def virtual_normal_loss(
+        self, pred: Tensor, target: Tensor, mask: Tensor, K: Optional[Tensor] = None
+    ) -> Tensor:
+        """Multi-scale 3D Virtual Normal Loss enforcing surface planarity."""
+        B, C, H, W = pred.shape
+        device = pred.device
+        dtype = pred.dtype
+
+        # Coordinate grid
+        v, u = torch.meshgrid(
+            torch.arange(H, device=device, dtype=dtype),
+            torch.arange(W, device=device, dtype=dtype),
+            indexing="ij",
+        )
+        u = u.unsqueeze(0).expand(B, -1, -1)
+        v = v.unsqueeze(0).expand(B, -1, -1)
+
+        if K is not None and K.dim() == 3:
+            fx = K[:, 0, 0].view(B, 1, 1).clamp(min=1.0)
+            fy = K[:, 1, 1].view(B, 1, 1).clamp(min=1.0)
+            cx = K[:, 0, 2].view(B, 1, 1)
+            cy = K[:, 1, 2].view(B, 1, 1)
+        else:
+            fx = torch.full((B, 1, 1), 149.33, device=device, dtype=dtype)
+            fy = fx
+            cx = torch.full((B, 1, 1), W / 2.0, device=device, dtype=dtype)
+            cy = torch.full((B, 1, 1), H / 2.0, device=device, dtype=dtype)
+
+        # 3D points P = (X, Y, Z)
+        pred_z = pred.squeeze(1).clamp(min=1e-3)
+        target_z = target.squeeze(1).clamp(min=1e-3)
+        m = mask.squeeze(1)
+
+        pred_x = (u - cx) / fx * pred_z
+        pred_y = (v - cy) / fy * pred_z
+        P_pred = torch.stack([pred_x, pred_y, pred_z], dim=1)
+
+        target_x = (u - cx) / fx * target_z
+        target_y = (v - cy) / fy * target_z
+        P_target = torch.stack([target_x, target_y, target_z], dim=1)
+
+        total_vnl = torch.tensor(0.0, device=device, dtype=dtype)
+        valid_scales = 0
+
+        for s in [1, 2, 4]:
+            if H <= 2 * s or W <= 2 * s:
+                continue
+            vx_pred = P_pred[:, :, s:-s, 2 * s:] - P_pred[:, :, s:-s, :-2 * s]
+            vy_pred = P_pred[:, :, 2 * s:, s:-s] - P_pred[:, :, :-2 * s, s:-s]
+            vx_target = P_target[:, :, s:-s, 2 * s:] - P_target[:, :, s:-s, :-2 * s]
+            vy_target = P_target[:, :, 2 * s:, s:-s] - P_target[:, :, :-2 * s, s:-s]
+
+            n_pred = torch.cross(vx_pred, vy_pred, dim=1)
+            n_target = torch.cross(vx_target, vy_target, dim=1)
+
+            norm_pred = torch.norm(n_pred, dim=1, keepdim=True).clamp(min=1e-6)
+            norm_target = torch.norm(n_target, dim=1, keepdim=True).clamp(min=1e-6)
+
+            m_inner = (
+                m[:, s:-s, 2 * s:]
+                & m[:, s:-s, :-2 * s]
+                & m[:, 2 * s:, s:-s]
+                & m[:, :-2 * s, s:-s]
+                & (norm_target.squeeze(1) > 1e-4)
+            )
+
+            if m_inner.sum() > 50:
+                n_p = n_pred / norm_pred
+                n_t = n_target / norm_target
+                cos_sim = torch.sum(n_p * n_t, dim=1)
+                loss_s = torch.mean(1.0 - cos_sim[m_inner].clamp(min=-1.0, max=1.0))
+                total_vnl = total_vnl + loss_s
+                valid_scales += 1
+
+        if valid_scales > 0:
+            return total_vnl / float(valid_scales)
+        return torch.tensor(0.0, device=device, dtype=dtype)
+
     def forward(
-        self, pred: Tensor, target: Tensor, image: Optional[Tensor] = None
+        self, pred: Tensor, target: Tensor, image: Optional[Tensor] = None, K: Optional[Tensor] = None
     ) -> Tuple[Tensor, Dict[str, float]]:
         """Compute total multi-task loss across valid pixels."""
         mask = (target >= self.cfg.min_depth) & (target <= self.cfg.max_depth) & ~torch.isnan(target)
@@ -713,11 +792,13 @@ class DioptraDINOLoss(nn.Module):
         l_silog = self.silog_loss(pred, target, mask)
         l_scale = self.scale_loss(pred, target, mask)
         l_edge = self.edge_loss(pred, target, mask)
+        l_vnl = self.virtual_normal_loss(pred, target, mask, K=K)
 
         total_loss = (
             self.cfg.weight_silog * l_silog
             + self.cfg.weight_scale * l_scale
             + self.cfg.weight_edge * l_edge
+            + self.cfg.weight_normal * l_vnl
         )
 
         metrics = {
@@ -725,6 +806,7 @@ class DioptraDINOLoss(nn.Module):
             "loss_silog": l_silog.item(),
             "loss_scale": l_scale.item(),
             "loss_edge": l_edge.item(),
+            "loss_vnl": l_vnl.item(),
         }
         return total_loss, metrics
 
@@ -737,7 +819,7 @@ def apply_dynamic_pinhole_crop(
     image: np.ndarray,
     depth: np.ndarray,
     K: np.ndarray,
-    crop_size_range: Tuple[float, float] = (0.55, 1.0),
+    crop_size_range: Tuple[float, float] = (0.35, 1.0),
     out_size: int = 224,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Random crop simulating optical zoom / focal length variation.
@@ -1136,10 +1218,10 @@ class TartanAirDINODataset(torch.utils.data.Dataset):
 
         K = self.K_canonical.copy()
 
-        # Dynamic pinhole crop augmentation
-        if self.apply_pinhole_aug and random.random() < 0.8:
+        # Dynamic pinhole crop augmentation (wide optical zoom range for camera invariance)
+        if self.apply_pinhole_aug and random.random() < 0.9:
             img, depth, K = apply_dynamic_pinhole_crop(
-                img, depth, K, crop_size_range=(0.55, 1.0), out_size=self.image_size
+                img, depth, K, crop_size_range=(0.35, 1.0), out_size=self.image_size
             )
         else:
             H, W = img.shape[:2]
@@ -1180,11 +1262,16 @@ def train_dioptra_dino(args):
     else:
         gpu_count = 0
 
+    img_sz = getattr(args, "image_size", 224)
+    w_norm = getattr(args, "weight_normal", 0.25)
     cfg = DioptraDINOConfig(
+        image_size=img_sz,
+        grid_size=img_sz // 14,
         epochs=args.epochs,
         batch_size=args.batch_size,
         lr_backbone=args.lr_backbone,
         lr_head=args.lr_head,
+        weight_normal=w_norm,
     )
 
     model = DioptraDINO(cfg).to(device)
@@ -1289,7 +1376,7 @@ def train_dioptra_dino(args):
 
             with get_autocast_context(cfg.use_amp and torch.cuda.is_available()):
                 preds = model(images, Ks, ara_gate=current_gate)
-                loss, metrics = loss_fn(preds, depths)
+                loss, metrics = loss_fn(preds, depths, K=Ks)
                 loss = loss / cfg.gradient_accumulation_steps
 
             scaler.scale(loss).backward()
@@ -1307,7 +1394,8 @@ def train_dioptra_dino(args):
             if step % 50 == 0:
                 print(f"Epoch [{epoch+1}/{cfg.epochs}] Step [{step}/{len(dataloader)}] "
                       f"Loss: {loss.item() * cfg.gradient_accumulation_steps:.4f} "
-                      f"(SiLog: {metrics.get('loss_silog', 0):.3f}, Scale: {metrics.get('loss_scale', 0):.3f}, Edge: {metrics.get('loss_edge', 0):.3f}) "
+                      f"(SiLog: {metrics.get('loss_silog', 0):.3f}, Scale: {metrics.get('loss_scale', 0):.3f}, "
+                      f"Edge: {metrics.get('loss_edge', 0):.3f}, VNL: {metrics.get('loss_vnl', 0):.3f}) "
                       f"ARA Gate: {current_gate:.2f}")
 
         elapsed = time.time() - t_start
@@ -1362,8 +1450,8 @@ def run_smoke_test():
     print(f"   Forward latency: {dt * 1000.0:.2f} ms")
 
     # Loss
-    print("2. Computing multi-task loss...")
-    loss, metrics = loss_fn(pred_depth, gt_depth)
+    print("2. Computing multi-task loss (including 3D Virtual Normal Loss)...")
+    loss, metrics = loss_fn(pred_depth, gt_depth, K=K)
     print(f"   Total loss: {loss.item():.4f}, metrics: {metrics}")
 
     # Backward
@@ -1477,6 +1565,9 @@ if __name__ == "__main__":
     parser.add_argument("--train", type=str, default=None, nargs="?", const="auto", help="Path to TartanAir dataset directory (default: 'auto')")
     parser.add_argument("--epochs", type=int, default=15, help="Number of training epochs")
     parser.add_argument("--batch-size", type=int, default=8, help="Batch size per GPU")
+    parser.add_argument("--image-size", type=int, default=224, help="Input resolution (e.g. 224, 336, 392, multiples of 28)")
+    parser.add_argument("--weight-normal", type=float, default=0.25, help="Weight for 3D Virtual Normal Loss (VNL)")
+    parser.add_argument("--crop-min", type=float, default=0.35, help="Minimum scale for dynamic optical pinhole crop")
     parser.add_argument("--lr-backbone", type=float, default=2e-5, help="Learning rate for DINOv2 backbone")
     parser.add_argument("--lr-head", type=float, default=2e-4, help="Learning rate for geometric head")
     parser.add_argument("--eval", action="store_true", help="Run quantitative evaluation benchmark")
