@@ -1,114 +1,145 @@
 # Dioptra: An Ultra-Lightweight Geometry-Aware Architecture for Monocular Metric Depth on Edge Devices
 
-[![arXiv](https://img.shields.io/badge/arXiv-Preprint-b31b1b.svg)](https://github.com/SeranomTheGreat/dioptra)
-[![Parameters](https://img.shields.io/badge/Parameters-8.1M-blue.svg)](https://github.com/SeranomTheGreat/dioptra)
-[![Inference Speed](https://img.shields.io/badge/Apple%20M3-18.9%20FPS%20(52.8ms)-success.svg)](https://github.com/SeranomTheGreat/dioptra)
-[![NVIDIA T4](https://img.shields.io/badge/NVIDIA%20T4-35.4%20FPS%20(28.2ms)-green.svg)](https://github.com/SeranomTheGreat/dioptra)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![PyTorch 2.0+](https://img.shields.io/badge/pytorch-2.0+-ee4c2c.svg)](https://pytorch.org/)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-**Dioptra** is an ultra-lightweight ($8.1$\,M parameters, $32.4$\,MB FP32 footprint) monocular metric depth estimator engineered for edge robotics, micro-UAVs, and mobile compute platforms. 
+Official PyTorch implementation and evaluation benchmark for **Dioptra**, an 8.1M parameter vision transformer for monocular metric depth estimation on resource-constrained edge hardware.
 
-By eliminating massive pre-trained vision backbones in favor of explicit camera geometry, Dioptra incorporates two complementary inductive biases:
-1. **Trivision Ray Embeddings**: Non-collinear optical ray triplets $(\hat{\mathbf{r}}_c, \hat{\mathbf{r}}_1, \hat{\mathbf{r}}_2)$ derived from camera intrinsics $\mathbf{K}$ that physically ground absolute metric scale calibration.
-2. **Angular Residual Attention (ARA)**: An intrinsic-conditioned self-attention regularizer that penalizes off-axis spatial deformation, enforcing physical surface planarity and cutting surface normal angular error by up to $12.2^\circ$.
-3. **Layer-Shared Geometric Caching**: Pre-computing the layer-invariant angular distance matrix $\sin^2(\theta_{q,k})$ once per image ($1.26$\,ms) cuts ARA runtime overhead by $>90\%$, accelerating steady-state forward inference from $98.4$\,ms to **$52.8$\,ms ($18.9$\,FPS)** on consumer Apple Silicon M3 GPUs with bit-for-bit mathematical equivalence ($\Delta = 0.00000000$).
+Rather than adapting multi-hundred-million parameter vision foundation models, Dioptra formulates depth prediction directly through camera intrinsics $\mathbf{K}$ using two complementary geometric inductive biases:
+
+1. **Trivision Ray Positional Embeddings**: Unprojects non-collinear optical ray triplets $(\hat{\mathbf{r}}_c, \hat{\mathbf{r}}_1, \hat{\mathbf{r}}_2)$ per patch token to establish metric scale calibration.
+2. **Angular Residual Attention (ARA)**: An intrinsic-conditioned self-attention regularizer that penalizes off-axis spatial deformation, enforcing physical surface planarity and cutting surface normal error.
+3. **Layer-Shared Geometric Caching**: Because ray angles depend only on camera geometry, the pairwise distance matrix $\sin^2(\theta_{q,k})$ is computed once per frame ($1.26$\,ms) and shared across all 10 transformer blocks. This reduces ARA overhead by $>90\%$, delivering steady-state inference at **18.9 FPS (52.8 ms)** on an Apple M3 GPU and **35.4 FPS (28.2 ms)** on an NVIDIA T4 with bit-for-bit mathematical equivalence ($\Delta = 0.00000000$).
 
 ---
 
-## 📊 Benchmark Highlights
+## Benchmark Results
 
-### 1. Component Ablation & Metric Accuracy (40 Held-Out Challenge Frames)
-Evaluated on uncompressed floating-point ground truth depth arrays ($\texttt{\_depth.npy}$) across three unseen TartanAir environments (*abandonedfactory*, *abandonedfactory_night*, *amusement*) under dual NVIDIA T4 from-scratch 24-epoch retraining:
+### Component Ablation Across 40 Held-Out Challenge Frames
+Evaluated on uncompressed floating-point ground truth depth arrays ($\texttt{\_depth.npy}$) across three strictly unseen evaluation environments (*abandonedfactory*, *abandonedfactory_night*, *amusement*) under from-scratch 24-epoch retraining on dual NVIDIA T4 GPUs:
 
 | Model / Ablation Variant | Ray Embedding | ARA Bias | Training $\mathbf{K}$ | Aligned AbsRel $\downarrow$ | Raw Metric AbsRel $\downarrow$ | Raw Metric $\delta_1$ $\uparrow$ | Surface Normal Error $\downarrow$ | M3 Latency |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Dioptra Full (Stage 2)** | **Trivision** | **Gate = 1.0** | **Dynamic** | **0.5944** | **0.7420** | **24.49%** | **56.86°** | **52.8 ms (Cached)** |
+| **Dioptra Stage 2 (Headline)** | **Trivision** | **Gate = 1.0** | **Dynamic** | **0.5944** | **0.7420** | **24.49%** | **56.86°** | **52.8 ms (Cached)** |
 | Stage 1 Baseline (24 Ep.) | Trivision | Gate = 1.0 | Fixed Canonical | 0.5545 | 0.7771 | 22.45% | 55.22° | 98.4 ms |
 | Retrained Without ARA (24 Ep.) | Trivision | Disabled | Fixed Canonical | 0.5836 | 0.7458 | 18.79% | 58.99° (+3.77°) | 52.4 ms |
 | Retrained Center-Ray PE (24 Ep.) | Center-Ray | Gate = 1.0 | Fixed Canonical | 0.5226 | 0.8909 | 22.62% | 55.45° | 101.2 ms |
 | Retrained 2D ViT (24 Ep.) | None (2D Patch) | Disabled | Fixed Canonical | 0.5468 | 0.8918 | 18.57% | 56.13° | 51.8 ms |
 
-> **Key Finding**: While oracle median scaling masks scale drift in naive 2D ViT and Center-Ray baselines, raw metric evaluation reveals that geometric ray embeddings purchase true metric scale calibration ($0.7420$ vs. $0.8918$), while ARA enforces physical surface planarity and boundary sharpness.
+*Note on Evaluation Protocol*: While oracle median scaling masks scale drift in naive 2D ViT and Center-Ray baselines, raw metric evaluation reveals that geometric ray embeddings anchor physical scale ($0.7420$ vs. $0.8918$), while ARA enforces physical surface planarity and boundary sharpness.
 
-### 2. Optical Focal Invariance (Out-of-Distribution FOV Sweep)
-Under extreme focal variations ($50^\circ$ telephoto to $100^\circ$ wide-angle):
-- **Fixed-$\mathbf{K}$ Baseline**: Suffers severe scale drift as focal length varies, degrading to $0.7198$ AbsRel at $50^\circ$.
-- **Dioptra (Dynamic Pinhole)**: Maintains scale equivariance across optical configurations, delivering a **$-55.9\%$ error reduction** under telephoto optics.
+### Out-of-Distribution Focal Invariance (FOV Sweep)
+Under focal length shifts from $50^\circ$ telephoto to $100^\circ$ wide-angle:
+- **Fixed-$\mathbf{K}$ Baseline**: Degrades to $0.7198$ AbsRel at $50^\circ$.
+- **Dioptra (Dynamic Pinhole)**: Maintains scale equivariance across optical configurations, reducing telephoto error by up to **$-55.9\%$**.
 
 ---
 
-## 🚀 Quick Start
+## Getting Started
 
 ### Installation
 ```bash
 git clone https://github.com/SeranomTheGreat/dioptra.git
 cd dioptra
 
-# Install lightweight dependencies (no heavy proprietary packages needed)
-pip install torch torchvision numpy matplotlib
+# Create environment and install dependencies
+python3 -m venv .venv
+source .venv/bin/activate
+pip install torch torchvision numpy pillow matplotlib
 ```
 
-### Architecture Verification & Unit Tests
-Verify parameter count ($8.1$\,M) and execute the 16-point architectural test suite:
+### Verification & Unit Tests
+Run the 16-point unit test suite covering ray geometry, numerical stability, chiral reflection, and caching:
 ```bash
-# Count parameters
-python3 dioptra.py --count
-# Output: Total Trainable Parameters: 8,097,233 (8.1M)
+# Model parameter count (8.1M)
+python dioptra.py --count
 
-# Run full unit test suite (patch embeddings, ARA, cached attention, decoder)
-python3 dioptra.py --test
-# Output: All 16/16 Unit Tests Passed Successfully!
+# Run test suite
+python dioptra.py --test
+
+# Forward pass smoke test
+python dioptra.py --smoke
 ```
 
-### Benchmarking Cached ARA Acceleration
-Benchmark bit-for-bit equivalence and latency speedup between uncached and cached forward passes:
+### Benchmarking Precomputed ARA Caching
+Verify mathematical bit-for-bit equivalence and measure latency speedup:
 ```bash
-python3 dioptra.py --benchmark-cache
-```
-
-### Interactive 3D Mesh Visualization
-Open the interactive 3D benchmark viewer in your browser to inspect ground truth vs. predicted 3D surface meshes:
-```bash
-open view_lobby_benchmark_3d.html
+python dioptra.py --benchmark-cache
 ```
 
 ---
 
-## 📁 Repository Structure
+## Evaluation
+
+Run evaluation on the multi-domain challenge test set:
+```bash
+python eval.py
+```
+Output comparison figures and error heatmaps will be generated in `test_outputs/`.
+
+---
+
+## Training and Reproduction
+
+Detailed training workflows are provided in:
+- [`KAGGLE_SETUP.md`](KAGGLE_SETUP.md): Dual NVIDIA T4 training and ablation scripts.
+- [`MAC_SETUP.md`](MAC_SETUP.md): Apple Silicon MPS hardware acceleration and memory budgeting.
+- [`notebooks/train_kaggle.ipynb`](notebooks/train_kaggle.ipynb): Training notebook for Stage 1 and Stage 2 fine-tuning.
+- [`notebooks/ablation_kaggle.ipynb`](notebooks/ablation_kaggle.ipynb): Notebook reproducing from-scratch component ablations.
+
+```bash
+# Stage 1 training (24 epochs, canonical intrinsics)
+python dioptra.py --train auto --epochs 24 --batch_size 8 --accum_steps 6
+
+# Stage 2 dynamic pinhole fine-tuning (15 epochs)
+python dioptra.py --train auto --resume outputs/checkpoint_epoch24.pt --epochs 15 --dynamic-crop
+```
+
+---
+
+## Interactive 3D Visualization
+
+Dioptra includes an interactive WebGL 3D point cloud and surface mesh visualizer comparing ground truth depth with model predictions:
+```bash
+open demo/viewer_3d.html
+```
+
+---
+
+## Repository Structure
 
 ```
 dioptra/
-├── dioptra.py                     # Primary architecture entrypoint and CLI interface
-├── tesseract.py                   # Core Dioptra transformer with ARA and caching
-├── tesseract_mac.py               # Metal Performance Shaders (MPS) profiling script
-├── evaluate_diverse_testset.py    # 40-frame multi-domain evaluation benchmark
-├── view_lobby_benchmark_3d.html   # WebGL 3D point cloud and mesh comparison viewer
-├── paper/                         # Complete preprint LaTeX source and publication figures
-│   ├── main.tex                   # Main manuscript
-│   ├── sections/                  # Modular paper sections (00-06)
-│   ├── figures/                   # All 9 publication-grade figures (PNG)
-│   └── references.bib             # Bibliography
-├── KAGGLE_SETUP.md                # Multi-GPU Kaggle training guide
-└── MAC_SETUP.md                   # Apple Silicon setup & MPS acceleration notes
+├── dioptra.py             # Core model architecture, ray geometry, and training pipeline
+├── eval.py                # Evaluation benchmark runner on held-out test frames
+├── dioptra_mac.py         # Apple Silicon (MPS) profiling and inference runner
+├── assets/                # Sample input images and test textures
+├── demo/                  # Interactive 3D WebGL mesh viewer (viewer_3d.html)
+├── notebooks/             # Kaggle training and ablation notebooks
+├── scripts/               # Dataset download and preprocessing scripts
+├── paper/                 # Complete preprint LaTeX source, bibliography, and figures
+├── KAGGLE_SETUP.md        # Kaggle reproduction instructions
+└── MAC_SETUP.md           # Apple Silicon MPS documentation
 ```
 
 ---
 
-## 📄 Paper & Citation
+## Citation
 
-If you use Dioptra in your research, please cite our preprint:
+If you find this work useful in your research, please cite our preprint:
 
 ```bibtex
-@article{dioptra2026,
+@article{harryson2026dioptra,
   title={Dioptra: An Ultra-Lightweight Geometry-Aware Architecture for Monocular Metric Depth on Edge Devices},
-  author={Yumnam Harryson and Contributors},
+  author={Harryson, Yumnam},
   journal={arXiv preprint},
-  year={2026},
-  url={https://github.com/SeranomTheGreat/dioptra}
+  year={2026}
 }
 ```
 
 ---
 
-## 📜 License
-This project is licensed under the Apache 2.0 License.
+## License
+
+This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.

@@ -719,3 +719,33 @@ Tesseract v1 — Configuration Summary
 2026-09-08 05:45:35,672 WARNING tesseract: OOM detected, halving batch_size: 3 → 2
 2026-09-08 05:45:35,927 WARNING tesseract: cam_left.json not found for carwelding/P000; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
 2026-09-08 05:45:35,927 INFO tesseract: TartanAirDataset: 1 samples, difficulty=easy, split=train
+2026-09-08 06:38:49,749 WARNING tesseract: OOM detected, halving batch_size: 8 → 4
+2026-09-08 06:38:49,749 WARNING tesseract: OOM detected, halving batch_size: 4 → 2
+2026-09-08 06:38:49,749 WARNING tesseract: OOM detected, halving batch_size: 2 → 2
+2026-09-08 06:38:49,749 WARNING tesseract: OOM detected, halving batch_size: 3 → 2
+2026-09-08 06:38:50,002 WARNING tesseract: cam_left.json not found for carwelding/P000; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-08 06:38:50,003 INFO tesseract: TartanAirDataset: 1 samples, difficulty=easy, split=train
+2026-09-08 06:39:25,667 WARNING __main__: OOM detected, halving batch_size: 8 → 4
+2026-09-08 06:39:25,667 WARNING __main__: OOM detected, halving batch_size: 4 → 2
+2026-09-08 06:39:25,667 WARNING __main__: OOM detected, halving batch_size: 2 → 2
+2026-09-08 06:39:25,667 WARNING __main__: OOM detected, halving batch_size: 3 → 2
+2026-09-08 06:39:25,925 WARNING __main__: cam_left.json not found for carwelding/P000; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-08 06:39:25,925 INFO __main__: TartanAirDataset: 1 samples, difficulty=easy, split=train
+2026-09-08 06:39:39,087 WARNING dioptra: OOM detected, halving batch_size: 8 → 4
+2026-09-08 06:39:39,087 WARNING dioptra: OOM detected, halving batch_size: 4 → 2
+2026-09-08 06:39:39,087 WARNING dioptra: OOM detected, halving batch_size: 2 → 2
+2026-09-08 06:39:39,087 WARNING dioptra: OOM detected, halving batch_size: 3 → 2
+2026-09-08 06:39:39,339 WARNING dioptra: cam_left.json not found for carwelding/P000; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-08 06:39:39,340 INFO dioptra: TartanAirDataset: 1 samples, difficulty=easy, split=train
+2026-09-08 06:42:05,212 WARNING __main__: OOM detected, halving batch_size: 8 → 4
+2026-09-08 06:42:05,213 WARNING __main__: OOM detected, halving batch_size: 4 → 2
+2026-09-08 06:42:05,213 WARNING __main__: OOM detected, halving batch_size: 2 → 2
+2026-09-08 06:42:05,213 WARNING __main__: OOM detected, halving batch_size: 3 → 2
+2026-09-08 06:42:05,462 WARNING __main__: cam_left.json not found for carwelding/P000; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-08 06:42:05,463 INFO __main__: TartanAirDataset: 1 samples, difficulty=easy, split=train
+2026-09-08 06:42:11,339 WARNING dioptra: OOM detected, halving batch_size: 8 → 4
+2026-09-08 06:42:11,339 WARNING dioptra: OOM detected, halving batch_size: 4 → 2
+2026-09-08 06:42:11,339 WARNING dioptra: OOM detected, halving batch_size: 2 → 2
+2026-09-08 06:42:11,339 WARNING dioptra: OOM detected, halving batch_size: 3 → 2
+2026-09-08 06:42:11,571 WARNING dioptra: cam_left.json not found for carwelding/P000; using 90° FOV default intrinsics (may be wrong for non-TartanAir data).
+2026-09-08 06:42:11,571 INFO dioptra: TartanAirDataset: 1 samples, difficulty=easy, split=train
