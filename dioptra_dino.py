@@ -21,12 +21,15 @@ from __future__ import annotations
 
 import argparse
 import glob
+import io
 import math
 import os
 import random
 import sys
 import time
+import zipfile
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -784,20 +787,212 @@ def apply_dynamic_pinhole_crop(
 
 
 # ---------------------------------------------------------------------------
+# TartanAir Dataset Discovery & Resolution
+# ---------------------------------------------------------------------------
+
+_TARTANAIR_DIFFS = {"Easy", "Medium", "Hard", "easy", "medium", "hard"}
+_MAX_SCAN_DEPTH = 5
+_SCAN_SKIP_DIRS = {".ipynb_checkpoints", "__pycache__", ".git", "__MACOSX"}
+
+
+def _dir_looks_like_tartanair(root: Path) -> bool:
+    """Cheap structural probe: does root match either TartanAir layout?"""
+    try:
+        tops = [d for d in root.iterdir() if d.is_dir()]
+    except OSError:
+        return False
+    if not tops:
+        return False
+    if any(t.name in _TARTANAIR_DIFFS for t in tops):
+        return True  # layout B root: {difficulty}/{env}/...
+    for t in tops[:64]:
+        try:
+            if any(c.name in _TARTANAIR_DIFFS for c in t.iterdir() if c.is_dir()):
+                return True  # layout A root: {env}/{difficulty}/...
+        except OSError:
+            continue
+    return False
+
+
+def _zip_looks_like_tartanair(zip_path: Path) -> bool:
+    """True if the archive contains image_left/ + depth_left/ members."""
+    try:
+        with zipfile.ZipFile(zip_path, "r") as zf:
+            names = zf.namelist()
+    except (zipfile.BadZipFile, OSError):
+        return False
+    has_img = any("/image_left/" in n for n in names)
+    has_depth = any("/depth_left/" in n for n in names)
+    return has_img and has_depth
+
+
+def _enumerate_input_mounts(base: Path) -> List[str]:
+    try:
+        children = sorted(d for d in base.iterdir() if d.is_dir())
+    except OSError:
+        return []
+    mounts: List[str] = []
+    for c in children:
+        if c.name == "datasets":
+            try:
+                for o in sorted(d for d in c.iterdir() if d.is_dir()):
+                    for s in sorted(d for d in o.iterdir() if d.is_dir()):
+                        mounts.append(f"datasets/{o.name}/{s.name}")
+            except OSError:
+                mounts.append("datasets/")
+        else:
+            mounts.append(c.name)
+    return mounts
+
+
+def _deep_find_tartanair(base: Path) -> Tuple[List[Path], List[Tuple[Path, int]]]:
+    dir_hits: List[Path] = []
+    zip_hits: List[Tuple[Path, int]] = []
+    seen = set()
+    stack: List[Tuple[Path, int]] = [(base, 0)]
+    while stack:
+        d, depth = stack.pop()
+        try:
+            key = str(d.resolve())
+        except OSError:
+            key = str(d)
+        if key in seen:
+            continue
+        seen.add(key)
+        if _dir_looks_like_tartanair(d):
+            dir_hits.append(d)
+            continue
+        if depth >= _MAX_SCAN_DEPTH:
+            continue
+        try:
+            entries = sorted(d.iterdir(), key=lambda p: p.name)
+        except OSError:
+            continue
+        for e in entries:
+            if e.is_dir():
+                if e.name in _SCAN_SKIP_DIRS:
+                    continue
+                stack.append((e, depth + 1))
+            elif e.is_file() and e.suffix.lower() == ".zip":
+                try:
+                    size = e.stat().st_size
+                except OSError:
+                    continue
+                if size < 1_048_576:
+                    continue
+                if _zip_looks_like_tartanair(e):
+                    zip_hits.append((e, size))
+    dir_hits.sort(key=str)
+    zip_hits.sort(key=lambda t: t[1], reverse=True)
+    return dir_hits, zip_hits
+
+
+def _resolve_single_mount(cand: Path) -> Optional[Path]:
+    if cand.is_file() and cand.suffix.lower() == ".zip":
+        return cand
+    if not cand.is_dir():
+        return None
+    if _dir_looks_like_tartanair(cand):
+        return cand
+    try:
+        subdirs = [d for d in sorted(cand.iterdir()) if d.is_dir()]
+    except OSError:
+        subdirs = []
+    for sd in subdirs[:16]:
+        if _dir_looks_like_tartanair(sd):
+            return sd
+    try:
+        zips = sorted(
+            (f for f in cand.glob("*.zip") if f.is_file()),
+            key=lambda f: f.stat().st_size, reverse=True,
+        )
+    except OSError:
+        zips = []
+    for z in zips:
+        if _zip_looks_like_tartanair(z):
+            return z
+    dir_hits, zip_hits = _deep_find_tartanair(cand)
+    if dir_hits:
+        return dir_hits[0]
+    if zip_hits:
+        return zip_hits[0][0]
+    # Fallback: check if directory contains png or zip files
+    try:
+        if any(cand.glob("**/*.png")) or any(cand.glob("**/*.zip")):
+            return cand
+    except OSError:
+        pass
+    return None
+
+
+def resolve_dataset_root(path: str = "auto") -> str:
+    """Resolve a --train argument into a usable dataset root (str).
+
+    Accepts 'auto', explicit directory path, nested mount path, or .zip archive.
+    """
+    if not path or str(path).lower() in ("auto", "none"):
+        scan_roots: List[Path] = []
+        env_dir = os.environ.get("TESSERACT_INPUT_DIR") or os.environ.get("DATA_PATH")
+        if env_dir and Path(env_dir).exists():
+            scan_roots.append(Path(env_dir))
+        if Path("/kaggle/input").is_dir():
+            scan_roots.append(Path("/kaggle/input"))
+        for candidate in [Path("."), Path(".."), Path("/kaggle/working")]:
+            if candidate.is_dir():
+                scan_roots.append(candidate)
+
+        mount_names: List[str] = []
+        for r in scan_roots:
+            mount_names.extend(_enumerate_input_mounts(r))
+
+        dir_hits: List[Path] = []
+        zip_hits: List[Tuple[Path, int]] = []
+        for r in scan_roots:
+            dh, zh = _deep_find_tartanair(r)
+            dir_hits.extend(dh)
+            zip_hits.extend(zh)
+
+        if dir_hits:
+            print(f"[Dioptra-DINO Dataset] Resolved 'auto' -> directory: {dir_hits[0]}")
+            return str(dir_hits[0])
+        if zip_hits:
+            print(f"[Dioptra-DINO Dataset] Resolved 'auto' -> zip archive: {zip_hits[0][0]} ({zip_hits[0][1]/(1024*1024):.1f} MB)")
+            return str(zip_hits[0][0])
+
+        raise FileNotFoundError(
+            "Could not auto-resolve TartanAir dataset from /kaggle/input.\n"
+            f"  Scanned: {', '.join(str(r) for r in scan_roots)}\n"
+            f"  Mounted inputs: {', '.join(mount_names) if mount_names else 'None'}\n"
+            "Please ensure 'dasvo-tartanair-rgb-d-validation-split' is attached as an Input in the right sidebar."
+        )
+
+    p = Path(path)
+    resolved = _resolve_single_mount(p)
+    if resolved is not None:
+        return str(resolved)
+    if p.exists():
+        return str(p)
+    raise FileNotFoundError(
+        f"Could not resolve TartanAir dataset from: {path}\n"
+        "Expected directory or .zip containing image_left/ and depth_left/ folders."
+    )
+
+
+# ---------------------------------------------------------------------------
 # TartanAir Dataset Loader for Dioptra-DINO
 # ---------------------------------------------------------------------------
 
 class TartanAirDINODataset(torch.utils.data.Dataset):
-    """TartanAir dataset loader supporting flat and nested directory structures."""
+    """Robust TartanAir dataset loader supporting flat, nested, and zip-backed layouts."""
 
     def __init__(
         self,
-        root_dir: str,
+        root_dir: str = "auto",
         split: str = "train",
         image_size: int = 224,
         apply_pinhole_aug: bool = True,
     ):
-        self.root_dir = root_dir
+        self.root_dir = resolve_dataset_root(root_dir)
         self.split = split
         self.image_size = image_size
         self.apply_pinhole_aug = apply_pinhole_aug and (split == "train")
@@ -809,22 +1004,95 @@ class TartanAirDINODataset(torch.utils.data.Dataset):
             [0.0, 0.0, 1.0],
         ], dtype=np.float32)
 
-        self.samples = []
-        self._find_samples()
-        print(f"[Dioptra-DINO Dataset] Found {len(self.samples)} {split} samples in {root_dir}")
+        self._is_zip = str(self.root_dir).lower().endswith(".zip")
+        self._zip_cache: Dict[str, zipfile.ZipFile] = {}
+        self._zip_cache_pid: Optional[int] = None
 
-    def _find_samples(self):
+        self.samples: List[Tuple[str, str]] = []
+        self._build_index()
+        print(f"[Dioptra-DINO Dataset] Successfully indexed {len(self.samples)} {split} samples from {self.root_dir}")
+
+    @staticmethod
+    def _normalize_stem(stem: str) -> str:
+        for tag in ("_depth", "_og", "_left"):
+            if stem.endswith(tag):
+                stem = stem[:-len(tag)]
+        return stem
+
+    def _zip_read(self, zip_path: str, member: str) -> bytes:
+        pid = os.getpid()
+        if self._zip_cache_pid != pid:
+            self._zip_cache = {}
+            self._zip_cache_pid = pid
+        zf = self._zip_cache.get(zip_path)
+        if zf is None:
+            zf = zipfile.ZipFile(zip_path, "r")
+            self._zip_cache[zip_path] = zf
+        with zf.open(member) as f:
+            return f.read()
+
+    def _build_index(self):
+        if self._is_zip:
+            self._build_index_zip()
+        else:
+            self._build_index_tree()
+
+        # Graceful fallback: if split filtering yielded 0 samples, include all found pairs
+        if len(self.samples) == 0:
+            if self._is_zip:
+                self._build_index_zip(force_all=True)
+            else:
+                self._build_index_tree(force_all=True)
+
+    def _build_index_zip(self, force_all: bool = False):
+        with zipfile.ZipFile(self.root_dir, "r") as zf:
+            names = [n for n in zf.namelist() if not n.endswith("/")]
+
+        img_map: Dict[str, str] = {}
+        depth_map: Dict[str, str] = {}
+
+        for n in names:
+            nl = n.lower()
+            if "/image_left/" in n and nl.endswith(".png"):
+                parts = n.split("/image_left/")
+                traj_prefix = parts[0]
+                fname = os.path.basename(parts[1])
+                stem = self._normalize_stem(os.path.splitext(fname)[0])
+                img_map[f"{traj_prefix}::{stem}"] = n
+            elif "/depth_left/" in n and nl.endswith(".npy"):
+                parts = n.split("/depth_left/")
+                traj_prefix = parts[0]
+                fname = os.path.basename(parts[1])
+                stem = self._normalize_stem(os.path.splitext(fname)[0])
+                depth_map[f"{traj_prefix}::{stem}"] = n
+
+        for key, img_path in sorted(img_map.items()):
+            if key in depth_map:
+                traj = key.split("::")[0]
+                is_val = (hash(traj) % 10) == 0
+                if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
+                    self.samples.append((img_path, depth_map[key]))
+
+    def _build_index_tree(self, force_all: bool = False):
         png_files = sorted(glob.glob(os.path.join(self.root_dir, "**", "*.png"), recursive=True))
         for img_path in png_files:
-            base_dir = os.path.dirname(img_path)
             fname = os.path.basename(img_path)
+            if "depth" in fname.lower():
+                continue
+            base_dir = os.path.dirname(img_path)
             stem = os.path.splitext(fname)[0]
+            clean = self._normalize_stem(stem)
 
+            # Check candidate depth files across all TartanAir directory and naming schemes
             cand_depths = [
-                os.path.join(base_dir, f"{stem}.npy"),
-                os.path.join(base_dir, f"{stem}_depth.npy"),
-                os.path.join(base_dir.replace("image_left", "depth_left"), f"{stem}_left_depth.npy"),
+                os.path.join(base_dir.replace("image_left", "depth_left"), f"{clean}_left_depth.npy"),
+                os.path.join(base_dir.replace("image_left", "depth_left"), f"{clean}.npy"),
+                os.path.join(base_dir.replace("image_left", "depth_left"), f"{stem}_depth.npy"),
                 os.path.join(base_dir.replace("image_left", "depth_left"), f"{stem}.npy"),
+                os.path.join(base_dir, f"{clean}_depth.npy"),
+                os.path.join(base_dir, f"{clean}.npy"),
+                os.path.join(base_dir, f"{stem}_depth.npy"),
+                os.path.join(base_dir, f"{stem}.npy"),
             ]
             depth_path = None
             for c in cand_depths:
@@ -833,22 +1101,36 @@ class TartanAirDINODataset(torch.utils.data.Dataset):
                     break
 
             if depth_path:
-                self.samples.append((img_path, depth_path))
+                traj_name = os.path.dirname(base_dir)
+                is_val = (hash(traj_name) % 10) == 0
+                if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
+                    self.samples.append((img_path, depth_path))
 
     def __len__(self) -> int:
         return len(self.samples)
 
     def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Tensor]:
-        img_path, depth_path = self.samples[idx]
+        img_src, depth_src = self.samples[idx]
 
+        from PIL import Image as PILImage
+
+        # Load RGB image
         try:
-            from PIL import Image as PILImage
-            img = np.array(PILImage.open(img_path).convert("RGB"))
+            if self._is_zip:
+                img_data = self._zip_read(self.root_dir, img_src)
+                img = np.array(PILImage.open(io.BytesIO(img_data)).convert("RGB"))
+            else:
+                img = np.array(PILImage.open(img_src).convert("RGB"))
         except Exception:
             img = np.zeros((480, 640, 3), dtype=np.uint8)
 
+        # Load Depth map (npy in metres)
         try:
-            depth = np.load(depth_path).astype(np.float32)
+            if self._is_zip:
+                depth_data = self._zip_read(self.root_dir, depth_src)
+                depth = np.load(io.BytesIO(depth_data)).astype(np.float32)
+            else:
+                depth = np.load(depth_src).astype(np.float32)
         except Exception:
             depth = np.zeros((480, 640), dtype=np.float32)
 
@@ -868,7 +1150,6 @@ class TartanAirDINODataset(torch.utils.data.Dataset):
             K[0, 2] *= scale_x
             K[1, 2] *= scale_y
 
-            from PIL import Image as PILImage
             img = np.array(PILImage.fromarray(img).resize((self.image_size, self.image_size), PILImage.BILINEAR))
             depth = np.array(PILImage.fromarray(depth).resize((self.image_size, self.image_size), PILImage.NEAREST))
 
@@ -894,7 +1175,10 @@ def train_dioptra_dino(args):
     device = torch.device("cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu"))
     print(f"Compute Device : {device}")
     if torch.cuda.is_available():
-        print(f"GPU Model      : {torch.cuda.get_device_name(0)} (Count: {torch.cuda.device_count()})")
+        gpu_count = torch.cuda.device_count()
+        print(f"GPU Model      : {torch.cuda.get_device_name(0)} (Count: {gpu_count})")
+    else:
+        gpu_count = 0
 
     cfg = DioptraDINOConfig(
         epochs=args.epochs,
@@ -906,17 +1190,67 @@ def train_dioptra_dino(args):
     model = DioptraDINO(cfg).to(device)
     loss_fn = DioptraDINOLoss(cfg).to(device)
 
-    # Optimizer with differential learning rate
+    # Multi-GPU support via DataParallel
+    if torch.cuda.is_available() and gpu_count > 1:
+        print(f"[Dioptra-DINO] Multi-GPU acceleration enabled across {gpu_count} GPUs via DataParallel!")
+        model = nn.DataParallel(model)
+
+    raw_model = model.module if hasattr(model, "module") else model
+
+    # Optimizer with differential learning rates
     param_groups = [
-        {"params": model.backbone.parameters(), "lr": cfg.lr_backbone, "weight_decay": cfg.weight_decay},
-        {"params": [p for n, p in model.named_parameters() if not n.startswith("backbone.")], "lr": cfg.lr_head, "weight_decay": cfg.weight_decay},
+        {"params": raw_model.backbone.parameters(), "lr": cfg.lr_backbone, "weight_decay": cfg.weight_decay},
+        {"params": [p for n, p in raw_model.named_parameters() if not n.startswith("backbone.")], "lr": cfg.lr_head, "weight_decay": cfg.weight_decay},
     ]
     optimizer = torch.optim.AdamW(param_groups, betas=(0.9, 0.999))
-    scaler = torch.cuda.amp.GradScaler(enabled=cfg.use_amp and torch.cuda.is_available())
 
-    dataset = TartanAirDINODataset(root_dir=args.train, split="train", image_size=cfg.image_size)
+    # Modern AMP GradScaler (deprecation-free)
+    try:
+        scaler = torch.amp.GradScaler("cuda", enabled=cfg.use_amp and torch.cuda.is_available())
+    except (AttributeError, TypeError):
+        scaler = torch.cuda.amp.GradScaler(enabled=cfg.use_amp and torch.cuda.is_available())
+
+    # Resolve and instantiate TartanAir dataset
+    train_root_arg = args.train or "auto"
+    dataset_root = resolve_dataset_root(train_root_arg)
+    print(f"[Dioptra-DINO Dataset] Active dataset root: {dataset_root}")
+
+    # Prefer dioptra's TartanAirDataset if available, fallback to internal TartanAirDINODataset
+    dataset = None
+    try:
+        # Check if dioptra is available in path
+        for p in [os.getcwd(), os.path.dirname(os.path.abspath(__file__)), "/kaggle/working", "/kaggle/working/dioptra_repo"]:
+            if os.path.isdir(p) and p not in sys.path:
+                sys.path.insert(0, p)
+        from dioptra import TartanAirDataset, DataConfig
+        dataset = TartanAirDataset(
+            root=dataset_root,
+            difficulty="all",
+            split="train",
+            img_size=cfg.image_size,
+            augment=True,
+            cfg=DataConfig(),
+        )
+        print(f"[Dioptra-DINO Dataset] Successfully loaded TartanAirDataset with {len(dataset):,} samples ✓")
+    except Exception as exc:
+        print(f"[Dioptra-DINO Dataset] Using built-in TartanAirDINODataset ({exc})")
+        dataset = TartanAirDINODataset(root_dir=dataset_root, split="train", image_size=cfg.image_size)
+
+    if len(dataset) == 0:
+        raise ValueError(
+            f"Found 0 training samples in {dataset_root}!\n"
+            "Please ensure TartanAir is attached to this Kaggle notebook:\n"
+            "Right Sidebar -> Input -> '+ Add Input' -> search 'dasvo-tartanair-rgb-d-validation-split' by pandrii000."
+        )
+
+    num_workers = min(4, os.cpu_count() or 1)
     dataloader = torch.utils.data.DataLoader(
-        dataset, batch_size=cfg.batch_size, shuffle=True, num_workers=min(4, os.cpu_count() or 1), pin_memory=True
+        dataset,
+        batch_size=cfg.batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=torch.cuda.is_available(),
+        drop_last=True,
     )
 
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=cfg.epochs * len(dataloader))
@@ -924,21 +1258,36 @@ def train_dioptra_dino(args):
     output_dir = "outputs_dino"
     os.makedirs(output_dir, exist_ok=True)
 
-    print(f"Training parameters: Epochs={cfg.epochs}, Batches/Epoch={len(dataloader)}, EffBatchSize={cfg.batch_size * cfg.gradient_accumulation_steps}")
+    print(f"Training configuration: Epochs={cfg.epochs}, Batches/Epoch={len(dataloader)}, "
+          f"BatchSize={cfg.batch_size} (EffBatchSize={cfg.batch_size * cfg.gradient_accumulation_steps})")
+
+    # Autocast context helper
+    def get_autocast_context(enabled: bool):
+        if torch.cuda.is_available():
+            if hasattr(torch, "amp") and hasattr(torch.amp, "autocast"):
+                return torch.amp.autocast(device_type="cuda", enabled=enabled)
+            return torch.cuda.amp.autocast(enabled=enabled)
+        return torch.cpu.amp.autocast(enabled=False) if hasattr(torch, "cpu") else torch.cuda.amp.autocast(enabled=False)
 
     for epoch in range(cfg.epochs):
         model.train()
         epoch_loss = 0.0
         t_start = time.time()
 
-        for step, (images, depths, Ks) in enumerate(dataloader):
-            images = images.to(device, non_blocking=True)
-            depths = depths.to(device, non_blocking=True)
-            Ks = Ks.to(device, non_blocking=True)
+        for step, batch in enumerate(dataloader):
+            if isinstance(batch, dict):
+                images = batch["image"].to(device, non_blocking=True)
+                depths = batch["depth"].to(device, non_blocking=True)
+                Ks = batch["intrinsics"].to(device, non_blocking=True)
+            else:
+                images, depths, Ks = batch
+                images = images.to(device, non_blocking=True)
+                depths = depths.to(device, non_blocking=True)
+                Ks = Ks.to(device, non_blocking=True)
 
             current_gate = min(1.0, float(epoch + step / len(dataloader)) / 3.0)
 
-            with torch.cuda.amp.autocast(enabled=cfg.use_amp and torch.cuda.is_available()):
+            with get_autocast_context(cfg.use_amp and torch.cuda.is_available()):
                 preds = model(images, Ks, ara_gate=current_gate)
                 loss, metrics = loss_fn(preds, depths)
                 loss = loss / cfg.gradient_accumulation_steps
@@ -965,10 +1314,15 @@ def train_dioptra_dino(args):
         mean_loss = epoch_loss / len(dataloader)
         print(f"==> Epoch {epoch+1} Complete! Mean Loss: {mean_loss:.4f}, Runtime: {elapsed:.1f}s")
 
+        save_dict = {
+            "epoch": epoch + 1,
+            "model_state_dict": (model.module if hasattr(model, "module") else model).state_dict(),
+            "cfg": cfg,
+        }
         ckpt_path = os.path.join(output_dir, f"dioptra_dino_epoch_{epoch+1}.pt")
         best_path = os.path.join(output_dir, "dioptra_dino_best.pt")
-        torch.save({"epoch": epoch + 1, "model_state_dict": model.state_dict(), "cfg": cfg}, ckpt_path)
-        torch.save({"epoch": epoch + 1, "model_state_dict": model.state_dict(), "cfg": cfg}, best_path)
+        torch.save(save_dict, ckpt_path)
+        torch.save(save_dict, best_path)
         print(f"Saved checkpoint: {ckpt_path}")
 
     print("\n>>> DIOPTRA-DINO TRAINING COMPLETED SUCCESSFULLY! <<<\n")
@@ -1120,14 +1474,14 @@ if __name__ == "__main__":
     parser.add_argument("--smoke", action="store_true", help="Run forward and backward smoke test")
     parser.add_argument("--count", action="store_true", help="Print detailed parameter audit")
     parser.add_argument("--test", action="store_true", help="Run geometric unit test suite")
-    parser.add_argument("--train", type=str, default=None, help="Path to TartanAir dataset directory")
+    parser.add_argument("--train", type=str, default=None, nargs="?", const="auto", help="Path to TartanAir dataset directory (default: 'auto')")
     parser.add_argument("--epochs", type=int, default=15, help="Number of training epochs")
     parser.add_argument("--batch-size", type=int, default=8, help="Batch size per GPU")
     parser.add_argument("--lr-backbone", type=float, default=2e-5, help="Learning rate for DINOv2 backbone")
     parser.add_argument("--lr-head", type=float, default=2e-4, help="Learning rate for geometric head")
     args = parser.parse_args()
 
-    if args.train:
+    if args.train is not None:
         train_dioptra_dino(args)
     elif args.smoke:
         run_smoke_test()
