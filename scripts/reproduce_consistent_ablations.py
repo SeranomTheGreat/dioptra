@@ -160,30 +160,3 @@ print("FINAL UNIFIED ABLATION RESULTS (Consistent with Table 1):")
 print("="*80)
 for r in results:
     print(f"{r['name']} & {r['params']} & {r['raw_absrel']:.4f} & {r['raw_rmse']:.2f}\\,m & {r['raw_d1']:.1f}\\% & {r['raw_d2']:.1f}\\% & {r['scale']:.3f} & {r['ali_absrel']:.4f} & {r['ali_d1']:.1f}\\% & {r['normal_err']:.2f}$^\\circ$ \\\\")
-
-# Save LaTeX Table Snippet
-latex_snippet_path = "outputs_dino/latex_ablation_table.tex"
-with open(latex_snippet_path, "w") as f:
-    f.write("% Full Empirical Ablation & Model Progression Table\n")
-    f.write("\\begin{table*}[t]\n")
-    f.write("\\centering\n")
-    f.write("\\caption{\\textbf{Comprehensive Empirical Ablation and Model Progression Matrix}. Evaluated across all 47 held-out test frames from 9 distinct virtual environments under identical zero-shot protocols and standardized center-crop preprocessing. Demonstrates the cumulative contributions of ray positional encoding, angular attention bias (ARA), dynamic pinhole crop augmentation, self-supervised foundation initialization, and multi-task 3D virtual normal supervision.}\n")
-    f.write("\\label{tab:ablation_progression}\n")
-    f.write("\\vspace{0.2em}\n")
-    f.write("\\resizebox{\\textwidth}{!}{%\n")
-    f.write("\\begin{tabular}{l c ccccc cc c}\n")
-    f.write("\\toprule\n")
-    f.write("\\textbf{Model Configuration} & \\textbf{Params} & \\multicolumn{5}{c}{\\textbf{Raw Absolute Metric (No Alignment)}} & \\multicolumn{2}{c}{\\textbf{Median-Aligned}} & \\textbf{3D Normal} \\\\\n")
-    f.write("\\cmidrule(lr){3-7} \\cmidrule(lr){8-9} \\cmidrule(lr){10-10}\n")
-    f.write("& & \\textbf{AbsRel} $\\downarrow$ & \\textbf{RMSE (m)} $\\downarrow$ & \\textbf{$\\delta_1 < 1.25$} $\\uparrow$ & \\textbf{$\\delta_2 < 1.25^2$} $\\uparrow$ & \\textbf{Scale} & \\textbf{AbsRel} $\\downarrow$ & \\textbf{$\\delta_1 < 1.25$} $\\uparrow$ & \\textbf{Error (deg)} $\\downarrow$ \\\\\n")
-    f.write("\\midrule\n")
-    for r in results:
-        is_best = "dino_ep26" in r["id"]
-        bold_s = "\\textbf{" if is_best else ""
-        bold_e = "}" if is_best else ""
-        f.write(f"{r['name']} & {r['params']} & {bold_s}{r['raw_absrel']:.4f}{bold_e} & {bold_s}{r['raw_rmse']:.2f}\\,m{bold_e} & {bold_s}{r['raw_d1']:.1f}\\%{bold_e} & {bold_s}{r['raw_d2']:.1f}\\%{bold_e} & {r['scale']:.3f} & {bold_s}{r['ali_absrel']:.4f}{bold_e} & {bold_s}{r['ali_d1']:.1f}\\%{bold_e} & {bold_s}{r['normal_err']:.2f}$^\\circ${bold_e} \\\\\n")
-    f.write("\\bottomrule\n")
-    f.write("\\end{tabular}%\n")
-    f.write("}\n")
-    f.write("\\end{table*}\n")
-print(f"Successfully saved LaTeX table to: {latex_snippet_path}")

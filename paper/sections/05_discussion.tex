@@ -7,37 +7,31 @@ A central design goal of Dioptra-DINO is edge feasibility. Most spatial AI model
 Crucially, Dioptra-DINO's single-image inference consumes under \textbf{$210$\,MB of RAM}, while its complete model parameter footprint is only \textbf{$105.05$\,MB} in FP32 format ($52.5$\,MB in FP16). The lightweight parameter profile enables seamless deployment on micro-aerial vehicles (MAVs), field rovers, and mobile edge robotics.
 
 \subsection{Qualitative Surface Reconstruction \& Normal Consistency}
-As shown in Figure~\ref{fig:method_diagnostic}, depth predictions from Dioptra produce consistent 3D point clouds and surface meshes ($50,176$ vertices, $99,452$ faces). In Panel 3 of Figure~\ref{fig:method_diagnostic}, surface normals derived via numerical spatial gradients:
-\begin{equation}
-    \hat{\mathbf{n}} = \frac{[-\partial z / \partial x, -\partial z / \partial y, 1]^T}{\| [-\partial z / \partial x, -\partial z / \partial y, 1]^T \|}
-\end{equation}
-reveal that the model distinguishes horizontal upward-facing ground planes ($\hat{\mathbf{n}} \approx [0, 1, 0]$, green) from orthogonal vertical building walls and pillars (blue/purple). This normal consistency enables direct export to standard graphics formats (\texttt{.ply}, \texttt{.obj}) for visualization and collision checking.
+As shown in Figure~\ref{fig:teaser}, depth predictions from Dioptra-DINO produce consistent 3D surface geometry. Surface normals derived via spatial cross products reveal that the network distinguishes horizontal upward-facing ground planes from orthogonal vertical building walls and pillars. Multi-Scale Virtual Normal Loss (VNL) supervision achieves a median 3D surface normal error of $39.80^\circ$ ($40.17^\circ$ mean), which is competitive for a compact $27.5$\,M parameter model without external normal estimation backbones.
 
 \subsection{Failure Mode Analysis: Downward Close-ups}
-Analyzing the worst-performing frames (e.g., frames $001318$–$001320$ with $\text{AbsRel} = 1.50$–$2.58$) reveals a distinct failure mode common to monocular depth:
+Analyzing challenging frames (e.g., frames with $\text{AbsRel} > 1.5$) reveals distinct failure modes common to monocular metric depth:
 \begin{enumerate}
     \item \textbf{Foreground Dominance}: When the camera tilts steeply downward facing an obstacle or catwalk within $<0.8$\,m that occupies $>60\%$ of the visual field, the image median anchors strictly to the near plane.
-    \item \textbf{Median Normalization Skew}: Under the standard Eigen evaluation protocol ($\hat{D}_{\text{eval}} = \hat{D} \cdot (\text{median}(D^*) / \text{median}(\hat{D}))$), dividing by an extreme near-field median mathematically explodes the relative error on the small sliver of distant background ($30$\,m away) through dividing by true distance.
-    \item \textbf{Specular and Textureless Highlights}: Extreme specular reflection on flat metallic surfaces eliminates vanishing lines and textural gradients, requiring temporal stereo or IMU fusion for disambiguation.
+    \item \textbf{Median Normalization Skew}: Under standard evaluation protocols, dividing by an extreme near-field median mathematically amplifies relative error on the small sliver of distant background through dividing by true distance.
+    \item \textbf{Specular and Textureless Highlights}: Extreme specular reflection on flat metallic surfaces eliminates vanishing lines and textural gradients, requiring temporal stereo or visual-inertial odometry fusion for disambiguation.
 \end{enumerate}
 
 \subsection{Camera-Intrinsic Equivariance vs. Positional Embedding}
 \label{sec:fov_discussion}
 A critical theoretical question for ray-conditioned networks~\cite{facil2019camconvs,yin2023metric3d,piccinelli2024unidepth} is whether explicit camera parameters $\mathbf{K}$ provide actionable geometric guidance or merely act as a passive coordinate bias. As demonstrated in Section~\ref{sec:fov_and_stratification}, when trained exclusively on fixed-sensor benchmarks such as TartanAir, models can overfit to the static relationship between image coordinates $(u, v)$ and ray vectors $\hat{\mathbf{r}}(u, v)$, rendering the ray embedding functionally equivalent to standard sinusoidal positional encoding. 
 
-Our dynamic pinhole augmentation decouples pixel space from metric ray directions by introducing stochastic window cropping ($L \in [0.55\cdot S_{\max}, S_{\max}]$) and continuous focal/center recalculations. As demonstrated by the up to \textbf{$-69.1\%$ error reduction} across multi-camera field-of-view sweeps (Table~\ref{tab:multi_fov_and_stratification}), conditioning depth decoding on dynamically varying $\hat{\mathbf{r}}(u, v)$ encourages the network to learn optical equivariance:
+Our dynamic pinhole augmentation uncouples pixel space from metric ray directions by introducing stochastic window cropping ($L \in [0.55\cdot S_{\max}, S_{\max}]$) and continuous focal/center recalculations. As demonstrated by the error reductions across multi-camera field-of-view sweeps (Table~\ref{tab:multi_fov_and_stratification}), conditioning depth decoding on dynamically varying $\hat{\mathbf{r}}(u, v)$ encourages the network to learn optical equivariance:
 \begin{equation}
     f_\theta(\mathbf{I} \circ \mathcal{T}_s, \mathbf{K}') \approx f_\theta(\mathbf{I}, \mathbf{K})
 \end{equation}
-where physical 3D scene distances remain invariant under optical focal scaling. The dynamic pinhole formulation completely eliminates catastrophic scale collapse under varying optical configurations. This confirms that Dioptra-DINO's architecture ($27.5$\,M parameters) actively incorporates extrinsic optical physics into its latent representations.
+where physical 3D scene distances remain invariant under optical focal scaling. The dynamic pinhole formulation substantially mitigates scale drift across varying optical configurations (improving the scale calibration ratio to $1.192$ vs. $1.593$ for the canonical 2D ViT). While wide-angle unprojection yields pronounced error drops (up to $-69.1\%$) on structured architectural scenes, performance slightly degrades ($+8.2\%$) in foliage-dense unstructured scenes, illustrating that geometric ray unprojection is most effective when scenes contain clear vanishing cues.
 
-\subsection{Limitations and Experimental Roadmap}
-While Dioptra-DINO demonstrates the viability of camera-grounded geometric embeddings in a compact model ($27.5$\,M parameters), several empirical avenues remain for future exploration:
+\subsection{Limitations and Experimental Scope}
+While Dioptra-DINO demonstrates the viability of camera-grounded geometric embeddings in a compact model ($27.5$\,M parameters), several limitations delineate its experimental scope:
 \begin{itemize}
-    \item \textbf{Direct Benchmark Comparison Against External Baselines}: While our experiments include five full from-scratch retrained controls (Canonical 2D ViT, Center-Ray PE, Without ARA, Stage~1 Baseline, and Stage~2 Headline) isolating each architectural mechanism on identical data splits, comparative analysis against foundation models confirms that Dioptra-DINO offers competitive precision while eliminating the multi-gigabyte memory footprint of billion-parameter models (Table~\ref{tab:env_breakdown}).
-    \item \textbf{Component Ablations and Progression}: As demonstrated in the empirical progression analysis (Section~\ref{sec:ablations} and Table~\ref{tab:ablation_progression}), isolating the geometric attention bias, ray positional encoding, and camera conditioning confirms that ARA reduces surface normal error by $3.70^\circ$, while multi-task DINOv2 integration doubles $\delta_1$ accuracy from $17.6\%$ to $35.3\%$ in raw metric space.
-    \item \textbf{Cross-Domain Real-World Transfer}: The present evaluation is conducted within the diverse TartanAir simulation domain. Evaluating zero-shot transfer onto real-world benchmark datasets (such as NYUv2 and KITTI) and handheld metric LiDAR sensors will provide additional validation for physical robotics deployment.
+    \item \textbf{Architectural Context vs. Head-to-Head Comparison}: While Table~\ref{tab:env_breakdown} includes foundation models (ZoeDepth, Metric3D) to provide orders-of-magnitude context on model size, compute, and reported literature metrics, these models were trained on multi-dataset collections. Our primary empirical claims are strictly grounded in our controlled 7-model ablation matrix within TartanAir, where all variants are trained and evaluated on identical splits with identical protocols.
+    \item \textbf{Controlled Ablation Progression}: As demonstrated in our progression analysis (Section~\ref{sec:ablations} and Table~\ref{tab:ablation_progression}), isolating the geometric attention bias, ray positional encoding, and camera conditioning confirms that ARA improves normal planarity by $3.21^\circ$, while full DINOv2 integration doubles raw $\delta_1$ accuracy from $17.4\%$ to $35.8\%$ in unaligned metric space.
+    \item \textbf{Cross-Domain Real-World Transfer}: The present evaluation is conducted on photorealistic TartanAir simulation trajectories. Evaluating zero-shot transfer onto physical real-world benchmarks (such as NYUv2, KITTI, and real robot platforms) with multi-thousand-frame held-out distributions represents an important direction for physical robotics deployment.
     \item \textbf{Quantized Edge Acceleration}: FP32 inference achieves $45.9$\,FPS on NVIDIA Tesla T4 and $38.6$\,FPS on Apple Silicon GPU. Porting model weights to FP16 CoreML and INT8 TensorRT backends represents a direct path to exceeding $>60$\,FPS on embedded robotics platforms.
 \end{itemize}
-
-

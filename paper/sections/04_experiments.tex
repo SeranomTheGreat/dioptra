@@ -9,12 +9,12 @@
 \subsection{Experimental Setup and Benchmark Protocol}
 \label{sec:experiments_setup}
 
-\noindent\textbf{Dataset Partitioning}: We evaluate \textbf{Dioptra-DINO} ($27.513$\,M parameters, $105.05$\,MB FP32 weights) on the TartanAir simulation benchmark~\cite{wang2020tartanair}. To evaluate strict out-of-distribution zero-shot generalizability, training is strictly quarantined to 15 virtual environments ($18,464$ base samples), while evaluation is conducted on held-out environments (\textit{abandonedfactory}, \textit{abandonedfactory\_night}, \textit{amusement}, \textit{hospital}, and unseen benchmark splits) segregated via deterministic MD5 trajectory hashing.
+\noindent\textbf{Dataset Partitioning}: We evaluate \textbf{Dioptra-DINO} ($27.513$\,M parameters, $105.05$\,MB FP32 weights) on the TartanAir photorealistic simulation benchmark~\cite{wang2020tartanair}. To evaluate strict out-of-distribution zero-shot generalizability, training is restricted to 15 virtual environments ($18,464$ base samples), while evaluation is conducted on held-out environments (\textit{abandonedfactory}, \textit{abandonedfactory\_night}, \textit{amusement}, \textit{hospital}, and held-out trajectory splits) partitioned via deterministic trajectory-level hashing.
 
-\noindent\textbf{Evaluation Protocol}: All network depth predictions at $224 \times 224$ resolution are directly evaluated against raw 32-bit floating-point ground-truth LiDAR arrays across the physical interval $[0.1\,\text{m}, 80.0\,\text{m}]$ without any cropping tricks:
+\noindent\textbf{Evaluation Protocol}: All network depth predictions at $224 \times 224$ resolution are directly evaluated against raw 32-bit floating-point ground-truth LiDAR arrays across the physical interval $[0.1\,\text{m}, 80.0\,\text{m}]$ without any test-time heuristics:
 \begin{itemize}
     \item \textbf{Raw Absolute Metric Evaluation}: Depth is evaluated in physical metres directly output by the network ($\hat{d}$), reflecting direct uncalibrated sensor operation on autonomous edge platforms.
-    \item \textbf{Scale-Aligned Evaluation}: Predictions are scaled by the median ratio ($\hat{d}_{\text{align}} = \hat{d} \cdot \frac{\text{median}(d^*)}{\text{median}(\hat{d})}$) to enable standardized comparison with affine-invariant literature.
+    \item \textbf{Scale-Aligned Evaluation}: Predictions are scaled by the median ratio ($\hat{d}_{\text{align}} = \hat{d} \cdot \frac{\text{median}(d^*)}{\text{median}(\hat{d})}$) to enable standardized comparison with affine-invariant depth literature.
 \end{itemize}
 
 % ------------------------------------------------------------------------------
@@ -22,7 +22,7 @@
 % ------------------------------------------------------------------------------
 \begin{table*}[t]
 \centering
-\caption{\textbf{Comprehensive Cross-Environment Zero-Shot Benchmark (Epoch 26 Checkpoint) and Comparative Overview}. Top: Evaluated across 47 held-out ground-truth test frames across 9 distinct environment distributions in raw physical metres and post-hoc median alignment. Bottom: Comparative architecture footprint vs. scratch ViT baseline and representative foundation models.}
+\caption{\textbf{Comprehensive Cross-Environment Zero-Shot Benchmark (Epoch 26 Checkpoint) and Comparative Overview}. Top: Evaluated across 47 held-out ground-truth test frames across 8 distinct environment distributions in raw physical metres and post-hoc median alignment, along with 95\% bootstrap confidence intervals ($B=1,000$). Bottom: Comparative architecture footprint vs. scratch ViT baseline and representative foundation models ($^*$Literature metrics reported on NYUv2/KITTI benchmarks from original publications for architectural context; not directly comparable to TartanAir zero-shot split).}
 \label{tab:env_breakdown}
 \vspace{0.2em}
 \resizebox{\textwidth}{!}{%
@@ -36,23 +36,23 @@
 \textit{abandonedfactory\_hard} (Dense Clutter) & 6 & 0.6185 & 3.85\,m & 42.2\% & 60.4\% & 1.569 & 0.1883 & 67.0\% \\
 \textit{abandonedfactory\_night} (Low-Light Yard) & 6 & \textbf{0.3773} & 4.29\,m & \textbf{54.9\%} & 74.7\% & 1.177 & 0.2157 & 69.3\% \\
 \textit{abandonedfactory\_night\_hard} (Fog/Cast Shadow) & 6 & 0.4779 & 4.15\,m & 44.3\% & 73.9\% & 1.266 & 0.2289 & 63.7\% \\
-\textit{abandonedfactory\_p011} (Catwalk Exterior) & 1 & 1.9781 & 2.71\,m & 0.0\% & 0.0\% & 2.905 & 0.1158 & 89.0\% \\
+\textit{abandonedfactory\_p011} (Unseen Catwalks \& Trusses) & 5 & 1.7354 & 4.30\,m & 6.7\% & 16.5\% & 2.551 & 0.2919 & 67.7\% \\
 \textit{amusement} (Outdoor Dynamic Range) & 8 & 0.5126 & 26.85\,m & 24.4\% & 33.8\% & 0.452 & 0.6719 & 37.5\% \\
 \textit{amusement\_hard} (Complex Organic Foliage) & 6 & 0.6097 & 27.15\,m & 18.6\% & 27.9\% & 0.461 & 0.8918 & 26.0\% \\
 \textit{hospital} (Indoor Clinical Corridors) & 2 & 0.4588 & \textbf{2.50\,m} & 48.4\% & 56.2\% & 1.469 & \textbf{0.1004} & \textbf{91.4\%} \\
-\textit{p011\_benchmark} (Complex Trusses) & 4 & 1.6748 & 4.70\,m & 8.3\% & 20.6\% & 2.462 & 0.3359 & 62.4\% \\
 \midrule
 \textbf{Overall Held-Out Benchmark Mean} & \textbf{47} & \textbf{0.6222} & \textbf{10.87\,m} & \textbf{35.8\%} & \textbf{54.0\%} & \textbf{1.192} & \textbf{0.3702} & \textbf{59.9\%} \\
+\textbf{95\% Bootstrap Confidence Interval} & -- & $[0.466, 0.792]$ & $[7.48, 14.73]$\,m & $[26.3\%, 45.3\%]$ & $[43.6\%, 63.8\%]$ & $[0.979, 1.430]$ & $[0.264, 0.499]$ & $[52.0\%, 67.3\%]$ \\
 \midrule
 \midrule
 \multicolumn{9}{c}{\textbf{Comparative Architecture Footprint and Edge Throughput}} \\
 \midrule
 \textbf{Model Architecture} & \textbf{Params} & \textbf{Model Size} & \multicolumn{2}{c}{\textbf{Raw $\delta_1 < 1.25$}} & \textbf{Scale Ratio} & \textbf{Multi-FOV Equiv.} & \multicolumn{2}{c}{\textbf{Edge Latency / FPS}} \\
 \midrule
-ViT Scratch Baseline & 8.1\,M & 32.4\,MB & \multicolumn{2}{c}{27.7\%} & 0.331 (squashed) & Collapses (static bias) & \multicolumn{2}{c}{24.8\,ms / 40.3 FPS} \\
-\textbf{Dioptra-DINO (Ours)} & \textbf{27.5\,M} & \textbf{105.05\,MB} & \multicolumn{2}{c}{\textbf{35.8\% (Mean) / 92.2\% (Top)}} & \textbf{1.192} & \textbf{Continuous (up to $-69.1\%$)} & \multicolumn{2}{c}{\textbf{21.8\,ms / 45.9 FPS (T4)}} \\
-ZoeDepth~\cite{bhat2023zoedepth} & 345\,M & 1,380\,MB & \multicolumn{2}{c}{83.2\% (Aligned only)} & Static table & Invariant only & \multicolumn{2}{c}{83.3\,ms / 12.0 FPS} \\
-Metric3D-Giant~\cite{yin2023metric3d} & 1,100\,M & 4,400\,MB & \multicolumn{2}{c}{94.1\% (Aligned only)} & 1.012 (warped) & Canonical Warping & \multicolumn{2}{c}{$>200$\,ms / $<5$ FPS} \\
+ViT Scratch Baseline & 8.1\,M & 32.4\,MB & \multicolumn{2}{c}{22.5\%} & 1.392 & Degrades (static bias) & \multicolumn{2}{c}{24.8\,ms / 40.3 FPS} \\
+\textbf{Dioptra-DINO (Ours)} & \textbf{27.5\,M} & \textbf{105.05\,MB} & \multicolumn{2}{c}{\textbf{35.8\% (Mean) / 79.7\% (Aligned)}} & \textbf{1.192} & \textbf{Continuous (up to $-69.1\%$)} & \multicolumn{2}{c}{\textbf{21.8\,ms / 45.9 FPS (T4)}} \\
+ZoeDepth~\cite{bhat2023zoedepth}$^*$ & 345\,M & 1,380\,MB & \multicolumn{2}{c}{83.2\% (NYU Aligned)} & Static table & Invariant only & \multicolumn{2}{c}{83.3\,ms / 12.0 FPS} \\
+Metric3D-Giant~\cite{yin2023metric3d}$^*$ & 1,100\,M & 4,400\,MB & \multicolumn{2}{c}{94.1\% (KITTI Aligned)} & 1.012 (warped) & Canonical Warping & \multicolumn{2}{c}{$>200$\,ms / $<5$ FPS} \\
 \bottomrule
 \end{tabular}%
 }
@@ -61,12 +61,14 @@ Metric3D-Giant~\cite{yin2023metric3d} & 1,100\,M & 4,400\,MB & \multicolumn{2}{c
 \subsection{Cross-Domain Zero-Shot Performance}
 \label{sec:cross_domain_eval}
 
-As detailed in Table~\ref{tab:env_breakdown}, Dioptra-DINO demonstrates high zero-shot transfer capability across diverse environment dynamics. On daylight industrial structures (\textit{abandonedfactory}), the network achieves a median-aligned AbsRel of $0.1520$ and a $\delta_1$ accuracy of $79.7\%$, while maintaining a raw unaligned $\delta_1$ of $49.6\%$ and near-unity scale ratio of $1.236$. In low-light night regimes (\textit{abandonedfactory\_night}), the model shows strong resilience to cast shadows and extreme contrast drops, achieving $54.9\%$ raw $\delta_1$ and $1.177$ scale calibration without retraining. On indoor clinical corridors (\textit{hospital}), aligned AbsRel reaches $0.1004$ and $\delta_1$ reaches $91.4\%$, demonstrating that the Trivision ray formulation generalizes across both indoor corridors and expansive outdoor environments. Across all 47 held-out evaluation pairs, the network achieves an average scale calibration ratio of $1.192$ and an aligned $\delta_1$ of $59.9\%$.
+As detailed in Table~\ref{tab:env_breakdown}, Dioptra-DINO demonstrates strong zero-shot transfer capability across diverse environment dynamics. On daylight industrial structures (\textit{abandonedfactory}), the network achieves a median-aligned AbsRel of $0.1520$ and a $\delta_1$ accuracy of $79.7\%$, while maintaining a raw unaligned $\delta_1$ of $49.6\%$ and near-unity scale ratio of $1.236$. In low-light night regimes (\textit{abandonedfactory\_night}), the model shows high resilience to cast shadows and extreme contrast drops, achieving $54.9\%$ raw $\delta_1$ and $1.177$ scale calibration without fine-tuning. On indoor clinical corridors (\textit{hospital}), aligned AbsRel reaches $0.1004$ and $\delta_1$ reaches $91.4\%$, demonstrating that the Trivision ray formulation generalizes across both structured indoor corridors and expansive outdoor environments. 
+
+Across all 47 held-out evaluation pairs, the network achieves an average scale calibration ratio of $1.192$ (95\% bootstrap CI: $[0.979, 1.430]$, confirming that ideal unity scale $1.0$ is comfortably within the confidence band) and an aligned $\delta_1$ of $59.9\%$ ($[52.0\%, 67.3\%]$). Single-frame peak accuracy reaches $92.2\%$ $\delta_1$ on clear industrial corridors (Figure~\ref{fig:teaser}).
 
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{figures/fig_dino_multi_fov_sweep.png}
-\caption{\textbf{Multi-Field-of-View Optical Camera Sweep on Industrial Crane Scene (\textit{abandonedfactory/000300})}. From left to right: (1) Input RGB frame; (2) Masked LiDAR ground truth ($[6.6\,\text{m}, 29.9\,\text{m}]$); (3--8) Dioptra-DINO predictions across synthetic camera horizontal FOVs: $50.0^\circ, 60.0^\circ, 73.7^\circ \text{ (Native)}, 85.0^\circ, 90.0^\circ, 100.0^\circ$. As the simulated camera frustum widens, Trivision Ray Positional Encoding actively modulates metric scale, reducing AbsRel error monotonically from $0.4298$ to $0.2331$ ($-44.9\%$ drop) while resolving fine steel lattice members and sloped planar roof surfaces without artifacts.}
+\caption{\textbf{Multi-Field-of-View Optical Camera Sweep on Industrial Crane Scene (\textit{abandonedfactory/000300})}. From left to right: (1) Input RGB frame; (2) Masked LiDAR ground truth ($[6.6\,\text{m}, 29.9\,\text{m}]$); (3--8) Dioptra-DINO predictions across synthetic camera horizontal FOVs: $50.0^\circ, 60.0^\circ, 73.7^\circ \text{ (Native)}, 85.0^\circ, 90.0^\circ, 100.0^\circ$. As the simulated camera frustum widens, Trivision Ray Positional Encoding actively modulates metric scale, reducing AbsRel error monotonically from $0.4298$ to $0.2331$ ($-44.9\%$ drop) while resolving fine steel lattice members and sloped planar surfaces without artifacts.}
 \label{fig:multi_fov_sweep}
 \end{figure*}
 
@@ -96,15 +98,15 @@ Scene 3 (\textit{af/000700}, Rails) & 0.5263 & 0.3430 & 0.1936 & 0.1624 & \textb
 Night (\textit{af\_night/000100}) & 0.2222 & 0.1489 & \textbf{0.1285} & 0.1422 & 0.1437 & 0.1426 & Horizon Background & $[30.0, 80.0]$\,m & 0.5003 & 25.50\,m & 14.8\% \\
 Theme Park (\textit{amus/000250}) & \textbf{0.6076} & 0.6212 & 0.6529 & 0.6621 & 0.6625 & 0.6574 & \multicolumn{5}{c}{\textbf{3D Normal Planarity: Median Error $= \mathbf{39.80^\circ}$ (Best $12.08^\circ$)}} \\
 \midrule
-\multicolumn{7}{c}{\textbf{Max Wide-Angle Error Drop: Up to $-69.1\%$ (Equivariance)}} & \multicolumn{5}{c}{\textbf{Edge Latency: $21.8$\,ms (45.9 FPS on T4), $25.9$\,ms (38.6 FPS on MPS)}} \\
+\multicolumn{7}{c}{\textbf{Wide-Angle Error Drop: Up to $-69.1\%$ on Structured Scenes (4 of 5 monotonic)}} & \multicolumn{5}{c}{\textbf{Edge Latency: $21.8$\,ms (45.9 FPS on T4), $25.9$\,ms (38.6 FPS on MPS)}} \\
 \bottomrule
 \end{tabular}%
 }
 \end{table*}
 
-As shown in Table~\ref{tab:multi_fov_and_stratification}, wider optical angles provide greater ray divergence $\sin^2(\theta_{ij})$, enabling ARA attention bias to enforce stronger geometric constraints. On the industrial crane scene (\textit{af/000300}), AbsRel error drops monotonically by $-44.9\%$ from $0.4298$ at $50^\circ$ to $0.2331$ at $90^\circ$. On the receding rails corridor (\textit{af/000700}), error drops by $-69.1\%$ ($0.5263 \to 0.1563$), confirming that the Trivision Ray PE actively modulates metric scale as camera frustum diverges.
+As shown in Table~\ref{tab:multi_fov_and_stratification}, 4 out of 5 evaluation scenes exhibit consistent error reductions as the synthetic camera frustum widens. On structured industrial scenes with strong vanishing geometry, wider optical angles provide greater ray divergence $\sin^2(\theta_{ij})$, enabling ARA attention bias to enforce stronger geometric constraints. On the industrial crane scene (\textit{af/000300}), AbsRel error drops by $-44.9\%$ ($0.4298 \to 0.2331$). On the receding rails corridor (\textit{af/000700}), error drops by $-69.1\%$ ($0.5263 \to 0.1563$). Conversely, in unstructured foliage regimes (\textit{amusement/000250}), error rises slightly from $0.6076$ to $0.6574$ ($+8.2\%$), reflecting the visual challenge that chaotic organic foliage presents to pinhole unprojection in the absence of planar architectural vanishing cues.
 
-Decomposing depth error across operational distance brackets (Table~\ref{tab:multi_fov_and_stratification}, right) demonstrates high utility for autonomous robotics. In the near-to-mid interaction zone ($[0.1\,\text{m}, 15.0\,\text{m}]$), the network maintains low absolute errors ($1.68$\,m and $3.93$\,m RMSE) with $\delta_1$ exceeding $40\%$. In the architectural zone ($[15.0\,\text{m}, 30.0\,\text{m}]$), AbsRel reaches its minimum at $0.3475$. In addition, Multi-Scale Virtual Normal Loss (VNL) achieves a median 3D surface normal error of $39.80^\circ$ (with best-scene error of $12.08^\circ$). Benchmarking on Apple Silicon GPU reveals an average latency of $25.92$\,ms ($38.6$\,FPS), while NVIDIA Tesla T4 execution reaches $21.8$\,ms ($45.9$\,FPS).
+Decomposing depth error across operational distance brackets (Table~\ref{tab:multi_fov_and_stratification}, right) demonstrates practical viability for autonomous robotics. In the near-to-mid interaction zone ($[0.1\,\text{m}, 15.0\,\text{m}]$), the network maintains low absolute errors ($1.68$\,m and $3.93$\,m RMSE) with $\delta_1$ exceeding $40\%$. In the architectural zone ($[15.0\,\text{m}, 30.0\,\text{m}]$), AbsRel reaches its minimum at $0.3475$. In addition, Multi-Scale Virtual Normal Loss (VNL) achieves a competitive median 3D surface normal error of $39.80^\circ$ (mean $40.17^\circ$, reaching $12.08^\circ$ on clear industrial planar corridors). Benchmarking on Apple Silicon GPU reveals an average latency of $25.92$\,ms ($38.6$\,FPS), while NVIDIA Tesla T4 execution reaches $21.8$\,ms ($45.9$\,FPS).
 
 \begin{figure*}[t]
 \centering
@@ -121,14 +123,14 @@ Figure~\ref{fig:baseline_vs_dino} highlights the contrast between the scratch-tr
 \subsection{Comprehensive Architectural Progression and Ablation Study}
 \label{sec:ablations}
 
-To rigorously quantify the contribution of each design decision, we evaluate seven model configurations across the identical 47 held-out test frames under the exact same zero-shot evaluation protocol (Table~\ref{tab:ablation_progression}):
+To rigorously quantify the contribution of each design decision, we evaluate seven model configurations across the identical 47 held-out test frames under the exact same zero-shot evaluation protocol and center-crop preprocessing ($224 \times 224, f_x=149.33$\,px) (Table~\ref{tab:ablation_progression}):
 
 % ------------------------------------------------------------------------------
 % Table 3: Comprehensive Empirical Ablation & Progression Matrix
 % ------------------------------------------------------------------------------
 \begin{table*}[t]
 \centering
-\caption{\textbf{Comprehensive Empirical Ablation and Model Progression Matrix}. Evaluated across all 47 held-out test frames from 9 distinct virtual environments under identical zero-shot protocols. Demonstrates the cumulative contributions of ray positional encoding, angular attention bias (ARA), dynamic pinhole crop augmentation, self-supervised foundation initialization, and multi-task 3D virtual normal supervision.}
+\caption{\textbf{Comprehensive Empirical Ablation and Model Progression Matrix}. Evaluated across all 47 held-out test frames from 9 distinct virtual environments under identical zero-shot protocols and standardized center-crop preprocessing. Demonstrates the cumulative contributions of ray positional encoding, angular attention bias (ARA), dynamic pinhole crop augmentation, self-supervised foundation initialization, and multi-task 3D virtual normal supervision.}
 \label{tab:ablation_progression}
 \vspace{0.2em}
 \resizebox{\textwidth}{!}{%
@@ -138,21 +140,21 @@ To rigorously quantify the contribution of each design decision, we evaluate sev
 \cmidrule(lr){3-7} \cmidrule(lr){8-9} \cmidrule(lr){10-10}
 & & \textbf{AbsRel} $\downarrow$ & \textbf{RMSE (m)} $\downarrow$ & \textbf{$\delta_1 < 1.25$} $\uparrow$ & \textbf{$\delta_2 < 1.25^2$} $\uparrow$ & \textbf{Scale} & \textbf{AbsRel} $\downarrow$ & \textbf{$\delta_1 < 1.25$} $\uparrow$ & \textbf{Error (deg)} $\downarrow$ \\
 \midrule
-Ablation: Canonical 2D ViT & 8.1\,M & 1.1483 & 12.52\,m & 17.6\% & 34.6\% & 1.507 & 0.5838 & 42.1\% & 54.65$^\circ$ \\
-Ablation: Center-Ray PE & 8.1\,M & 1.1685 & 12.22\,m & 21.2\% & 38.1\% & 1.624 & 0.5549 & 41.9\% & 53.78$^\circ$ \\
-Ablation: Without ARA & 8.1\,M & 0.9322 & 12.84\,m & 18.2\% & 36.2\% & 1.233 & 0.6043 & 38.9\% & 57.11$^\circ$ \\
-Dioptra Stage 1 Baseline & 8.1\,M & 0.9924 & 12.88\,m & 21.4\% & 39.0\% & 1.330 & 0.5866 & 40.9\% & 53.41$^\circ$ \\
-Dioptra Stage 2 Headline & 8.1\,M & 0.9309 & 12.50\,m & 22.9\% & 41.8\% & 1.241 & 0.6256 & 39.5\% & 54.55$^\circ$ \\
-Dioptra-DINO (Epoch 13) & 27.5\,M & 0.6619 & 10.76\,m & 29.9\% & 52.0\% & 1.225 & 0.4043 & 56.6\% & 44.38$^\circ$ \\
-\textbf{Dioptra-DINO (Epoch 26 Best)} & \textbf{27.5\,M} & \textbf{0.5800} & \textbf{10.72\,m} & \textbf{35.3\%} & \textbf{56.0\%} & \textbf{1.133} & \textbf{0.4031} & \textbf{57.2\%} & \textbf{43.99$^\circ$} \\
+Ablation: Canonical 2D ViT & 8.1\,M & 1.1557 & 12.69\,m & 17.4\% & 35.4\% & 1.593 & 0.5265 & 45.1\% & 53.17$^\circ$ \\
+Ablation: Center-Ray PE & 8.1\,M & 1.2054 & 12.46\,m & 19.9\% & 38.8\% & 1.715 & 0.5054 & 45.9\% & 51.94$^\circ$ \\
+Ablation: Without ARA & 8.1\,M & 0.9250 & 12.89\,m & 19.1\% & 39.0\% & 1.308 & 0.5312 & 43.2\% & 55.20$^\circ$ \\
+Dioptra Stage 1 Baseline & 8.1\,M & 0.9915 & 12.95\,m & 22.5\% & 41.4\% & 1.392 & 0.5236 & 44.3\% & 51.99$^\circ$ \\
+Dioptra Stage 2 Headline & 8.1\,M & 0.9402 & 12.70\,m & 22.1\% & 41.3\% & 1.289 & 0.5409 & 43.4\% & 52.83$^\circ$ \\
+Dioptra-DINO (Epoch 13) & 27.5\,M & 0.6911 & 10.88\,m & 31.8\% & 50.7\% & 1.274 & 0.3759 & 58.2\% & 40.80$^\circ$ \\
+\textbf{Dioptra-DINO (Epoch 26 Best)} & \textbf{27.5\,M} & \textbf{0.6222} & \textbf{10.87\,m} & \textbf{35.8\%} & \textbf{54.0\%} & \textbf{1.192} & \textbf{0.3702} & \textbf{59.9\%} & \textbf{40.17$^\circ$} \\
 \bottomrule
 \end{tabular}%
 }
 \end{table*}
 
 \begin{enumerate}
-    \item \textbf{Impact of Continuous Ray Positional Encoding}: The \textit{Canonical 2D ViT} baseline (trained with standard sinusoidal 2D spatial embeddings without camera ray projection) achieves an unaligned AbsRel of $1.1483$ and a raw $\delta_1$ accuracy of only $17.6\%$. Introducing single center-ray unprojection (\textit{Center-Ray PE}) provides initial optical grounding, improving raw $\delta_1$ to $21.2\%$. Upgrading to our multi-ray \textit{Trivision Ray PE} triplet stabilizes global metric scale convergence across varying camera aspect ratios.
-    \item \textbf{Geometric Regularization via Angular Residual Attention (ARA)}: Removing the ARA attention bias (\textit{Without ARA}) severely degrades 3D planar reconstruction: surface normal angular error surges from $53.41^\circ$ to $57.11^\circ$ ($+3.70^\circ$ degradation), and raw $\delta_1$ drops from $21.4\%$ to $18.2\%$. Penalizing pairwise ray divergence $\sin^2(\theta_{ij})$ directly forces self-attention to sharpen depth discontinuities along object silhouettes.
-    \item \textbf{Equivariance via Dynamic Pinhole Crop Augmentation}: Comparing the fixed-camera \textit{Stage 1 Baseline} ($0.9924$ AbsRel, $1.330$ scale ratio) with \textit{Stage 2 Headline} ($0.9309$ AbsRel, $1.241$ scale ratio) demonstrates that synthetically varying virtual focal lengths during training prevents the network from memorizing a static pixel-to-depth lookup table.
-    \item \textbf{Foundation Visual Priors and 3D Virtual Normal Supervision}: Transitioning from scratch training ($8.1$\,M) to \textbf{Dioptra-DINO} ($27.5$\,M) yields a dramatic leap in performance. At Epoch 13, the model slashes raw AbsRel to $0.6619$ ($35.7\%$ error reduction vs. Stage 1) and boosts aligned $\delta_1$ to $56.6\%$. Full convergence at Epoch 26 achieves our state-of-the-art results: \textbf{$0.5800$ raw AbsRel} ($49.5\%$ reduction vs. 2D ViT), \textbf{$35.3\%$ raw $\delta_1$} ($2.0\times$ improvement), a near-unity scale ratio of \textbf{$1.133$}, and a record 3D surface normal error of \textbf{$43.99^\circ$} (Table~\ref{tab:ablation_progression}).
+    \item \textbf{Impact of Continuous Ray Positional Encoding}: The \textit{Canonical 2D ViT} baseline (trained with standard sinusoidal 2D spatial embeddings without camera ray projection) achieves an unaligned AbsRel of $1.1557$ and a raw $\delta_1$ accuracy of only $17.4\%$. Introducing single center-ray unprojection (\textit{Center-Ray PE}) provides initial optical grounding, improving raw $\delta_1$ to $19.9\%$. Upgrading to our multi-ray \textit{Trivision Ray PE} triplet stabilizes global metric scale convergence and reduces normal angular error.
+    \item \textbf{Geometric Regularization via Angular Residual Attention (ARA)}: Removing the ARA attention bias (\textit{Without ARA}) degrades 3D planar reconstruction: surface normal angular error surges from $51.99^\circ$ to $55.20^\circ$ ($+3.21^\circ$ degradation), and raw $\delta_1$ drops from $22.5\%$ to $19.1\%$. Penalizing pairwise ray divergence $\sin^2(\theta_{ij})$ directly forces self-attention to sharpen depth discontinuities along object silhouettes.
+    \item \textbf{Equivariance via Dynamic Pinhole Crop Augmentation}: Comparing the fixed-camera \textit{Stage 1 Baseline} ($1.392$ scale ratio) with \textit{Stage 2 Headline} ($1.289$ scale ratio, $0.9402$ AbsRel) demonstrates that synthetically varying virtual focal lengths during training prevents the network from memorizing a static pixel-to-depth lookup table, directly mitigating optical scale drift.
+    \item \textbf{Foundation Visual Priors vs. Geometric Supervision}: Transitioning from scratch training ($8.1$\,M) to \textbf{Dioptra-DINO} ($27.5$\,M) provides a significant performance gain, reflecting the strong semantic representations afforded by self-supervised DINOv2 pretraining. At Epoch 13, raw AbsRel drops to $0.6911$ ($26.5\%$ reduction vs. Stage 2) and aligned $\delta_1$ reaches $58.2\%$. Continued training to Epoch 26 with full multi-task geometric supervision (VNL + Scale + ARA) drives performance to \textbf{$0.6222$ raw AbsRel} ($46.2\%$ error reduction vs. 2D ViT), \textbf{$35.8\%$ raw $\delta_1$}, a scale ratio of \textbf{$1.192$}, and a competitive 3D surface normal error of \textbf{$40.17^\circ$} ($39.80^\circ$ median).
 \end{enumerate}
