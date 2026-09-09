@@ -1357,6 +1357,7 @@ def train_dioptra_dino(args):
         if isinstance(resume_arg, str) and os.path.isfile(resume_arg):
             resume_target = resume_arg
         else:
+            # 1. Search output directory
             cands = sorted(
                 glob.glob(os.path.join(output_dir, "dioptra_dino_epoch_*.pt")),
                 key=lambda p: int(os.path.splitext(p)[0].split("_")[-1]) if os.path.splitext(p)[0].split("_")[-1].isdigit() else 0
@@ -1365,10 +1366,25 @@ def train_dioptra_dino(args):
                 resume_target = cands[-1]
             elif os.path.exists(os.path.join(output_dir, "dioptra_dino_best.pt")):
                 resume_target = os.path.join(output_dir, "dioptra_dino_best.pt")
+            else:
+                # 2. Search /kaggle/input for uploaded checkpoint datasets
+                input_cands = sorted(
+                    glob.glob("/kaggle/input/**/dioptra_dino*.pt", recursive=True)
+                    + glob.glob("/kaggle/input/**/dioptra_dino*.zip", recursive=True),
+                    key=lambda p: int(os.path.splitext(os.path.basename(p))[0].split("_")[-1]) if os.path.splitext(os.path.basename(p))[0].split("_")[-1].isdigit() else 0
+                )
+                if input_cands:
+                    resume_target = input_cands[-1]
 
         if resume_target and os.path.exists(resume_target):
             print(f"[Dioptra-DINO] Resuming training from checkpoint: {resume_target}")
-            ckpt = torch.load(resume_target, map_location=device)
+            import __main__
+            if not hasattr(__main__, "DioptraDINOConfig"):
+                setattr(__main__, "DioptraDINOConfig", DioptraDINOConfig)
+            try:
+                ckpt = torch.load(resume_target, map_location=device, weights_only=False)
+            except TypeError:
+                ckpt = torch.load(resume_target, map_location=device)
             raw_model.load_state_dict(ckpt["model_state_dict"])
             start_epoch = ckpt.get("epoch", 0)
             print(f"[Dioptra-DINO] Successfully restored model weights! Resuming at Epoch {start_epoch + 1}/{cfg.epochs}")
