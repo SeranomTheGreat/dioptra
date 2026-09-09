@@ -120,8 +120,11 @@ with top-left corner $(x_0, y_0)$ sampled uniformly over the valid range $[0, W 
 
 Under projective pinhole geometry, spatial scaling and translation of the sensor plane transform the intrinsic parameters as:
 \begin{equation}
-    f_x' = f_x \cdot \frac{W'}{L}, \quad f_y' = f_y \cdot \frac{H'}{L}, \quad c_x' = (c_x - x_0) \cdot \frac{W'}{L}, \quad c_y' = (c_y - y_0) \cdot \frac{H'}{L}
-    \label{eq:pinhole_transform}
+\begin{aligned}
+    f_x' &= f_x \cdot \frac{W'}{L}, \qquad &f_y' &= f_y \cdot \frac{H'}{L}, \\
+    c_x' &= (c_x - x_0) \cdot \frac{W'}{L}, \qquad &c_y' &= (c_y - y_0) \cdot \frac{H'}{L}
+\end{aligned}
+\label{eq:pinhole_transform}
 \end{equation}
 Because the cropped region represents a magnified sub-cone of the optical frustum, the effective horizontal field of view varies dynamically between $\approx 45.0^\circ$ and $73.7^\circ$. Crucially, the physical metric depth values $\mathbf{D}^*(u, v)$ in metres are invariant to sensor cropping. This transformation cleanly uncouples pixel positions $(u, v)$ from optical ray angles $\hat{\mathbf{r}}$, forcing the Trivision encoder and ARA attention bias to actively condition on the transformed intrinsic matrix $\mathbf{K}'$.
 
