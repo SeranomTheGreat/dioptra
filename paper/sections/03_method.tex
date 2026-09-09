@@ -3,20 +3,20 @@
 
 \begin{figure*}[t]
     \centering
-    \includegraphics[width=0.98\linewidth]{figures/fig_analysis.png}
-    \caption{\textbf{Dioptra Structural Decomposition and Multi-Panel Diagnostic (\texttt{abandonedfactory/P000\_000544\_left})}. Evaluated under Stage~2 dynamic pinhole conditioning on a strictly held-out zero-shot test scene. (1) Input RGB frame; (2) Predicted metric depth map with true metric scaling ($\text{AbsRel} = 0.2138$, $\text{RMSE} = 3.28$\,m); (3) Reconstructed surface normal vectors $[\hat{n}_x, \hat{n}_y, \hat{n}_z]$ mapped to RGB color space, showing clean separation between the horizontal ground plane (green) and orthogonal vertical masonry walls and pillars (blue/purple); (4) Disparity proximity map ($1/D$) isolating immediate navigation hazards.}
+    \includegraphics[width=0.98\linewidth]{figures/fig_dino_method_analysis.png}
+    \caption{\textbf{Dioptra-DINO Structural Decomposition and Multi-Panel Diagnostic (\textit{abandonedfactory/000100})}. Evaluated on a strictly held-out zero-shot test scene. (a) Input RGB frame ($224 \times 224$); (b) Dioptra-DINO predicted physical metric depth $\hat{D}$ ($\text{AbsRel} = 0.1703, \delta_2 = 98.1\%$); (c) Reconstructed 3D surface normal vectors $[\hat{n}_x, \hat{n}_y, \hat{n}_z]$ mapped to RGB color space, demonstrating planar ground and vertical facade reconstruction enforced by the Multi-Scale 3D Virtual Normal Loss (VNL); (d) Obstacle proximity hazard map ($1 / \hat{D}$) isolating immediate flight hazards for reactive edge navigation.}
     \label{fig:method_diagnostic}
 \end{figure*}
 
 \subsection{Architecture Overview}
-Dioptra is structured as an end-to-end geometry-aware dense prediction architecture. Given an input RGB image $\mathbf{I} \in \mathbb{R}^{3 \times H \times W}$ and its camera intrinsic matrix $\mathbf{K} \in \mathbb{R}^{3 \times 3}$, Dioptra outputs a dense metric depth map $\hat{\mathbf{D}} \in \mathbb{R}^{1 \times H \times W}$.
+Dioptra-DINO is structured as an end-to-end geometry-aware dense prediction architecture. Given an input RGB image $\mathbf{I} \in \mathbb{R}^{3 \times H \times W}$ and its camera intrinsic matrix $\mathbf{K} \in \mathbb{R}^{3 \times 3}$, Dioptra outputs a dense metric depth map $\hat{\mathbf{D}} \in \mathbb{R}^{1 \times H \times W}$.
 
-The model consists of four integrated components totaling $8.097$\,M parameters:
+The model consists of four integrated components totaling $27.513$\,M parameters ($105.05$\,MB FP32 weights):
 \begin{enumerate}
-    \item \textbf{Convolutional Patch Stem}: Projects the $224 \times 224$ image into $N = 784$ spatial tokens ($P=8$, grid size $28 \times 28$) with embedding dimension $D = 256$ ($0.138$\,M parameters).
-    \item \textbf{Trivision Ray Positional Encoder}: Unprojects 3 continuous camera rays per token, generating geometric positional embeddings modulated via Feature-wise Linear Modulation (FiLM) ($0.162$\,M parameters).
-    \item \textbf{10-Layer ViT with Angular Residual Attention (ARA)}: A 10-layer Vision Transformer with 8 attention heads per layer ($d_h = 32$), MLP expansion ratio $3.0$, LayerScale initialization ($10^{-5}$), and continuous angular residual attention bias ($6.591$\,M parameters).
-    \item \textbf{Multi-Scale Reassembly Head}: Fuses intermediate representations from layers $\{3, 6, 8, 10\}$ via progressive spatial deconvolutions and residual blocks to generate the full-resolution depth map ($1.206$\,M parameters).
+    \item \textbf{Pretrained DINOv2-Small Vision Backbone}: Projects the $224 \times 224$ image into $N = 256$ spatial tokens ($P=14$, grid size $16 \times 16$) with embedding dimension $D = 384$ across 12 transformer layers and 6 attention heads ($21.666$\,M parameters). The patch size of 14 reduces quadratic attention computation by $9.4\times$ compared to patch-8 baselines.
+    \item \textbf{Trivision Ray Positional Modulator}: Unprojects 3 continuous optical rays per patch token, projecting Fourier harmonics through a 3-layer MLP that modulates transformer representations via affine Feature-wise Linear Modulation (FiLM) ($0.408$\,M parameters).
+    \item \textbf{Angular Residual Attention (ARA)}: Injects continuous geometric angular residuals $\sin^2(\theta_{q, k}) = 1 - (\hat{\mathbf{r}}_q \cdot \hat{\mathbf{r}}_k)^2$ into self-attention maps via scalar curriculum gating $\alpha(t)$ ($4$ parameters) to penalize divergent optical rays.
+    \item \textbf{Multi-Scale DPT Reassembly Decoder}: Fuses intermediate hierarchical representations from layers $\{3, 6, 9, 12\}$ via progressive spatial deconvolutions and residual blocks to generate the full-resolution metric depth map ($5.439$\,M parameters).
 \end{enumerate}
 
 \subsection{Trivision Ray Positional Encoding}
