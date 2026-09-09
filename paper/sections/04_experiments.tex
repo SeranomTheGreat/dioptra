@@ -63,6 +63,9 @@ Horizon Background & $[30.0\,\text{m}, 80.0\,\text{m}]$ & 0.5003 & 25.50\,m & 14
 \end{tabular}
 \end{table}
 
+\subsection{Multi-Camera Field-of-View Sweeps and Scale Equivariance}
+\label{sec:fov_experiments}
+
 % ------------------------------------------------------------------------------
 % Table 3: Multi-Scene Multi-FOV Equivariance Matrix
 % ------------------------------------------------------------------------------
@@ -154,6 +157,7 @@ Dioptra-DINO (Epoch 13) & 27.5\,M & 0.6619 & 10.76\,m & 29.9\% & 52.0\% & 1.225 
 \end{table*}
 
 \subsection{Ablation Study and Empirical Progression Analysis}
+\label{sec:ablations}
 To rigorously quantify the individual contribution of each architectural component, we benchmark seven model configurations across the identical 47 held-out test frames under the exact same zero-shot protocol (Table~\ref{tab:ablation_progression} and Figure~\ref{fig:ablation_progression}):
 \begin{enumerate}
     \item \textbf{Impact of Continuous Ray Positional Encoding}: The \textit{Canonical 2D ViT} baseline (trained with standard sinusoidal 2D spatial embeddings without camera ray projection) suffers from severe focal-depth ambiguity, achieving an unaligned AbsRel of $1.1483$ and a raw $\delta_1$ accuracy of only $17.6\%$. Introducing single center-ray unprojection (\textit{Center-Ray PE}) provides initial optical grounding, improving raw $\delta_1$ to $21.2\%$. Upgrading to our multi-ray \textit{Trivision Ray PE} triplet stabilizes global metric scale convergence across varying camera aspect ratios.

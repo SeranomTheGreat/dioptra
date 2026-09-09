@@ -2,7 +2,7 @@
 
 % --- Standard Universal Packages ---
 \usepackage[top=0.85in,bottom=0.85in,left=0.75in,right=0.75in]{geometry}
-\usepackage{times}
+\usepackage{mathptmx}
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{amssymb}
@@ -11,7 +11,11 @@
 \usepackage{url}
 \usepackage{cite}
 \usepackage{xcolor}
+\usepackage{placeins}
 \usepackage{hyperref}
+
+% --- Expand Float Queue to Prevent 'Too many unprocessed floats' ---
+\extrafloats{100}
 
 % --- Hyperlink Setup ---
 \hypersetup{
@@ -36,11 +40,16 @@
 \begin{document}
 
 \twocolumn[{%
-  \begin{@twocolumnfalse}
-    \maketitle
+  \maketitle
+  \begin{center}
+    \vspace{-1.5em}
+    \textbf{\large Abstract}\\[0.6em]
+  \end{center}
+  \begin{quote}
+    \small
     \input{sections/00_abstract}
-    \vspace{1.5em}
-  \end{@twocolumnfalse}
+  \end{quote}
+  \vspace{1.5em}
 }]
 
 % --- Sections ---
