@@ -127,3 +127,27 @@ Metric3D-Giant (Yin et al., 2024) & 1,100\,M & 4.40\,GB & 94.1\% (Aligned) & 1.0
 \end{tabular}%
 }
 \end{table*}
+
+% ------------------------------------------------------------------------------
+% Visual Qualitative Figures
+% ------------------------------------------------------------------------------
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/fig_dino_multi_fov_sweep.png}
+\caption{\textbf{Multi-Field-of-View Optical Camera Sweep on Industrial Crane Scene (\textit{abandonedfactory/000300})}. From left to right: (1) Input RGB frame; (2) Masked LiDAR ground truth ($[6.6\,\text{m}, 29.9\,\text{m}]$); (3--8) Dioptra-DINO predictions across synthetic camera horizontal FOVs: $50.0^\circ, 60.0^\circ, 73.7^\circ \text{ (Native)}, 85.0^\circ, 90.0^\circ, 100.0^\circ$. As the simulated camera frustum widens, Trivision Ray Positional Encoding actively modulates metric scale, reducing AbsRel error from $0.4298$ to $0.2331$ ($-44.9\%$ drop) while resolving fine steel lattice members and sloped planar roof surfaces without artifacts.}
+\label{fig:multi_fov_sweep}
+\end{figure*}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.92\textwidth]{figures/fig_baseline_vs_dino_comparison.png}
+\caption{\textbf{Head-to-Head Visual Comparison: Scratch ViT Baseline (8.1\,M) vs. Dioptra-DINO (27.5\,M)}. Top row: old scratch-trained baseline collapses into blurry, scale-distorted distance blobs ($\delta_1 < 10\%$, AbsRel $> 1.7$). Bottom row: Dioptra-DINO resolves sharp architectural edges, planar walls, elevated steel trusses, and structural silhouettes with high fidelity.}
+\label{fig:baseline_vs_dino}
+\end{figure*}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.92\textwidth]{figures/fig_dino_multiscene_eval.png}
+\caption{\textbf{Cross-Environment Qualitative Evaluation Across Diverse Held-Out Regimes}. Evaluated on 4 challenging zero-shot scenes: (a) Daylight Industrial Courtyard (\textit{000100}, $\text{AbsRel} = 0.1703, \delta_2 = 98.1\%$); (b) Receding Rails Corridor (\textit{000700}, $\text{AbsRel} = 0.1936, \delta_1 = 73.3\%$); (c) High-Clutter Truss Catwalk (\textit{P002/000695}, $\text{AbsRel} = 0.1616, \delta_1 = 72.7\%$); and (d) Night Low-Light Industrial Yard (\textit{000100}, $\text{AbsRel} = 0.1285$).}
+\label{fig:multiscene_eval}
+\end{figure*}
