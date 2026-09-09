@@ -1,23 +1,55 @@
 \documentclass[10pt,twocolumn,letterpaper]{article}
 
-% --- Standard Universal Packages ---
-\usepackage[top=0.85in,bottom=0.85in,left=0.75in,right=0.75in]{geometry}
+% --- Page Geometry & Conference Margins ---
+\usepackage[top=0.75in,bottom=0.85in,left=0.75in,right=0.75in]{geometry}
+\setlength{\columnsep}{0.25in}
+
+% --- Professional Typography & Math Fonts ---
 \usepackage{mathptmx}
+\usepackage{microtype}
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{booktabs}
-\usepackage{microtype}
 \usepackage{url}
 \usepackage{cite}
 \usepackage{xcolor}
 \usepackage{placeins}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage{titlesec}
 \usepackage{hyperref}
 
-% --- Expand Float Queue to Prevent 'Too many unprocessed floats' ---
+% --- Professional Caption Setup (CVPR / IEEE Style) ---
+\captionsetup{font=small,labelfont=bf,labelsep=period,skip=4pt}
+\captionsetup[table]{font=small,labelfont=bf,labelsep=period,skip=4pt}
+
+% --- Compact Section Formatting ---
+\titleformat{\section}{\fontsize{10.5}{12.5}\selectfont\bfseries}{\thesection}{0.5em}{}
+\titleformat{\subsection}{\fontsize{9.5}{11.5}\selectfont\bfseries}{\thesubsection}{0.4em}{}
+\titleformat{\subsubsection}{\fontsize{9}{11}\selectfont\itshape}{\thesubsubsection}{0.4em}{}
+\titlespacing*{\section}{0pt}{7pt plus 2pt minus 2pt}{3pt plus 1pt minus 1pt}
+\titlespacing*{\subsection}{0pt}{5pt plus 2pt minus 2pt}{2pt plus 1pt minus 1pt}
+\titlespacing*{\subsubsection}{0pt}{4pt plus 1pt minus 1pt}{2pt plus 1pt minus 1pt}
+
+% --- Compact List Environments ---
+\setlist{nosep,leftmargin=1.2em}
+
+% --- Float Spacing & Placement Optimization (Prevents Float Stacking & Gaps) ---
+\renewcommand{\topfraction}{0.95}
+\renewcommand{\bottomfraction}{0.85}
+\renewcommand{\textfraction}{0.05}
+\renewcommand{\floatpagefraction}{0.85}
+\renewcommand{\dbltopfraction}{0.95}
+\renewcommand{\dblfloatpagefraction}{0.85}
+\setlength{\floatsep}{6pt plus 2pt minus 2pt}
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{6pt plus 2pt minus 2pt}
+\setlength{\dblfloatsep}{6pt plus 2pt minus 2pt}
+\setlength{\dbltextfloatsep}{8pt plus 2pt minus 2pt}
 \extrafloats{100}
 
-% --- Hyperlink Setup ---
+% --- Hyperlink Styling ---
 \hypersetup{
     colorlinks=true,
     linkcolor=blue!80!black,
@@ -29,9 +61,9 @@
 \title{\Large\textbf{Dioptra: An Ultra-Lightweight Geometry-Aware Architecture\\for Monocular Metric Depth on Edge Devices}}
 
 \author{
-    \textbf{Yumnam Harryson Singh}\\[0.3em]
+    \textbf{Yumnam Harryson Singh}\\[0.2em]
     \normalsize Independent Researcher\\
-    \normalsize \texttt{harryson424242@gmail.com}\\[0.2em]
+    \normalsize \texttt{harryson424242@gmail.com}\\[0.1em]
     \normalsize \url{https://github.com/SeranomTheGreat/dioptra}
 }
 
@@ -42,17 +74,17 @@
 \twocolumn[{%
   \maketitle
   \begin{center}
-    \vspace{-1.5em}
-    \textbf{\large Abstract}\\[0.6em]
+    \vspace{-1.8em}
+    \parbox{0.92\textwidth}{%
+      \small
+      \textbf{Abstract}---%
+      \input{sections/00_abstract}
+    }
   \end{center}
-  \begin{quote}
-    \small
-    \input{sections/00_abstract}
-  \end{quote}
-  \vspace{1.5em}
+  \vspace{1.2em}
 }]
 
-% --- Sections ---
+% --- Core Manuscript Sections ---
 \input{sections/01_introduction}
 \input{sections/02_related_work}
 \input{sections/03_method}
@@ -60,11 +92,10 @@
 \input{sections/05_discussion}
 \input{sections/06_conclusion}
 
-% --- References ---
+% --- Bibliography ---
 {\small
 \bibliographystyle{unsrt}
 \bibliography{references}
 }
 
 \end{document}
-
