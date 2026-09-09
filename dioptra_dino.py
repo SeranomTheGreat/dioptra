@@ -20,6 +20,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import gc
 import glob
 import io
 import math
@@ -1330,20 +1331,52 @@ def train_dioptra_dino(args):
             "Right Sidebar -> Input -> '+ Add Input' -> search 'dasvo-tartanair-rgb-d-validation-split' by pandrii000."
         )
 
-    num_workers = min(4, os.cpu_count() or 1)
+    def _worker_init_fn(worker_id):
+        torch.set_num_threads(1)
+
+    num_workers = min(2, os.cpu_count() or 1)
     dataloader = torch.utils.data.DataLoader(
         dataset,
         batch_size=cfg.batch_size,
         shuffle=True,
         num_workers=num_workers,
         pin_memory=torch.cuda.is_available(),
+        persistent_workers=(num_workers > 0),
+        worker_init_fn=_worker_init_fn,
         drop_last=True,
     )
 
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=cfg.epochs * len(dataloader))
-
     output_dir = "outputs_dino"
     os.makedirs(output_dir, exist_ok=True)
+
+    # Checkpoint Resume Logic
+    start_epoch = 0
+    resume_arg = getattr(args, "resume", None)
+    if resume_arg:
+        resume_target = None
+        if isinstance(resume_arg, str) and os.path.isfile(resume_arg):
+            resume_target = resume_arg
+        else:
+            cands = sorted(
+                glob.glob(os.path.join(output_dir, "dioptra_dino_epoch_*.pt")),
+                key=lambda p: int(os.path.splitext(p)[0].split("_")[-1]) if os.path.splitext(p)[0].split("_")[-1].isdigit() else 0
+            )
+            if cands:
+                resume_target = cands[-1]
+            elif os.path.exists(os.path.join(output_dir, "dioptra_dino_best.pt")):
+                resume_target = os.path.join(output_dir, "dioptra_dino_best.pt")
+
+        if resume_target and os.path.exists(resume_target):
+            print(f"[Dioptra-DINO] Resuming training from checkpoint: {resume_target}")
+            ckpt = torch.load(resume_target, map_location=device)
+            raw_model.load_state_dict(ckpt["model_state_dict"])
+            start_epoch = ckpt.get("epoch", 0)
+            print(f"[Dioptra-DINO] Successfully restored model weights! Resuming at Epoch {start_epoch + 1}/{cfg.epochs}")
+
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=cfg.epochs * len(dataloader))
+    if start_epoch > 0:
+        for _ in range(start_epoch * len(dataloader)):
+            scheduler.step()
 
     print(f"Training configuration: Epochs={cfg.epochs}, Batches/Epoch={len(dataloader)}, "
           f"BatchSize={cfg.batch_size} (EffBatchSize={cfg.batch_size * cfg.gradient_accumulation_steps})")
@@ -1356,7 +1389,7 @@ def train_dioptra_dino(args):
             return torch.cuda.amp.autocast(enabled=enabled)
         return torch.cpu.amp.autocast(enabled=False) if hasattr(torch, "cpu") else torch.cuda.amp.autocast(enabled=False)
 
-    for epoch in range(cfg.epochs):
+    for epoch in range(start_epoch, cfg.epochs):
         model.train()
         epoch_loss = 0.0
         t_start = time.time()
@@ -1398,6 +1431,11 @@ def train_dioptra_dino(args):
                       f"Edge: {metrics.get('loss_edge', 0):.3f}, VNL: {metrics.get('loss_vnl', 0):.3f}) "
                       f"ARA Gate: {current_gate:.2f}")
 
+            if step % 500 == 0:
+                gc.collect()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+
         elapsed = time.time() - t_start
         mean_loss = epoch_loss / len(dataloader)
         print(f"==> Epoch {epoch+1} Complete! Mean Loss: {mean_loss:.4f}, Runtime: {elapsed:.1f}s")
@@ -1412,6 +1450,11 @@ def train_dioptra_dino(args):
         torch.save(save_dict, ckpt_path)
         torch.save(save_dict, best_path)
         print(f"Saved checkpoint: {ckpt_path}")
+        del save_dict
+
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
     print("\n>>> DIOPTRA-DINO TRAINING COMPLETED SUCCESSFULLY! <<<\n")
 
@@ -1570,6 +1613,7 @@ if __name__ == "__main__":
     parser.add_argument("--crop-min", type=float, default=0.35, help="Minimum scale for dynamic optical pinhole crop")
     parser.add_argument("--lr-backbone", type=float, default=2e-5, help="Learning rate for DINOv2 backbone")
     parser.add_argument("--lr-head", type=float, default=2e-4, help="Learning rate for geometric head")
+    parser.add_argument("--resume", type=str, default=None, nargs="?", const="auto", help="Resume from checkpoint (path or 'auto' for latest in outputs_dino/)")
     parser.add_argument("--eval", action="store_true", help="Run quantitative evaluation benchmark")
     parser.add_argument("--sweep", action="store_true", help="Run multi-FOV sweep visualization")
     parser.add_argument("--checkpoint", type=str, default="outputs_dino/dioptra_dino_best.pt", help="Path to model checkpoint")
