@@ -3556,15 +3556,19 @@ logger = logging.getLogger(__name__)
 # Dataset root resolution (Kaggle-aware)
 # ======================================================================
 
-_TARTANAIR_DIFFS = {"Easy", "Medium", "Hard"}
+_TARTANAIR_DIFFS = {
+    "Easy", "Medium", "Hard", "easy", "medium", "hard",
+    "Data_easy", "data_easy", "Data_hard", "data_hard"
+}
 
 
 def _dir_looks_like_tartanair(root: Path) -> bool:
-    """Cheap structural probe: does root match either TartanAir layout?
+    """Cheap structural probe: does root match TartanAir v1, v2, or warehouse stereo layout?
 
-    Layout A: root/{env}/{Easy|Medium|Hard}/P000/...
-    Layout B: root/{Easy|Medium|Hard}/{env}/P000/...
-    Probes at most two directory levels (listings stay small).
+    Supports:
+      Layout A: root/{env}/{Easy|Medium|Hard|Data_easy}/P000/...
+      Layout B: root/{Easy|Medium|Hard|Data_easy}/{env}/P000/...
+      Warehouse: root/warehouse_stereo/... or root containing warehouse environments
     """
     try:
         tops = [d for d in root.iterdir() if d.is_dir()]
@@ -3572,33 +3576,35 @@ def _dir_looks_like_tartanair(root: Path) -> bool:
         return False
     if not tops:
         return False
+    top_names = {t.name for t in tops}
+    if "warehouse_stereo" in top_names or root.name == "warehouse_stereo":
+        return True
+    if any(k in top_names for k in ("carwelding", "abandonedfactory", "IndustrialHangar", "Supermarket")):
+        return True
     if any(t.name in _TARTANAIR_DIFFS for t in tops):
         return True  # layout B root
     for t in tops[:64]:
         try:
-            if any(c.name in _TARTANAIR_DIFFS for c in t.iterdir() if c.is_dir()):
+            sub = [c.name for c in t.iterdir() if c.is_dir()]
+            if any(c in _TARTANAIR_DIFFS for c in sub):
                 return True  # layout A root
+            if any(c in ("image_left", "image_lcam_front", "depth_left", "depth_lcam_front") for c in sub):
+                return True
         except OSError:
             continue
     return False
 
 
 def _zip_looks_like_tartanair(zip_path: Path) -> bool:
-    """True if the archive contains image_left/ + depth_left/ members."""
+    """True if the archive contains TartanAir v1 or v2 stereo image/depth members."""
     try:
         with zipfile.ZipFile(zip_path, "r") as zf:
             names = zf.namelist()
     except (zipfile.BadZipFile, OSError):
         return False
-    has_img = has_depth = False
-    for n in names:
-        if "/image_left/" in n:
-            has_img = True
-        elif "/depth_left/" in n:
-            has_depth = True
-        if has_img and has_depth:
-            return True
-    return False
+    has_img = any(("/image_left/" in n or "/image_lcam_front/" in n) for n in names)
+    has_depth = any(("/depth_left/" in n or "/depth_lcam_front/" in n) for n in names)
+    return has_img and has_depth
 
 
 def _enumerate_input_mounts(base: Path) -> List[str]:
@@ -3667,6 +3673,8 @@ def _deep_find_tartanair(
             continue
         seen.add(key)
         if _dir_looks_like_tartanair(d):
+            if (d / "warehouse_stereo").is_dir():
+                d = d / "warehouse_stereo"
             dir_hits.append(d)
             continue  # match: the subtree below is the dataset itself
         if depth >= _MAX_SCAN_DEPTH:
@@ -3707,15 +3715,19 @@ def _resolve_single_mount(cand: Path) -> Optional[Path]:
         return None
     # 2. Directory that IS a dataset root
     if _dir_looks_like_tartanair(cand):
+        if (cand / "warehouse_stereo").is_dir():
+            return cand / "warehouse_stereo"
         return cand
     # 3. Dataset nested one level down — Kaggle auto-extracted mounts keep
-    #    the uploader's top folder, e.g. .../dasvo-tartanair-.../tartanair/
+    #    the uploader's top folder, e.g. .../tartanair-warehouse-stereo-suite/warehouse_stereo/
     try:
         subdirs = [d for d in sorted(cand.iterdir()) if d.is_dir()]
     except OSError:
         subdirs = []
     for sd in subdirs[:16]:
         if _dir_looks_like_tartanair(sd):
+            if (sd / "warehouse_stereo").is_dir():
+                return sd / "warehouse_stereo"
             return sd
     # 4. Dataset shipped as a zip inside the dir (Kaggle zip-mounted
     #    datasets); pick the largest matching archive.
@@ -3752,8 +3764,8 @@ def resolve_dataset_root(path: str) -> str:
           namespaced: /kaggle/input/datasets/<owner>/<slug>/tartanair/…
       * a dataset root directory (used as-is)
       * a directory CONTAINING the dataset at any depth ≤ 5, e.g. the
-        Kaggle mount /kaggle/input/dasvo-tartanair-rgb-d-validation-split
-        → .../dasvo-tartanair-rgb-d-validation-split/tartanair
+        Kaggle mount /kaggle/input/tartanair-warehouse-stereo-suite
+        → .../tartanair-warehouse-stereo-suite/warehouse_stereo
       * a .zip archive path (zip-backed lazy mode — no extraction needed)
       * a directory containing the dataset as a zip (Kaggle zip-mounted
         datasets); picks the largest matching archive
@@ -3792,32 +3804,53 @@ def resolve_dataset_root(path: str) -> str:
             dh, zh = _deep_find_tartanair(r)
             dir_hits.extend(dh)
             zip_hits.extend(zh)
-        if dir_hits:  # prefer an extracted tree over any archive
-            root = dir_hits[0]
+
+        # Prioritize our uploaded TartanAir Warehouse Stereo Suite
+        warehouse_dirs = [
+            d for d in dir_hits
+            if any(k in str(d).lower() for k in ("warehouse", "stereo-suite", "stereo_suite", "tartanair-warehouse"))
+        ]
+        warehouse_zips = [
+            z for z in zip_hits
+            if any(k in str(z[0]).lower() for k in ("warehouse", "stereo-suite", "stereo_suite", "tartanair-warehouse"))
+        ]
+        if warehouse_dirs:
+            root = warehouse_dirs[0]
+            logger.info(f"Dataset root resolved (Warehouse Stereo Suite): auto -> {root}")
+            return str(root)
+        if warehouse_zips:
+            warehouse_zips.sort(key=lambda t: t[1], reverse=True)
+            root = warehouse_zips[0][0]
+            logger.info(f"Dataset root resolved (Warehouse Stereo Suite zip): auto -> {root} (zip-backed)")
+            return str(root)
+
+        # General TartanAir hits (strictly excluding external dasvo dataset)
+        clean_dirs = [d for d in dir_hits if "dasvo" not in str(d).lower()]
+        if clean_dirs:
+            root = clean_dirs[0]
             logger.info(f"Dataset root resolved: auto -> {root}")
             return str(root)
-        if zip_hits:
-            zip_hits.sort(key=lambda t: t[1], reverse=True)
-            root = zip_hits[0][0]
+        clean_zips = [z for z in zip_hits if "dasvo" not in str(z[0]).lower()]
+        if clean_zips:
+            clean_zips.sort(key=lambda t: t[1], reverse=True)
+            root = clean_zips[0][0]
             logger.info(f"Dataset root resolved: auto -> {root} (zip-backed)")
             return str(root)
+
         blob = " ".join(mount_names).lower()
-        if not any(k in blob for k in ("tartanair", "dasvo")):
+        if not any(k in blob for k in ("warehouse", "stereo", "tartanair")):
             hint = (
-                "None of the mounted inputs looks like the TartanAir dataset "
-                "— it is probably not attached to this notebook. Add it via "
-                "the right sidebar → Input → '+ Add Input' → search "
-                "'dasvo-tartanair-rgb-d-validation-split' (by pandrii000), "
-                "then re-run. On current Kaggle notebooks it mounts under "
-                "/kaggle/input/datasets/pandrii000/"
-                "dasvo-tartanair-rgb-d-validation-split/."
+                "None of the mounted inputs looks like our uploaded TartanAir Warehouse "
+                "Stereo Suite ('yumnamharryson/tartanair-warehouse-stereo-suite'). "
+                "Please attach it via the right sidebar → Input → '+ Add Input' → search "
+                "'tartanair-warehouse-stereo-suite' (by yumnamharryson). "
+                "On Kaggle it mounts under /kaggle/input/datasets/yumnamharryson/tartanair-warehouse-stereo-suite/."
             )
         else:
             hint = (
-                "A TartanAir-named input is mounted, but no "
-                "{env}/{Easy|Hard}/P00x/image_left + depth_left tree (or a "
-                ".zip of it) was found inside it — inspect it with "
-                "!ls <mount> and pass the inner directory via --train."
+                "A TartanAir-named input is mounted, but no valid warehouse stereo layout "
+                "(with image_left/depth_left or image_lcam_front/depth_lcam_front) was found inside it. "
+                "Please verify the dataset mount path."
             )
         raise FileNotFoundError(
             "Could not resolve a TartanAir dataset from: auto\n"
@@ -3878,10 +3911,11 @@ class TartanAirDataset(torch.utils.data.Dataset):
     unextracted by Kaggle still work).
 
     Image/depth filename pairings (normalized-stem matching strips the
-    _depth/_og/_left camera tags):
-        000000.png         ↔ 000000.npy             (plain)
-        000000_og.png      ↔ 000000.npy             (official TartanAir)
-        000000_left.png    ↔ 000000_left_depth.npy  (DASVO/Kaggle split)
+    _depth/_og/_left/_lcam_front camera tags):
+        000000.png            ↔ 000000.npy                    (plain)
+        000000_og.png         ↔ 000000.npy                    (official TartanAir)
+        000000_left.png       ↔ 000000_left_depth.(npy|png)   (TartanAir v1 stereo)
+        000000_lcam_front.png ↔ 000000_lcam_front_depth.png   (TartanAir v2 stereo)
 
     Args:
         root: Root directory of TartanAir dataset, or a .zip archive
@@ -3899,7 +3933,26 @@ class TartanAirDataset(torch.utils.data.Dataset):
         "easy": "Easy",
         "medium": "Medium",
         "hard": "Hard",
+        "data_easy": "Data_easy",
+        "data_hard": "Data_hard",
     }
+
+    @staticmethod
+    def _extract_env_name_from_path(p: Path) -> str:
+        """Extract environment name from path components, recognizing warehouse stereo environments."""
+        for part in reversed(p.parts):
+            pl = part.lower()
+            if pl in ("carwelding", "abandonedfactory", "industrialhangar", "supermarket"):
+                return part
+        for part in reversed(p.parts):
+            if part.startswith("P0") or part in (
+                "image_left", "image_lcam_front", "image_right", "image_rcam_front",
+                "depth_left", "depth_lcam_front", "Easy", "Hard", "Medium",
+                "Data_easy", "Data_hard", "warehouse_stereo"
+            ):
+                continue
+            return part
+        return "warehouse"
 
     def __init__(
         self,
@@ -3912,6 +3965,8 @@ class TartanAirDataset(torch.utils.data.Dataset):
     ):
         super().__init__()
         self.root = Path(root)
+        if (self.root / "warehouse_stereo").is_dir():
+            self.root = self.root / "warehouse_stereo"
         # fail fast with a clear message instead of
         # a bare FileNotFoundError from iterdir() when the root is missing.
         # the root may also be a .zip archive
@@ -3980,10 +4035,16 @@ class TartanAirDataset(torch.utils.data.Dataset):
         code re-read cam_left.json in every __getitem__ call) and cached in
         the sample dicts.
         """
-        difficulties = (
-            ["Easy", "Medium", "Hard"] if self.difficulty == "all"
-            else [self.DIFFICULTY_MAP.get(self.difficulty.lower(), "Easy")]
-        )
+        if self.difficulty == "all":
+            difficulties = ["Easy", "Data_easy", "Medium", "Hard", "Data_hard"]
+        elif self.difficulty.lower() in ("easy", "data_easy"):
+            difficulties = ["Easy", "Data_easy"]
+        elif self.difficulty.lower() in ("hard", "data_hard"):
+            difficulties = ["Hard", "Data_hard"]
+        elif self.difficulty.lower() == "medium":
+            difficulties = ["Medium"]
+        else:
+            difficulties = [self.DIFFICULTY_MAP.get(self.difficulty.lower(), self.difficulty)]
         diff_set = set(difficulties)
 
         # Collect (traj_dir, env_name, diff_name) across both layouts.
@@ -4032,28 +4093,55 @@ class TartanAirDataset(torch.utils.data.Dataset):
                             if traj_dir.is_dir():
                                 traj_dirs.append((traj_dir, top_dir.name, "Hard"))
 
+        # Recursive discovery for warehouse stereo suite and nested layouts
+        if not traj_dirs:
+            for cand in sorted(self.root.glob("**/image_left")):
+                if cand.is_dir():
+                    traj_p = cand.parent
+                    env = self._extract_env_name_from_path(cand)
+                    traj_dirs.append((traj_p, env, "Easy"))
+            for cand in sorted(self.root.glob("**/image_lcam_front")):
+                if cand.is_dir():
+                    traj_p = cand.parent
+                    env = self._extract_env_name_from_path(cand)
+                    traj_dirs.append((traj_p, env, "Data_easy"))
+
         # Per-trajectory intrinsics cache
         K_cache: Dict[str, Tensor] = {}
         depth_scale_cache: Dict[str, float] = {}
 
         for traj_dir, env_name, diff_name in traj_dirs:
+            # Discover image and depth directories (support TartanAir v1 and v2)
             img_dir = traj_dir / "image_left"
             depth_dir = traj_dir / "depth_left"
+            img_right_dir = traj_dir / "image_right"
 
-            if not img_dir.is_dir() or not depth_dir.is_dir():
+            if not (img_dir.is_dir() and depth_dir.is_dir()):
+                img_dir = traj_dir / "image_lcam_front"
+                depth_dir = traj_dir / "depth_lcam_front"
+                img_right_dir = traj_dir / "image_rcam_front"
+
+            if not (img_dir.is_dir() and depth_dir.is_dir()):
+                # Path replacement check for nested modality trees
+                cand_depth = Path(
+                    str(img_dir).replace("image_left", "depth_left").replace("image_lcam_front", "depth_lcam_front")
+                )
+                if cand_depth.is_dir():
+                    depth_dir = cand_depth
+
+            if not (img_dir.is_dir() and depth_dir.is_dir()):
                 continue
 
             traj_key = f"{env_name}/{traj_dir.name}"
 
-            # Academic zero-shot cross-environment split (v2):
-            # Split strictly by environment name so train and val NEVER share 3D worlds.
-            # Prevents intra-scene data leakage.
+            # Zero-shot cross-environment split for indoor warehouse environments:
             if getattr(self.cfg, "split_mode", "cross_env") == "cross_env":
                 env_key = env_name.lower().strip()
                 env_hash = int(hashlib.md5(env_key.encode()).hexdigest(), 16)
-                is_val = (env_hash % 10) >= 8  # 80% train envs, 20% held-out val envs
+                # Hold out abandonedfactory for validation; train on carwelding, industrialhangar, supermarket
+                is_val = (env_key == "abandonedfactory") or ((env_hash % 10) >= 9)
             else:
-                # Legacy / intra-environment cross-trajectory split
+                # Intra-environment cross-trajectory split
                 traj_hash = int(hashlib.md5(traj_key.encode()).hexdigest(), 16)
                 is_val = (traj_hash % 10) >= 8  # 80% train, 20% val
             if self.split == "train" and is_val:
@@ -4063,6 +4151,8 @@ class TartanAirDataset(torch.utils.data.Dataset):
 
             # --- Intrinsics: parse once per trajectory ---
             cam_path = traj_dir / "cam_left.json"
+            if not cam_path.is_file():
+                cam_path = traj_dir / "cam_lcam_front.json"
             if cam_path.is_file():
                 cam_key = str(cam_path)
                 if cam_key not in K_cache:
@@ -4072,36 +4162,17 @@ class TartanAirDataset(torch.utils.data.Dataset):
                 traj_K = K_cache[cam_key]
                 traj_depth_scale = depth_scale_cache[cam_key]
             else:
-                logger.warning(
-                    f"cam_left.json not found for {traj_key}; using 90° FOV "
-                    f"default intrinsics (may be wrong for non-TartanAir data)."
-                )
                 traj_K = None
                 traj_depth_scale = 1000.0
 
-            # List image files; support .npy/.png/.tiff depth.
-            # the DASVO TartanAir validation
-            # split (kaggle.com/datasets/pandrii000/…) names images
-            # 000000_left.png with depth files 000000_left_depth.npy — the
-            # old exact-stem matcher (plus its _og fallback) dropped EVERY
-            # frame of that dataset, yielding an empty index. Depth files
-            # are now indexed by NORMALIZED stem (camera tags stripped), so
-            # all known TartanAir conventions pair up:
-            #   000000.png ↔ 000000.npy                 (assumed layout)
-            #   000000_og.png ↔ 000000.npy              (official release)
-            #   000000_left.png ↔ 000000_left_depth.npy (DASVO/Kaggle split)
+            # List image files; support .npy/.png/.tiff depth
             depth_index: Dict[str, Tuple[Path, str]] = {}
             for d_path in sorted(depth_dir.iterdir()):
                 d_ext = d_path.suffix.lower()
                 if d_ext not in (".npy", ".png", ".tiff"):
-                    continue  # skips pose_left.txt and anything unrelated
+                    continue
                 key = self._normalize_stem(d_path.stem)
                 if key in depth_index:
-                    logger.warning(
-                        f"{traj_key}: ambiguous depth stems normalize to "
-                        f"'{key}' ({depth_index[key][0].name} vs "
-                        f"{d_path.name}); keeping the first."
-                    )
                     continue
                 depth_index[key] = (d_path, d_ext.lstrip("."))
 
@@ -4113,8 +4184,19 @@ class TartanAirDataset(torch.utils.data.Dataset):
                     continue
                 depth_path, depth_format = entry
 
+                # Optional stereo right image
+                right_path = None
+                if img_right_dir.is_dir():
+                    cand_right = img_right_dir / img_path.name
+                    if not cand_right.is_file():
+                        # Stem replacement for v1/v2 naming
+                        cand_right = img_right_dir / img_path.name.replace("_left", "_right").replace("_lcam_front", "_rcam_front")
+                    if cand_right.is_file():
+                        right_path = str(cand_right)
+
                 self.samples.append({
                     "image": str(img_path),
+                    "image_right": right_path,
                     "depth": str(depth_path),
                     "depth_format": depth_format,
                     "intrinsics": traj_K,          # cached (3, 3) tensor or None
@@ -4129,9 +4211,8 @@ class TartanAirDataset(torch.utils.data.Dataset):
             raise FileNotFoundError(
                 f"No samples found under {self.root} "
                 f"(difficulty={self.difficulty}, split={self.split}). "
-                f"Expected layout: {{env}}/{{Easy|Medium|Hard}}/P000/ or "
-                f"{{Easy|Medium|Hard}}/{{env}}/P000/ with image_left/*.png + "
-                f"depth_left/*.(npy|png)"
+                f"Expected layout containing image_left/ + depth_left/ or "
+                f"image_lcam_front/ + depth_lcam_front/ folders."
             )
 
     def _build_index_zip(self) -> None:
@@ -4172,10 +4253,16 @@ class TartanAirDataset(torch.utils.data.Dataset):
             for i in range(1, len(parts)):
                 dirs.add("/".join(parts[:i]))
 
-        difficulties = (
-            ["Easy", "Medium", "Hard"] if self.difficulty == "all"
-            else [self.DIFFICULTY_MAP.get(self.difficulty.lower(), "Easy")]
-        )
+        if self.difficulty == "all":
+            difficulties = ["Easy", "Data_easy", "Medium", "Hard", "Data_hard"]
+        elif self.difficulty.lower() in ("easy", "data_easy"):
+            difficulties = ["Easy", "Data_easy"]
+        elif self.difficulty.lower() in ("hard", "data_hard"):
+            difficulties = ["Hard", "Data_hard"]
+        elif self.difficulty.lower() == "medium":
+            difficulties = ["Medium"]
+        else:
+            difficulties = [self.DIFFICULTY_MAP.get(self.difficulty.lower(), self.difficulty)]
         diff_set = set(difficulties)
 
         # Collect (traj_prefix, env_name, diff_name) across both layouts.
@@ -4236,23 +4323,31 @@ class TartanAirDataset(torch.utils.data.Dataset):
                         }):
                             traj_entries.append((f"{dp}/{tr}", top_name, "Hard"))
 
+        # If standard layout probe found nothing (e.g. warehouse_stereo/... or v2 layout), scan dirs:
+        if not traj_entries:
+            for d in sorted(dirs):
+                if d.endswith("/image_left") or d.endswith("/image_lcam_front"):
+                    tp = d.rsplit("/", 1)[0]
+                    env_n = self._extract_env_name_from_path(Path(d))
+                    traj_entries.append((tp, env_n, "Data_easy" if "lcam" in d else "Easy"))
+
         file_set = set(names)
         kept: List[Tuple[str, str, str]] = []
         for traj_prefix, env_name, diff_name in traj_entries:
-            if f"{traj_prefix}/image_left" not in dirs:
-                continue
-            if f"{traj_prefix}/depth_left" not in dirs:
-                continue
+            has_v1 = f"{traj_prefix}/image_left" in dirs and f"{traj_prefix}/depth_left" in dirs
+            has_v2 = f"{traj_prefix}/image_lcam_front" in dirs and f"{traj_prefix}/depth_lcam_front" in dirs
+            if not (has_v1 or has_v2):
+                cand_depth_v1 = traj_prefix.replace("image_left", "depth_left")
+                cand_depth_v2 = traj_prefix.replace("image_lcam_front", "depth_lcam_front")
+                if not (cand_depth_v1 in dirs or cand_depth_v2 in dirs):
+                    continue
 
-            # Academic zero-shot cross-environment split (v2):
-            # Split strictly by environment name so train and val NEVER share 3D worlds.
-            # Prevents intra-scene data leakage.
+            # Zero-shot cross-environment split for indoor warehouse environments:
             if getattr(self.cfg, "split_mode", "cross_env") == "cross_env":
                 env_key = env_name.lower().strip()
                 env_hash = int(hashlib.md5(env_key.encode()).hexdigest(), 16)
-                is_val = (env_hash % 10) >= 8  # 80% train envs, 20% held-out val envs
+                is_val = (env_key == "abandonedfactory") or ((env_hash % 10) >= 9)
             else:
-                # Legacy / intra-environment cross-trajectory split
                 traj_key = f"{env_name}/{traj_prefix.rsplit('/', 1)[-1]}"
                 traj_hash = int(hashlib.md5(traj_key.encode()).hexdigest(), 16)
                 is_val = (traj_hash % 10) >= 8
@@ -4262,10 +4357,14 @@ class TartanAirDataset(torch.utils.data.Dataset):
                 continue
             kept.append((traj_prefix, env_name, diff_name))
 
-        # Read all cam_left.json members in one zip open (prefix restored —
-        # 'names' are layout-scan names, zip members keep the top folder).
-        cam_members = [f"{tp}/cam_left.json" for tp, _, _ in kept
-                       if f"{tp}/cam_left.json" in file_set]
+        # Read all cam json members in one zip open
+        cam_members = [
+            f"{tp}/cam_left.json" for tp, _, _ in kept
+            if f"{tp}/cam_left.json" in file_set
+        ] + [
+            f"{tp}/cam_lcam_front.json" for tp, _, _ in kept
+            if f"{tp}/cam_lcam_front.json" in file_set
+        ]
         cam_data: Dict[str, bytes] = {}
         if cam_members:
             with zipfile.ZipFile(self._zip_path, "r") as zf:
@@ -4274,22 +4373,26 @@ class TartanAirDataset(torch.utils.data.Dataset):
 
         for traj_prefix, env_name, diff_name in kept:
             traj_key = f"{env_name}/{traj_prefix.rsplit('/', 1)[-1]}"
-            img_prefix = traj_prefix + "/image_left/"
-            depth_prefix = traj_prefix + "/depth_left/"
+            if f"{traj_prefix}/image_lcam_front" in dirs:
+                img_prefix = traj_prefix + "/image_lcam_front/"
+                depth_prefix = traj_prefix + "/depth_lcam_front/"
+                right_prefix = traj_prefix + "/image_rcam_front/"
+            else:
+                img_prefix = traj_prefix + "/image_left/"
+                depth_prefix = traj_prefix + "/depth_left/"
+                right_prefix = traj_prefix + "/image_right/"
 
             # --- Intrinsics: parse once per trajectory ---
             cam_member = traj_prefix + "/cam_left.json"
+            if cam_member not in cam_data:
+                cam_member = traj_prefix + "/cam_lcam_front.json"
             if cam_member in cam_data:
                 traj_K, traj_depth_scale = self._parse_cam_json(cam_data[cam_member])
             else:
-                logger.warning(
-                    f"cam_left.json not found for {traj_key}; using 90° FOV "
-                    f"default intrinsics (may be wrong for non-TartanAir data)."
-                )
                 traj_K = None
                 traj_depth_scale = 1000.0
 
-            # --- Depth index by normalized stem (same as dir mode) ---
+            # --- Depth index by normalized stem ---
             depth_index: Dict[str, Tuple[str, str]] = {}
             for member in sorted(by_parent.get(depth_prefix[:-1], [])):
                 ext = member.rsplit(".", 1)[-1].lower()
@@ -4298,11 +4401,6 @@ class TartanAirDataset(torch.utils.data.Dataset):
                 stem = member[len(depth_prefix):-len(ext) - 1]
                 key = self._normalize_stem(stem)
                 if key in depth_index:
-                    logger.warning(
-                        f"{traj_key}: ambiguous depth stems normalize to "
-                        f"'{key}' ({depth_index[key][0]} vs {member}); "
-                        f"keeping the first."
-                    )
                     continue
                 depth_index[key] = (member, ext)
 
@@ -4316,8 +4414,18 @@ class TartanAirDataset(torch.utils.data.Dataset):
                     continue
                 depth_member, depth_format = entry
 
+                # Optional stereo right image
+                right_member = right_prefix + member[len(img_prefix):]
+                has_right = right_member in file_set
+                if not has_right:
+                    alt_right = right_prefix + member[len(img_prefix):].replace("_left", "_right").replace("_lcam_front", "_rcam_front")
+                    has_right = alt_right in file_set
+                    if has_right:
+                        right_member = alt_right
+
                 self.samples.append({
                     "image": prefix + member,
+                    "image_right": prefix + right_member if has_right else None,
                     "depth": prefix + depth_member,
                     "depth_format": depth_format,
                     "intrinsics": traj_K,          # cached (3, 3) tensor or None
@@ -4333,9 +4441,8 @@ class TartanAirDataset(torch.utils.data.Dataset):
             raise FileNotFoundError(
                 f"No samples found inside zip {self._zip_path} "
                 f"(difficulty={self.difficulty}, split={self.split}). "
-                f"Expected layout: {{env}}/{{Easy|Medium|Hard}}/P000/ or "
-                f"{{Easy|Medium|Hard}}/{{env}}/P000/ with image_left/*.png + "
-                f"depth_left/*.(npy|png)"
+                f"Expected layout containing image_left/ + depth_left/ or "
+                f"image_lcam_front/ + depth_lcam_front/ members."
             )
 
     @staticmethod
@@ -4343,13 +4450,17 @@ class TartanAirDataset(torch.utils.data.Dataset):
         """Strip camera/suffix tags so image and depth stems pair up across
         TartanAir naming conventions.
 
-        One pass over the known tags handles every real convention:
-          000000_left_depth -> 000000   (DASVO/Kaggle depth naming)
-          000000_left       -> 000000   (DASVO/Kaggle image naming)
-          000000_og         -> 000000   (official TartanAir image naming)
-          000000            -> 000000   (plain naming)
+        Handles:
+          000000_left_depth / 000000_left       -> 000000 (TartanAir v1 left)
+          000000_lcam_front_depth / 000000_lcam_front -> 000000 (TartanAir v2 front)
+          000000_right_depth / 000000_right     -> 000000 (TartanAir v1 right)
+          000000_rcam_front_depth / 000000_rcam_front -> 000000 (TartanAir v2 right)
+          000000_depth / 000000_og / 000000     -> 000000
         """
-        for tag in ("_depth", "_og", "_left"):
+        for tag in (
+            "_lcam_front_depth", "_rcam_front_depth", "_left_depth", "_right_depth",
+            "_lcam_front", "_rcam_front", "_left", "_right", "_depth", "_og"
+        ):
             if stem.endswith(tag):
                 stem = stem[: -len(tag)]
         return stem
@@ -6392,7 +6503,7 @@ def main():
     # Resolve the dataset root BEFORE any dataset construction below.
     # Supports "auto" (recursive scan of /kaggle/input — both the classic
     # /kaggle/input/<slug> and namespaced /kaggle/input/datasets/<owner>/
-    # <slug> layouts), Kaggle mount dirs (…/dasvo-tartanair-…/tartanair),
+    # <slug> layouts), Kaggle mount dirs (…/tartanair-warehouse-stereo-suite/…),
     # and .zip archives (lazy zip-backed mode, no extraction). See
     # resolve_dataset_root.
     if args.train:

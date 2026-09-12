@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import gc
 import glob
+import hashlib
 import io
 import math
 import os
@@ -873,39 +874,50 @@ def apply_dynamic_pinhole_crop(
 # TartanAir Dataset Discovery & Resolution
 # ---------------------------------------------------------------------------
 
-_TARTANAIR_DIFFS = {"Easy", "Medium", "Hard", "easy", "medium", "hard"}
+_TARTANAIR_DIFFS = {
+    "Easy", "Medium", "Hard", "easy", "medium", "hard",
+    "Data_easy", "data_easy", "Data_hard", "data_hard"
+}
 _MAX_SCAN_DEPTH = 5
 _SCAN_SKIP_DIRS = {".ipynb_checkpoints", "__pycache__", ".git", "__MACOSX"}
 
 
 def _dir_looks_like_tartanair(root: Path) -> bool:
-    """Cheap structural probe: does root match either TartanAir layout?"""
+    """Cheap structural probe: does root match TartanAir v1, v2, or warehouse stereo layout?"""
     try:
         tops = [d for d in root.iterdir() if d.is_dir()]
     except OSError:
         return False
     if not tops:
         return False
+    top_names = {t.name for t in tops}
+    if "warehouse_stereo" in top_names or root.name == "warehouse_stereo":
+        return True
+    if any(k in top_names for k in ("carwelding", "abandonedfactory", "IndustrialHangar", "Supermarket")):
+        return True
     if any(t.name in _TARTANAIR_DIFFS for t in tops):
         return True  # layout B root: {difficulty}/{env}/...
     for t in tops[:64]:
         try:
-            if any(c.name in _TARTANAIR_DIFFS for c in t.iterdir() if c.is_dir()):
+            sub = [c.name for c in t.iterdir() if c.is_dir()]
+            if any(c in _TARTANAIR_DIFFS for c in sub):
                 return True  # layout A root: {env}/{difficulty}/...
+            if any(c in ("image_left", "image_lcam_front", "depth_left", "depth_lcam_front") for c in sub):
+                return True
         except OSError:
             continue
     return False
 
 
 def _zip_looks_like_tartanair(zip_path: Path) -> bool:
-    """True if the archive contains image_left/ + depth_left/ members."""
+    """True if the archive contains TartanAir v1 or v2 stereo image/depth members."""
     try:
         with zipfile.ZipFile(zip_path, "r") as zf:
             names = zf.namelist()
     except (zipfile.BadZipFile, OSError):
         return False
-    has_img = any("/image_left/" in n for n in names)
-    has_depth = any("/depth_left/" in n for n in names)
+    has_img = any(("/image_left/" in n or "/image_lcam_front/" in n) for n in names)
+    has_depth = any(("/depth_left/" in n or "/depth_lcam_front/" in n) for n in names)
     return has_img and has_depth
 
 
@@ -943,6 +955,8 @@ def _deep_find_tartanair(base: Path) -> Tuple[List[Path], List[Tuple[Path, int]]
             continue
         seen.add(key)
         if _dir_looks_like_tartanair(d):
+            if (d / "warehouse_stereo").is_dir():
+                d = d / "warehouse_stereo"
             dir_hits.append(d)
             continue
         if depth >= _MAX_SCAN_DEPTH:
@@ -976,6 +990,8 @@ def _resolve_single_mount(cand: Path) -> Optional[Path]:
     if not cand.is_dir():
         return None
     if _dir_looks_like_tartanair(cand):
+        if (cand / "warehouse_stereo").is_dir():
+            return cand / "warehouse_stereo"
         return cand
     try:
         subdirs = [d for d in sorted(cand.iterdir()) if d.is_dir()]
@@ -983,6 +999,8 @@ def _resolve_single_mount(cand: Path) -> Optional[Path]:
         subdirs = []
     for sd in subdirs[:16]:
         if _dir_looks_like_tartanair(sd):
+            if (sd / "warehouse_stereo").is_dir():
+                return sd / "warehouse_stereo"
             return sd
     try:
         zips = sorted(
@@ -1035,18 +1053,37 @@ def resolve_dataset_root(path: str = "auto") -> str:
             dir_hits.extend(dh)
             zip_hits.extend(zh)
 
-        if dir_hits:
-            print(f"[Dioptra-DINO Dataset] Resolved 'auto' -> directory: {dir_hits[0]}")
-            return str(dir_hits[0])
-        if zip_hits:
-            print(f"[Dioptra-DINO Dataset] Resolved 'auto' -> zip archive: {zip_hits[0][0]} ({zip_hits[0][1]/(1024*1024):.1f} MB)")
-            return str(zip_hits[0][0])
+        # Prioritize our uploaded TartanAir Warehouse Stereo Suite
+        warehouse_dirs = [
+            d for d in dir_hits
+            if any(k in str(d).lower() for k in ("warehouse", "stereo-suite", "stereo_suite", "tartanair-warehouse"))
+        ]
+        warehouse_zips = [
+            z for z in zip_hits
+            if any(k in str(z[0]).lower() for k in ("warehouse", "stereo-suite", "stereo_suite", "tartanair-warehouse"))
+        ]
+        if warehouse_dirs:
+            print(f"[Dioptra-DINO Dataset] Resolved 'auto' -> Warehouse Stereo Suite directory: {warehouse_dirs[0]}")
+            return str(warehouse_dirs[0])
+        if warehouse_zips:
+            print(f"[Dioptra-DINO Dataset] Resolved 'auto' -> Warehouse Stereo Suite zip: {warehouse_zips[0][0]} ({warehouse_zips[0][1]/(1024*1024):.1f} MB)")
+            return str(warehouse_zips[0][0])
+
+        # Filter out external dasvo dataset
+        clean_dirs = [d for d in dir_hits if "dasvo" not in str(d).lower()]
+        if clean_dirs:
+            print(f"[Dioptra-DINO Dataset] Resolved 'auto' -> directory: {clean_dirs[0]}")
+            return str(clean_dirs[0])
+        clean_zips = [z for z in zip_hits if "dasvo" not in str(z[0]).lower()]
+        if clean_zips:
+            print(f"[Dioptra-DINO Dataset] Resolved 'auto' -> zip archive: {clean_zips[0][0]} ({clean_zips[0][1]/(1024*1024):.1f} MB)")
+            return str(clean_zips[0][0])
 
         raise FileNotFoundError(
             "Could not auto-resolve TartanAir dataset from /kaggle/input.\n"
             f"  Scanned: {', '.join(str(r) for r in scan_roots)}\n"
             f"  Mounted inputs: {', '.join(mount_names) if mount_names else 'None'}\n"
-            "Please ensure 'dasvo-tartanair-rgb-d-validation-split' is attached as an Input in the right sidebar."
+            "Please ensure our uploaded 'tartanair-warehouse-stereo-suite' (by yumnamharryson) is attached as an Input in the right sidebar."
         )
 
     p = Path(path)
@@ -1076,6 +1113,8 @@ class TartanAirDINODataset(torch.utils.data.Dataset):
         apply_pinhole_aug: bool = True,
     ):
         self.root_dir = resolve_dataset_root(root_dir)
+        if os.path.isdir(os.path.join(self.root_dir, "warehouse_stereo")):
+            self.root_dir = os.path.join(self.root_dir, "warehouse_stereo")
         self.split = split
         self.image_size = image_size
         self.apply_pinhole_aug = apply_pinhole_aug and (split == "train")
@@ -1096,8 +1135,26 @@ class TartanAirDINODataset(torch.utils.data.Dataset):
         print(f"[Dioptra-DINO Dataset] Successfully indexed {len(self.samples)} {split} samples from {self.root_dir}")
 
     @staticmethod
+    def _is_val_split(path_str: str) -> bool:
+        """Partition samples into train and val splits.
+        Hold out abandonedfactory for validation; train on carwelding, industrialhangar, supermarket.
+        """
+        pl = path_str.lower()
+        if "abandonedfactory" in pl:
+            return True
+        for train_env in ("carwelding", "industrialhangar", "supermarket"):
+            if train_env in pl:
+                return False
+        # Deterministic MD5 hash fallback for other environments
+        h = int(hashlib.md5(path_str.encode()).hexdigest(), 16)
+        return (h % 10) >= 9
+
+    @staticmethod
     def _normalize_stem(stem: str) -> str:
-        for tag in ("_depth", "_og", "_left"):
+        for tag in (
+            "_lcam_front_depth", "_rcam_front_depth", "_left_depth", "_right_depth",
+            "_lcam_front", "_rcam_front", "_left", "_right", "_depth", "_og"
+        ):
             if stem.endswith(tag):
                 stem = stem[:-len(tag)]
         return stem
@@ -1136,14 +1193,16 @@ class TartanAirDINODataset(torch.utils.data.Dataset):
 
         for n in names:
             nl = n.lower()
-            if "/image_left/" in n and nl.endswith(".png"):
-                parts = n.split("/image_left/")
+            if ("/image_left/" in n or "/image_lcam_front/" in n) and nl.endswith(".png"):
+                mod = "/image_left/" if "/image_left/" in n else "/image_lcam_front/"
+                parts = n.split(mod)
                 traj_prefix = parts[0]
                 fname = os.path.basename(parts[1])
                 stem = self._normalize_stem(os.path.splitext(fname)[0])
                 img_map[f"{traj_prefix}::{stem}"] = n
-            elif "/depth_left/" in n and nl.endswith(".npy"):
-                parts = n.split("/depth_left/")
+            elif ("/depth_left/" in n or "/depth_lcam_front/" in n) and (nl.endswith(".npy") or nl.endswith(".png")):
+                mod = "/depth_left/" if "/depth_left/" in n else "/depth_lcam_front/"
+                parts = n.split(mod)
                 traj_prefix = parts[0]
                 fname = os.path.basename(parts[1])
                 stem = self._normalize_stem(os.path.splitext(fname)[0])
@@ -1152,7 +1211,8 @@ class TartanAirDINODataset(torch.utils.data.Dataset):
         for key, img_path in sorted(img_map.items()):
             if key in depth_map:
                 traj = key.split("::")[0]
-                is_val = (hash(traj) % 10) == 0
+                # Hold out abandonedfactory for validation; train on carwelding, industrialhangar, supermarket
+                is_val = self._is_val_split(traj)
                 if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
                     self.samples.append((img_path, depth_map[key]))
 
@@ -1160,23 +1220,25 @@ class TartanAirDINODataset(torch.utils.data.Dataset):
         png_files = sorted(glob.glob(os.path.join(self.root_dir, "**", "*.png"), recursive=True))
         for img_path in png_files:
             fname = os.path.basename(img_path)
-            if "depth" in fname.lower():
+            if "depth" in fname.lower() or "rcam" in fname.lower() or "_right" in fname.lower():
                 continue
             base_dir = os.path.dirname(img_path)
             stem = os.path.splitext(fname)[0]
             clean = self._normalize_stem(stem)
 
-            # Check candidate depth files across all TartanAir directory and naming schemes
-            cand_depths = [
-                os.path.join(base_dir.replace("image_left", "depth_left"), f"{clean}_left_depth.npy"),
-                os.path.join(base_dir.replace("image_left", "depth_left"), f"{clean}.npy"),
-                os.path.join(base_dir.replace("image_left", "depth_left"), f"{stem}_depth.npy"),
-                os.path.join(base_dir.replace("image_left", "depth_left"), f"{stem}.npy"),
-                os.path.join(base_dir, f"{clean}_depth.npy"),
-                os.path.join(base_dir, f"{clean}.npy"),
-                os.path.join(base_dir, f"{stem}_depth.npy"),
-                os.path.join(base_dir, f"{stem}.npy"),
-            ]
+            # Check candidate depth files across all TartanAir directory and naming schemes (both .npy and .png)
+            cand_depths = []
+            for depth_dir in [
+                base_dir.replace("image_left", "depth_left").replace("image_lcam_front", "depth_lcam_front"),
+                base_dir,
+            ]:
+                for s in [
+                    f"{clean}_left_depth", f"{clean}_lcam_front_depth", f"{clean}_depth", f"{clean}",
+                    f"{stem}_depth", f"{stem}"
+                ]:
+                    cand_depths.append(os.path.join(depth_dir, f"{s}.npy"))
+                    cand_depths.append(os.path.join(depth_dir, f"{s}.png"))
+
             depth_path = None
             for c in cand_depths:
                 if os.path.exists(c):
@@ -1185,7 +1247,7 @@ class TartanAirDINODataset(torch.utils.data.Dataset):
 
             if depth_path:
                 traj_name = os.path.dirname(base_dir)
-                is_val = (hash(traj_name) % 10) == 0
+                is_val = self._is_val_split(traj_name)
                 if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
                     self.samples.append((img_path, depth_path))
 
@@ -1207,13 +1269,24 @@ class TartanAirDINODataset(torch.utils.data.Dataset):
         except Exception:
             img = np.zeros((480, 640, 3), dtype=np.uint8)
 
-        # Load Depth map (npy in metres)
+        # Load Depth map (.npy or .png in metres)
         try:
-            if self._is_zip:
-                depth_data = self._zip_read(self.root_dir, depth_src)
-                depth = np.load(io.BytesIO(depth_data)).astype(np.float32)
+            if str(depth_src).lower().endswith(".png"):
+                if self._is_zip:
+                    depth_bytes = self._zip_read(self.root_dir, depth_src)
+                    depth_arr = np.array(PILImage.open(io.BytesIO(depth_bytes))).astype(np.float32)
+                else:
+                    depth_arr = np.array(PILImage.open(depth_src)).astype(np.float32)
+                if depth_arr.max() > 1000.0:
+                    depth = depth_arr / 1000.0
+                else:
+                    depth = depth_arr
             else:
-                depth = np.load(depth_src).astype(np.float32)
+                if self._is_zip:
+                    depth_data = self._zip_read(self.root_dir, depth_src)
+                    depth = np.load(io.BytesIO(depth_data)).astype(np.float32)
+                else:
+                    depth = np.load(depth_src).astype(np.float32)
         except Exception:
             depth = np.zeros((480, 640), dtype=np.float32)
 
@@ -1327,8 +1400,8 @@ def train_dioptra_dino(args):
     if len(dataset) == 0:
         raise ValueError(
             f"Found 0 training samples in {dataset_root}!\n"
-            "Please ensure TartanAir is attached to this Kaggle notebook:\n"
-            "Right Sidebar -> Input -> '+ Add Input' -> search 'dasvo-tartanair-rgb-d-validation-split' by pandrii000."
+            "Please ensure our uploaded TartanAir Warehouse Stereo Suite is attached to this Kaggle notebook:\n"
+            "Right Sidebar -> Input -> '+ Add Input' -> search 'tartanair-warehouse-stereo-suite' by yumnamharryson."
         )
 
     def _worker_init_fn(worker_id):

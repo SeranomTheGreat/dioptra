@@ -1,0 +1,24 @@
+{
+  "id": "yumnamharryson/dioptra-dino-training",
+  "title": "Dioptra-DINO Training",
+  "code_file": "train_dino_kaggle.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "keywords": [
+    "gpu",
+    "deep-learning",
+    "computer-vision"
+  ],
+  "dataset_sources": [
+    "yumnamharryson/tartanair-warehouse-stereo-suite",
+    "yumnamharryson/tesseract-v17"
+  ],
+  "kernel_sources": [],
+  "competition_sources": [],
+  "model_sources": [],
+  "machine_shape": "NvidiaTeslaT4"
+}

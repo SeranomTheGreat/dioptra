@@ -6,14 +6,14 @@ This guide explains how to reproduce Dioptra training and ablation experiments o
 
 ## 1. Datasets and Setup
 
-Training is conducted on the TartanAir benchmark using the cross-environment split:
-- **15 Training Environments**: `carwelding`, `endofworld`, `gascola`, `hospital`, `japanesealley`, `neighborhood`, `ocean`, `office`, `office2`, `oldtown`, `seasidetown`, `seasonsforest`, `seasonsforest_winter`, `soulcity`, `westerndesert`.
-- **3 Strictly Held-Out Validation Environments**: `abandonedfactory`, `abandonedfactory_night`, `amusement`.
+Training is conducted exclusively on our uploaded **TartanAir Warehouse Stereo Suite** (`yumnamharryson/tartanair-warehouse-stereo-suite`), containing pure indoor and industrial warehouse environments with full stereo pairs:
+- **Training Environments**: `carwelding` (automotive assembly), `IndustrialHangar` (structural warehouse trusses), `Supermarket` (tall shelving aisles).
+- **Strictly Held-Out Validation Environment**: `abandonedfactory` (high-bay industrial warehouse & catwalks).
 
 ### Attaching Inputs on Kaggle
 1. Create a new notebook on Kaggle (Settings $\to$ **Accelerator: GPU T4 x2**).
-2. Attach the code dataset containing `dioptra.py` (or upload this repository).
-3. Attach the TartanAir validation split dataset (`pandrii000/dasvo-tartanair-rgb-d-validation-split`).
+2. Attach the code repository (or upload this directory).
+3. Attach our uploaded dataset: **`yumnamharryson/tartanair-warehouse-stereo-suite`**.
 
 ---
 

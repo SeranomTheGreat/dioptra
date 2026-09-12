@@ -127,7 +127,14 @@ def preprocess_sample(img_path: str, gt_path: Optional[str] = None, img_size: in
     gt_np = None
     if gt_path and os.path.exists(gt_path):
         try:
-            gt_arr = np.load(gt_path).astype(np.float32)
+            if str(gt_path).lower().endswith(".png"):
+                gt_raw = np.array(Image.open(gt_path), dtype=np.float32)
+                if gt_raw.max() > 250.0:
+                    gt_arr = gt_raw / 1000.0
+                else:
+                    gt_arr = gt_raw
+            else:
+                gt_arr = np.load(gt_path).astype(np.float32)
             gt_t = torch.from_numpy(gt_arr)
             gt_cropped = gt_t[top:top + min_side, left:left + min_side]
             gt_depth = TF.resize(gt_cropped.unsqueeze(0), [img_size, img_size], interpolation=TF.InterpolationMode.NEAREST).squeeze(0)
