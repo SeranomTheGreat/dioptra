@@ -41,8 +41,7 @@ def build_kernel():
             "volsiai/hypersim-pack",
             "pandrii000/dasvo-tartanair-rgb-d-validation-split",
             "soumikrakshit/nyu-depth-v2",
-            "alextitto/kitti-rgb-depth-20k-subset",
-            "volsiai/dioptra-dino-epoch-13",
+            "alextitto/kitti-rgb-depth-20k-subset"
         ],
         "kernel_sources": [],
         "competition_sources": [],
@@ -51,7 +50,7 @@ def build_kernel():
 
     with open(os.path.join(out_dir, "kernel-metadata.json"), "w") as f:
         json.dump(metadata, f, indent=2)
-    print("✓ Saved kernel-metadata.json with 13 dataset sources.")
+    print("✓ Saved kernel-metadata.json with 12 dataset sources (checkpoint detached).")
 
     # 3. Build Jupyter Notebook cells
     cells = [
@@ -67,7 +66,7 @@ def build_kernel():
                 "- **NYU-Depth-v2**: Official RGB-D indoor benchmark (`soumikrakshit/nyu-depth-v2`)\n",
                 "- **KITTI**: Eigen metric depth benchmark (`alextitto/kitti-rgb-depth-20k-subset`)\n",
                 "- **DASVO TartanAir**: Benchmark validation split (`pandrii000/dasvo-tartanair-rgb-d-validation-split`)\n",
-                "- **Automatic Resume**: Preemption-resistant state restoration from attached checkpoint (`volsiai/dioptra-dino-epoch-13`) or local checkpoints"
+                "- **Training Mode**: From-scratch joint multi-domain training (Epoch 0 to 40) using pre-trained DINOv2-Small ViT backbone."
             ]
         },
         {
@@ -124,9 +123,9 @@ def build_kernel():
             "execution_count": None,
             "outputs": [],
             "source": [
-                "# [3] Launch Training with Freely Resumable Engine\n",
+                "# [3] Launch Training from Scratch (Epoch 0 to 40)\n",
                 "# --train auto : Auto-scans all 12 mounted datasets across TartanAir, Hypersim, NYUv2, and KITTI\n",
-                "# --resume auto : Automatically restores weights, optimizer, scheduler, scaler from /kaggle/input or local\n",
+                "# --resume none : Trains from scratch (Epoch 0) initializing from official DINOv2-Small ViT weights\n",
                 "# --weight-normal 0.25 : 3D Virtual Normal Loss enforcing surface planarity & boundary sharpness\n",
                 "# --crop-min 0.35 : Wide optical zoom crop for camera-intrinsic equivariance\n",
                 "# --batch-size 8 : Batch size per GPU (DataParallel multi-GPU acceleration across 2x T4s)\n",
@@ -141,7 +140,7 @@ def build_kernel():
                 "    '--crop-min 0.35 '\n",
                 "    '--lr-backbone 2e-5 '\n",
                 "    '--lr-head 2e-4 '\n",
-                "    '--resume auto '\n",
+                "    '--resume none '\n",
                 "    '--output-dir /kaggle/working/outputs_dino'\n",
                 ")\n",
                 "print('Executing training command:')\n",

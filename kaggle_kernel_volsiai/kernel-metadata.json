@@ -24,8 +24,7 @@
     "volsiai/hypersim-pack",
     "pandrii000/dasvo-tartanair-rgb-d-validation-split",
     "soumikrakshit/nyu-depth-v2",
-    "alextitto/kitti-rgb-depth-20k-subset",
-    "volsiai/dioptra-dino-epoch-13"
+    "alextitto/kitti-rgb-depth-20k-subset"
   ],
   "kernel_sources": [],
   "competition_sources": [],
