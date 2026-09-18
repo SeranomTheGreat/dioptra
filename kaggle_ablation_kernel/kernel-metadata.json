@@ -1,0 +1,17 @@
+{
+  "id": "yumnamharryson/dioptra-dino-ablations-retraining",
+  "title": "Dioptra-DINO Ablations Retraining",
+  "code_file": "dioptra_dino_ablations.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "dataset_sources": [
+    "yumnamharryson/tartanair-warehouse-stereo-suite"
+  ],
+  "kernel_sources": [],
+  "competition_sources": [],
+  "model_sources": []
+}

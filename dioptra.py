@@ -4644,20 +4644,33 @@ class TartanAirDataset(torch.utils.data.Dataset):
                 depth = np.load(io.BytesIO(bytes(src))).astype(np.float32)
             else:
                 depth = np.load(src).astype(np.float32)
-        elif depth_format == "png":
+        elif depth_format in ("png", "tiff"):
             from PIL import Image
             if isinstance(src, (bytes, bytearray)):
-                depth = np.array(Image.open(io.BytesIO(bytes(src)))).astype(np.float32) / depth_scale
+                pil_img = Image.open(io.BytesIO(bytes(src)))
             else:
-                depth = np.array(Image.open(src)).astype(np.float32) / depth_scale
-        elif depth_format == "tiff":
-            from PIL import Image
-            if isinstance(src, (bytes, bytearray)):
-                depth = np.array(Image.open(io.BytesIO(bytes(src)))).astype(np.float32) / depth_scale
+                pil_img = Image.open(src)
+            raw = np.array(pil_img)
+            if raw.ndim == 3 and raw.shape[2] == 4:
+                # TartanAir2 RGBA 4-byte IEEE-754 float32 encoding directly in meters
+                depth = np.ascontiguousarray(raw).view(np.float32).squeeze(-1)
+            elif raw.ndim == 3 and raw.shape[2] == 3:
+                depth = raw[..., 0].astype(np.float32)
+                if depth.max() > 1000.0:
+                    depth = depth / depth_scale
+            elif raw.ndim == 3 and raw.shape[2] == 1:
+                depth = raw[:, :, 0].astype(np.float32)
+                if depth.max() > 1000.0:
+                    depth = depth / depth_scale
             else:
-                depth = np.array(Image.open(src)).astype(np.float32) / depth_scale
+                depth = raw.astype(np.float32)
+                if depth.max() > 1000.0:
+                    depth = depth / depth_scale
         else:
             raise ValueError(f"Unknown depth_format: {depth_format}")
+        if depth.ndim == 3:
+            depth = depth.squeeze()
+        depth = np.nan_to_num(depth, nan=0.0, posinf=80.0, neginf=0.0).astype(np.float32)
         return torch.from_numpy(depth)
 
     @staticmethod

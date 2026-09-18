@@ -1384,6 +1384,7 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
                 self.samples.append((img_path, depth_cand, "hypersim"))
 
     def _index_nyu(self, root: str, force_all: bool = False):
+        # Format A: Test split with *_colors.png and *_depth.png
         color_files = sorted(
             glob.glob(os.path.join(root, "**", "*_colors.png"), recursive=True)
             + glob.glob(os.path.join(root, "**", "rgb_*.png"), recursive=True)
@@ -1401,19 +1402,52 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
                 if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
                     self.samples.append((img_path, depth_cand, "nyu"))
 
+        # Format B: Official NYUv2 train split (nyu2_train/<scene>_out/<frame>.jpg and <frame>.png)
+        train_jpgs = sorted(glob.glob(os.path.join(root, "**", "nyu2_train", "*", "*.jpg"), recursive=True))
+        for img_path in train_jpgs:
+            depth_cand = img_path[:-4] + ".png"
+            if os.path.exists(depth_cand):
+                is_val = self._is_val_split(img_path, "nyu")
+                if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
+                    self.samples.append((img_path, depth_cand, "nyu"))
+
+        # Format C: General .jpg with sibling .png depth inside any train folder
+        if len(self.samples) == 0:
+            all_jpgs = sorted(glob.glob(os.path.join(root, "**", "*.jpg"), recursive=True))
+            for img_path in all_jpgs:
+                if "tonemap" in img_path:  # Hypersim handled separately
+                    continue
+                depth_cand = img_path[:-4] + ".png"
+                if os.path.exists(depth_cand):
+                    is_val = self._is_val_split(img_path, "nyu")
+                    if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
+                        self.samples.append((img_path, depth_cand, "nyu"))
+
     def _index_kitti(self, root: str, force_all: bool = False):
         # Case A: Depth in depths/ and image in images/
         depth_files = sorted(glob.glob(os.path.join(root, "**", "depths", "*.png"), recursive=True))
         for depth_path in depth_files:
             fname = os.path.basename(depth_path)
             parent = os.path.dirname(os.path.dirname(depth_path))
-            for cand_sub in ["images", "image_02", "rgbs", "image"]:
+            found_img = False
+            for cand_sub in ["images", "image", "rgb", "rgbs", "color", "image_02", "image_03"]:
                 img_cand = os.path.join(parent, cand_sub, fname)
                 if os.path.exists(img_cand):
                     is_val = self._is_val_split(img_cand, "kitti")
                     if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
                         self.samples.append((img_cand, depth_path, "kitti"))
+                    found_img = True
                     break
+            if not found_img:
+                # Direct string substitution fallback
+                for sub_from, sub_to in [("/depths/", "/images/"), ("/depths/", "/image/"), ("/depth/", "/image/"), ("/depth/", "/rgb/")]:
+                    if sub_from in depth_path:
+                        img_cand = depth_path.replace(sub_from, sub_to)
+                        if os.path.exists(img_cand):
+                            is_val = self._is_val_split(img_cand, "kitti")
+                            if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
+                                self.samples.append((img_cand, depth_path, "kitti"))
+                            break
 
         # Case B: KITTI Eigen standard structure (image_02/data/*.png and proj_depth)
         kitti_imgs = sorted(glob.glob(os.path.join(root, "**", "image_02", "data", "*.png"), recursive=True))
@@ -1482,26 +1516,32 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
                     if mp.lower().endswith(".png"):
                         raw_d = np.array(PILImage.open(io.BytesIO(depth_bytes)))
                         if raw_d.ndim == 3 and raw_d.shape[2] == 4:
+                            # IEEE-754 32-bit float encoding directly in meters
                             depth = np.ascontiguousarray(raw_d).view(np.float32).squeeze(-1)
                         elif raw_d.ndim == 3:
                             depth = raw_d[..., 0].astype(np.float32)
+                            if depth.max() > 1000.0:
+                                depth = depth / 1000.0
                         else:
                             depth = raw_d.astype(np.float32)
-                        if depth.max() > 1000.0:
-                            depth = depth / 1000.0
+                            if depth.max() > 1000.0:
+                                depth = depth / 1000.0
                     else:
                         depth = np.load(io.BytesIO(depth_bytes)).astype(np.float32)
                 else:
                     if depth_src.lower().endswith(".png"):
                         raw_d = np.array(PILImage.open(depth_src))
                         if raw_d.ndim == 3 and raw_d.shape[2] == 4:
+                            # IEEE-754 32-bit float encoding directly in meters
                             depth = np.ascontiguousarray(raw_d).view(np.float32).squeeze(-1)
                         elif raw_d.ndim == 3:
                             depth = raw_d[..., 0].astype(np.float32)
+                            if depth.max() > 1000.0:
+                                depth = depth / 1000.0
                         else:
                             depth = raw_d.astype(np.float32)
-                        if depth.max() > 1000.0:
-                            depth = depth / 1000.0
+                            if depth.max() > 1000.0:
+                                depth = depth / 1000.0
                     else:
                         depth = np.load(depth_src).astype(np.float32)
         except Exception:
@@ -1513,7 +1553,14 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
             if depth is None or depth.ndim != 2:
                 depth = np.zeros((H, W), dtype=np.float32)
 
-        # Sanitize depth: replace NaNs/Infs, clamp metric range [0.01, 100.0]
+        # Ensure depth resolution matches image resolution before cropping or resizing
+        if depth.shape[:2] != (H, W):
+            try:
+                depth = np.array(PILImage.fromarray(depth).resize((W, H), PILImage.NEAREST))
+            except Exception:
+                depth = np.zeros((H, W), dtype=np.float32)
+
+        # Sanitize depth: replace NaNs/Infs, clamp metric range [0.01, 120.0]
         depth = np.nan_to_num(depth, nan=0.0, posinf=0.0, neginf=0.0).astype(np.float32)
         depth = np.where((depth >= 0.01) & (depth <= 120.0), depth, 0.0)
 
@@ -1687,6 +1734,21 @@ def train_dioptra_dino(args):
     if resume_arg and str(resume_arg).lower() not in ("none", "false"):
         resume_target = resume_arg if (isinstance(resume_arg, str) and os.path.isfile(resume_arg)) else find_latest_checkpoint(output_dir)
         if resume_target and os.path.exists(resume_target):
+            # If checkpoint is packaged inside a .zip file, extract the .pt file first
+            if resume_target.lower().endswith(".zip"):
+                try:
+                    import tempfile
+                    extract_tmp = tempfile.mkdtemp(prefix="ckpt_extract_")
+                    with zipfile.ZipFile(resume_target, "r") as zf:
+                        pt_members = [m for m in zf.namelist() if m.endswith(".pt")]
+                        if pt_members:
+                            # Choose the latest epoch / best checkpoint inside the zip
+                            pt_members.sort(key=lambda p: int(os.path.splitext(os.path.basename(p))[0].split("_")[-1]) if os.path.splitext(os.path.basename(p))[0].split("_")[-1].isdigit() else 0)
+                            extracted_pt = zf.extract(pt_members[-1], path=extract_tmp)
+                            resume_target = extracted_pt
+                except Exception as z_err:
+                    print(f"[Dioptra-DINO] Warning: Failed to extract zip checkpoint ({z_err})")
+
             print(f"[Dioptra-DINO] Resuming training from checkpoint: {resume_target}")
             import __main__
             if not hasattr(__main__, "DioptraDINOConfig"):

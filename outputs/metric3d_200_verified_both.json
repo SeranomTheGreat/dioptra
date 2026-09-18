@@ -1,0 +1,16 @@
+{
+  "direct_metric": {
+    "abs_rel": 0.3269,
+    "sq_rel": 2.1998,
+    "rmse": 7.192,
+    "d1": 26.52,
+    "scale": 0.7254
+  },
+  "median_scaled": {
+    "abs_rel": 0.1625,
+    "sq_rel": 1.3079,
+    "rmse": 6.019,
+    "d1": 78.46,
+    "scale": 1.0
+  }
+}

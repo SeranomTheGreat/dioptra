@@ -1,0 +1,62 @@
+{
+  "dioptra_dino": {
+    "name": "Dioptra-DINO (Ours)",
+    "backbone": "DINOv2-Small + Ray-FiLM + ARA",
+    "params": 27512834,
+    "abs_rel": 0.05836270445026457,
+    "sq_rel": 0.21076019244268537,
+    "rmse": 2.273345756828785,
+    "rmse_log": 0.10805885137990118,
+    "delta1": 96.69634688254395,
+    "delta2": 98.85547472737181,
+    "delta3": 99.47806446289422,
+    "scale_ratio": 1.0049781319499016,
+    "latency_ms": 36.01916375,
+    "fps": 27.762998800881377
+  },
+  "canonical_vit_dpt": {
+    "name": "Canonical 2D ViT + DPT",
+    "backbone": "DINOv2-Small + Standard DPT",
+    "params": 26103169,
+    "abs_rel": 0.4992557272315025,
+    "sq_rel": 3.6640127182006834,
+    "rmse": 9.41699984073639,
+    "rmse_log": 0.780974633693695,
+    "delta1": 14.350561385862704,
+    "delta2": 30.001182249481605,
+    "delta3": 48.14762183337143,
+    "scale_ratio": 0.6450085236132145,
+    "latency_ms": 33.81325103999999,
+    "fps": 29.574204468450315
+  },
+  "depth_anything_v2_midas": {
+    "name": "Depth Anything V2-Small (MiDaS Affine)",
+    "backbone": "DINOv2-Small (Pretrained Foundation)",
+    "params": 24785089,
+    "abs_rel": 0.09141782970167696,
+    "sq_rel": 0.43944538436830044,
+    "rmse": 3.0720670667290686,
+    "rmse_log": 0.1463374364376068,
+    "delta1": 91.53195911921708,
+    "delta2": 97.97098926537498,
+    "delta3": 99.33717418983014,
+    "scale_ratio": 0.9940888690948486,
+    "latency_ms": 171.98071396,
+    "fps": 5.814605469265492
+  },
+  "depth_anything_v2_median": {
+    "name": "Depth Anything V2-Small (Median-Scaled)",
+    "backbone": "DINOv2-Small (Pretrained Foundation)",
+    "params": 24785089,
+    "abs_rel": 0.09730792601592839,
+    "sq_rel": 0.44818401500582694,
+    "rmse": 2.92035776168108,
+    "rmse_log": 0.14402002889662982,
+    "delta1": 91.35786382574432,
+    "delta2": 98.38136482827184,
+    "delta3": 99.48479702784054,
+    "scale_ratio": 0.9983761250972748,
+    "latency_ms": 171.98071396,
+    "fps": 5.814605469265492
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "dioptra": {
+    "model_label": "Dioptra-DINO (Ours)",
+    "critical_miss_rate_percent": 14.278573316800308,
+    "false_alarm_rate_percent": 0.0,
+    "near_field_bias_meters": 0.27599520502345903
+  },
+  "unidepth": {
+    "model_label": "UniDepth-V2 ViT-Small",
+    "critical_miss_rate_percent": 20.086356296866388,
+    "false_alarm_rate_percent": 8.31125655810088e-05,
+    "near_field_bias_meters": 0.42720321180032833
+  },
+  "depth_anything": {
+    "model_label": "Depth Anything V2 (Affine)",
+    "critical_miss_rate_percent": 26.224339861816755,
+    "false_alarm_rate_percent": 0.00010389070697626098,
+    "near_field_bias_meters": 0.4189926938020757
+  },
+  "metric3d": {
+    "model_label": "Metric3D ViT-Small",
+    "critical_miss_rate_percent": 7.874777490930994,
+    "false_alarm_rate_percent": 4.066418542259022,
+    "near_field_bias_meters": -0.48395243074212757
+  }
+}

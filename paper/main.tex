@@ -4,10 +4,10 @@
 \usepackage[top=0.75in,bottom=0.85in,left=0.75in,right=0.75in]{geometry}
 \setlength{\columnsep}{0.25in}
 
-% --- Professional Typography & Math Fonts ---
 \usepackage{mathptmx}
 \usepackage{microtype}
 \usepackage{graphicx}
+\usepackage[export]{adjustbox}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{booktabs}
@@ -18,9 +18,18 @@
 \usepackage{caption}
 \usepackage{enumitem}
 \usepackage{titlesec}
+\usepackage{tabularx}
+\usepackage{multirow}
 \usepackage{hyperref}
 
-% --- Professional Caption Setup (CVPR / IEEE Style) ---
+% --- Ragged bottom and paragraph tolerance for 2-column formatting ---
+\raggedbottom
+\emergencystretch=2em
+\hbadness=10000
+\vbadness=10000
+\hfuzz=1pt
+
+% --- Professional Caption Setup (CVPR / NeurIPS / IEEE Style) ---
 \captionsetup{font=small,labelfont=bf,labelsep=period,skip=4pt}
 \captionsetup[table]{font=small,labelfont=bf,labelsep=period,skip=4pt}
 
@@ -36,12 +45,16 @@
 \setlist{nosep,leftmargin=1.2em}
 
 % --- Float Spacing & Placement Optimization (Prevents Float Stacking & Gaps) ---
+\setcounter{topnumber}{4}
+\setcounter{bottomnumber}{3}
+\setcounter{totalnumber}{6}
+\setcounter{dbltopnumber}{4}
 \renewcommand{\topfraction}{0.95}
 \renewcommand{\bottomfraction}{0.85}
 \renewcommand{\textfraction}{0.05}
-\renewcommand{\floatpagefraction}{0.85}
+\renewcommand{\floatpagefraction}{0.75}
 \renewcommand{\dbltopfraction}{0.95}
-\renewcommand{\dblfloatpagefraction}{0.85}
+\renewcommand{\dblfloatpagefraction}{0.75}
 \setlength{\floatsep}{6pt plus 2pt minus 2pt}
 \setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
 \setlength{\intextsep}{6pt plus 2pt minus 2pt}
@@ -58,7 +71,7 @@
 }
 
 % --- Title & Author Metadata ---
-\title{\Large\textbf{Dioptra: An Ultra-Lightweight Geometry-Aware Architecture\\for Monocular Metric Depth on Edge Devices}}
+\title{\Large\textbf{Dioptra-DINO: Foundation-Assisted Geometry-Aware Monocular Metric Depth\\for Real-Time Edge Robotics}}
 
 \author{
     \textbf{Yumnam Harryson Singh}\\[0.2em]
@@ -93,7 +106,9 @@
 \input{sections/06_conclusion}
 
 % --- Bibliography ---
-{\small
+{\footnotesize
+\setlength{\itemsep}{0pt}
+\setlength{\parskip}{0pt}
 \bibliographystyle{unsrt}
 \bibliography{references}
 }

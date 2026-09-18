@@ -35,6 +35,8 @@ outputs/candidates/
 outputs/eval_baseline/
 outputs/eval_stage2/
 outputs_dino/
+outputs/*.log
+outputs/*.txt
 
 # OS and IDE files
 .DS_Store
@@ -45,3 +47,12 @@ outputs_dino/
 
 # Zip archives
 *.zip
+
+# Data and large scratch outputs
+data/
+logs/
+eval_receipts/
+outputs_ablations/
+outputs_dino_eval/
+kaggle_kernel_volsiai/output/
+*.pdf

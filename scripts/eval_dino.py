@@ -34,7 +34,6 @@ from PIL import Image
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torchvision.transforms.functional as TF
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from dioptra_dino import DioptraDINO, DioptraDINOConfig, IMAGENET_MEAN, IMAGENET_STD
@@ -119,7 +118,7 @@ def preprocess_sample(img_path: str, gt_path: Optional[str] = None, img_size: in
     raw_cropped = raw_img.crop((left, top, left + min_side, top + min_side))
     img_resized = raw_cropped.resize((img_size, img_size), Image.Resampling.BILINEAR)
 
-    img_t = TF.to_tensor(img_resized)
+    img_t = torch.from_numpy(np.array(img_resized, dtype=np.float32)).permute(2, 0, 1) / 255.0
     mean = torch.tensor(IMAGENET_MEAN).view(3, 1, 1)
     std = torch.tensor(IMAGENET_STD).view(3, 1, 1)
     input_t = ((img_t - mean) / std).unsqueeze(0).to(device)
@@ -137,7 +136,7 @@ def preprocess_sample(img_path: str, gt_path: Optional[str] = None, img_size: in
                 gt_arr = np.load(gt_path).astype(np.float32)
             gt_t = torch.from_numpy(gt_arr)
             gt_cropped = gt_t[top:top + min_side, left:left + min_side]
-            gt_depth = TF.resize(gt_cropped.unsqueeze(0), [img_size, img_size], interpolation=TF.InterpolationMode.NEAREST).squeeze(0)
+            gt_depth = F.interpolate(gt_cropped.unsqueeze(0).unsqueeze(0), size=(img_size, img_size), mode="nearest").squeeze(0).squeeze(0)
             gt_np = gt_depth.numpy()
         except Exception as e:
             print(f"[Dioptra-DINO Eval] Error reading GT {gt_path}: {e}")

@@ -3,42 +3,59 @@
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\textwidth]{figures/fig_method_pipeline.png}
-\caption{\textbf{Dioptra-DINO Architecture and Geometry-Coupled Training Framework}. An input RGB frame is processed by a self-supervised DINOv2-Small ViT backbone ($14 \times 14$ patches, $256$ tokens). Concurrently, camera intrinsics $\mathbf{K}'$ are unprojected into continuous 3D optical ray triplets $\mathcal{R}_i$, embedded via Fourier harmonics, and injected via affine FiLM modulation. Angular Residual Attention (ARA) introduces an intrinsic geometric penalty $\sin^2(\theta_{ij})$ into transformer self-attention. Multi-scale token features are reassembled via a DPT decoder supervised by a multi-task loss combining raw metric SiLog, batch log-median scale, edge gradients, and Multi-Scale 3D Virtual Normal Loss ($\mathcal{L}_{\text{vnl}}$). Dynamic pinhole crop augmentation enforces camera-intrinsic equivariance across continuous focal variations.}
+\includegraphics[width=\textwidth,max height=0.28\textheight,keepaspectratio]{figures/fig_method_pipeline.png}
+\caption{\textbf{Dioptra-DINO Architecture and Geometry-Coupled Training Framework}. Top: An input RGB frame is processed by a self-supervised DINOv2-Small ViT backbone ($14 \times 14$ patches, $256$ tokens). Concurrently, camera intrinsics $\mathbf{K}'$ are unprojected into continuous 3D optical ray triplets $\mathcal{R}_i$, embedded via Fourier harmonics, and injected via affine FiLM modulation. Angular Residual Attention (ARA) introduces an intrinsic geometric penalty $\sin^2(\theta_{ij})$ into transformer self-attention. Multi-scale token features are reassembled via a DPT decoder supervised by a multi-task loss combining raw metric SiLog, batch log-median scale, edge gradients, and Multi-Scale 3D Virtual Normal Loss ($\mathcal{L}_{\text{vnl}}$). Bottom: Live sample prediction, ground truth metric depth, and reconstructed 3D surface normals evaluated directly on the 40-epoch model.}
 \label{fig:pipeline}
 \end{figure*}
 
 \subsection{Architecture Overview}
 Dioptra-DINO couples a self-supervised vision transformer backbone with physical projective camera constraints (Figure~\ref{fig:pipeline}). Given an RGB image $\mathbf{I} \in \mathbb{R}^{H \times W \times 3}$ and its camera intrinsic matrix $\mathbf{K} \in \mathbb{R}^{3 \times 3}$, our goal is to predict dense physical depth $\hat{\mathbf{D}} \in \mathbb{R}^{H \times W}$ in metres.
 
-The network consists of:
+The network comprises four tightly integrated modules totaling exactly $\mathbf{27,512,834}$ parameters ($27.513$\,M, $105.05$\,MB in FP32):
 \begin{enumerate}
-    \item \textbf{Vision Backbone}: A pre-trained DINOv2-Small ViT (`vits14`, $21.66$\,M parameters) producing patch tokens $\mathbf{X}_0 \in \mathbb{R}^{N \times D}$, where $N = (H / 14) \times (W / 14) = 16 \times 16 = 256$ tokens and $D = 384$.
-    \item \textbf{Trivision Ray Positional Encoding}: An analytic ray unprojection module that computes 3D optical unit rays and modulates patch tokens via affine Feature-wise Linear Modulation (FiLM).
-    \item \textbf{Angular Residual Attention (ARA)}: A continuous geometric attention bias that penalizes divergent ray angles $\theta_{ij}$ across transformer attention heads.
-    \item \textbf{Dense Prediction Transformer (DPT) Decoder}: A multi-scale reassembly and residual fusion decoder ($5.44$\,M parameters) generating full-resolution metric depth predictions.
+    \item \textbf{Vision Backbone}: A pre-trained DINOv2-Small ViT (`vits14`, $21,659,136$ parameters, $21.66$\,M) producing patch tokens $\mathbf{X}_0 \in \mathbb{R}^{N \times D}$, where $N = (H / 14) \times (W / 14) = 16 \times 16 = 256$ tokens and $D = 384$.
+    \item \textbf{Trivision Ray Positional Encoding}: An analytic ray unprojection module ($225,792$ parameters, $0.23$\,M) that computes 3D optical unit rays and modulates patch tokens via affine Feature-wise Linear Modulation (FiLM).
+    \item \textbf{Angular Residual Attention (ARA)}: A continuous geometric attention refinement module ($1,183,873$ parameters, $1.18$\,M) that penalizes divergent ray angles $\theta_{ij}$ across transformer attention heads.
+    \item \textbf{Dense Prediction Transformer (DPT) Decoder}: A multi-scale reassembly and residual fusion decoder ($4,444,033$ parameters, $4.44$\,M) generating full-resolution metric depth predictions.
 \end{enumerate}
 
 \subsection{Trivision Ray Positional Encoding}
-Standard vision transformers rely on 2D coordinate embeddings that remain invariant under camera zoom or focal variations. To directly ground token representations in 3D projective space, we compute continuous optical unit rays for each patch.
+Standard vision transformers rely on 2D coordinate embeddings that remain invariant under camera zoom or focal variations. To directly ground token representations in physical 3D projective space, we compute continuous optical unit rays for each patch.
 
-Given a pixel $(u, v)$ and camera intrinsic calibration matrix $\mathbf{K}'$, the physical 3D optical ray direction is:
+\noindent\textbf{Analytic Matrix Inversion}: Under the projective pinhole camera model, the intrinsic calibration matrix $\mathbf{K}'$ transforming camera coordinates to pixel coordinates is:
 \begin{equation}
-    \hat{\mathbf{r}}(u, v) = \frac{\mathbf{K}'^{-1} [u, v, 1]^T}{\|\mathbf{K}'^{-1} [u, v, 1]^T\|_2}
+    \mathbf{K}' = \begin{bmatrix} f_x' & 0 & c_x' \\ 0 & f_y' & c_y' \\ 0 & 0 & 1 \end{bmatrix}
+\end{equation}
+with determinant $\det(\mathbf{K}') = f_x' f_y' > 0$ for non-degenerate camera optics. To ensure numerical stability and avoid external linear algebra runtime dependencies on edge robotics hardware, we compute $\mathbf{K}'^{-1}$ in closed form via Cramer's rule. For the upper-triangular matrix $\mathbf{K}'$, the cofactor matrix $\mathbf{C}(\mathbf{K}')$ is lower-triangular:
+\begin{equation}
+    \mathbf{C}(\mathbf{K}') = \begin{bmatrix} f_y' & 0 & 0 \\ 0 & f_x' & 0 \\ -c_x' f_y' & -c_y' f_x' & f_x' f_y' \end{bmatrix}
+\end{equation}
+The adjugate matrix $\text{adj}(\mathbf{K}') = \mathbf{C}(\mathbf{K}')^T$ is the transpose of the cofactor matrix:
+\begin{equation}
+    \text{adj}(\mathbf{K}') = \begin{bmatrix} f_y' & 0 & -c_x' f_y' \\ 0 & f_x' & -c_y' f_x' \\ 0 & 0 & f_x' f_y' \end{bmatrix}
+\end{equation}
+Dividing by $\det(\mathbf{K}') + \epsilon = f_x' f_y' + \epsilon$ yields the exact closed-form inverse:
+\begin{equation}
+    \mathbf{K}'^{-1} = \frac{\text{adj}(\mathbf{K}')}{\det(\mathbf{K}') + \epsilon} = \begin{bmatrix} \frac{1}{f_x'} & 0 & -\frac{c_x'}{f_x'} \\ 0 & \frac{1}{f_y'} & -\frac{c_y'}{f_y'} \\ 0 & 0 & 1 \end{bmatrix}
+    \label{eq:k_inverse}
+\end{equation}
+where $\epsilon = 10^{-8}$ prevents division-by-zero under vanishing focal parameters. 
+
+\noindent\textbf{Continuous Optical Ray Unprojection}: For any homogeneous pixel coordinate $\tilde{\mathbf{u}} = [u, v, 1]^T$, multiplying by $\mathbf{K}'^{-1}$ produces the unprojected directional vector in 3D camera space:
+\begin{equation}
+    \mathbf{K}'^{-1} \tilde{\mathbf{u}} = \left[ \frac{u - c_x'}{f_x'}, \; \frac{v - c_y'}{f_y'}, \; 1 \right]^T
+\end{equation}
+Normalizing onto the unit sphere $\mathbb{S}^2$ yields the exact 3D optical unit ray direction:
+\begin{equation}
+    \hat{\mathbf{r}}(u, v) = \frac{\mathbf{K}'^{-1} [u, v, 1]^T}{\|\mathbf{K}'^{-1} [u, v, 1]^T\|_2} = \frac{\left[ \frac{u - c_x'}{f_x'}, \; \frac{v - c_y'}{f_y'}, \; 1 \right]^T}{\sqrt{\left(\frac{u - c_x'}{f_x'}\right)^2 + \left(\frac{v - c_y'}{f_y'}\right)^2 + 1}}
     \label{eq:ray_unproject}
 \end{equation}
 
-\noindent\textbf{Analytic Matrix Inversion}: To ensure numerical stability and avoid external linear algebra runtime dependencies on edge GPUs, we compute $\mathbf{K}'^{-1}$ in closed form via Cramer's rule:
-\begin{equation}
-    \mathbf{K}'^{-1} = \frac{\text{adj}(\mathbf{K}')}{\det(\mathbf{K}') + \epsilon}
-\end{equation}
-where $\det(\mathbf{K}') = f_x' f_y' > 0$ for standard cameras and $\epsilon = 10^{-8}$.
-
-\noindent\textbf{Ray Triplet and Reflection Symmetry}: For each patch token centered at $(u_c, v_c)$ with half-width $p_h = P / 2$, we extract an optical ray triplet:
+\noindent\textbf{Ray Triplet and Reflection Symmetry}: Rather than collapsing an entire $14 \times 14$ patch into a single line-of-sight vector, we sample an optical ray triplet spanning the local frustum cone. For each patch token centered at $(u_c, v_c)$ with half-width $p_h = P / 2$, we define:
 \begin{equation}
     \mathcal{R}_i = \left\{ \hat{\mathbf{r}}_{\text{center}}, \hat{\mathbf{r}}_{\text{corner1}}, \hat{\mathbf{r}}_{\text{corner2}} \right\}
 \end{equation}
-Under standard orientation, $\hat{\mathbf{r}}_{\text{corner1}}$ samples the top-left offset $(u_c - p_h, v_c - p_h)$ and $\hat{\mathbf{r}}_{\text{corner2}}$ samples the bottom-right offset $(u_c + p_h, v_c + p_h)$. When spatial data augmentation applies a horizontal reflection ($u' = W' - 1 - u$), we track this transformation and reflect the chiral corner rays:
+Under standard camera orientation, $\hat{\mathbf{r}}_{\text{corner1}}$ evaluates the top-left offset $(u_c - p_h, v_c - p_h)$ and $\hat{\mathbf{r}}_{\text{corner2}}$ evaluates the bottom-right offset $(u_c + p_h, v_c + p_h)$. When spatial data augmentation applies a horizontal reflection ($u' = W' - 1 - u$), we track this transformation and reflect the chiral corner rays:
 \begin{equation}
     \hat{\mathbf{r}}_{\text{corner1}} \leftarrow (u_c + p_h, v_c - p_h), \quad \hat{\mathbf{r}}_{\text{corner2}} \leftarrow (u_c - p_h, v_c + p_h)
 \end{equation}
@@ -51,17 +68,37 @@ This guarantees that optical ray directions correspond accurately to the augment
 The concatenated triplet embedding $\gamma(\mathcal{R}_i) \in \mathbb{R}^{108}$ is projected through a 2-layer MLP ($108 \rightarrow 256 \rightarrow 384$) with LayerNorm to generate affine scale $\alpha \in \mathbb{R}^{384}$ and shift $\beta \in \mathbb{R}^{384}$ vectors, modulating patch tokens via Feature-wise Linear Modulation: $\mathbf{x}' = \alpha \odot \mathbf{x} + \beta$.
 
 \subsection{Angular Residual Attention (ARA)}
-To refine high-frequency surface boundaries and encourage planar consistency, Dioptra introduces an intrinsic geometric attention bias. In a perspective optical frame, the angular separation $\theta_{q, k}$ between a query ray $\hat{\mathbf{r}}_q$ and key ray $\hat{\mathbf{r}}_k$ satisfies:
-\begin{equation}
-    d_{\text{ang}}^2(\hat{\mathbf{r}}_q, \hat{\mathbf{r}}_k) = 1 - (\hat{\mathbf{r}}_q \cdot \hat{\mathbf{r}}_k)^2 = \sin^2(\theta_{q, k})
-\end{equation}
+To refine high-frequency surface boundaries and encourage planar consistency, Dioptra introduces an intrinsic geometric attention bias. 
 
-We define the Angular Residual Attention bias $\mathbf{B} \in \mathbb{R}^{H \times N \times N}$ for attention head $h$ as:
+\noindent\textbf{Angular Residual Surrogate Penalty}: Let $\hat{\mathbf{r}}_i, \hat{\mathbf{r}}_j \in \mathbb{S}^2$ be two unit ray vectors ($\|\hat{\mathbf{r}}_i\|_2 = \|\hat{\mathbf{r}}_j\|_2 = 1$). The geodesic distance on the unit sphere is the subtended angle $\theta_{ij} = \arccos(\hat{\mathbf{r}}_i \cdot \hat{\mathbf{r}}_j) \in [0, \pi]$. Directly computing $\theta_{ij}$ via $\arccos(\cdot)$ in attention modules is problematic for two reasons: (i) transcendental inverse trigonometric functions incur excessive runtime latency on edge accelerators; and (ii) the derivative $\frac{d}{dz}\arccos(z) = -\frac{1}{\sqrt{1 - z^2}}$ has a singularity at $z \to 1^-$ (parallel rays $\theta_{ij} \to 0$), which risks numerical gradient instability during backpropagation.
+
+To establish a smooth and computationally efficient geometric surrogate penalty, we exploit the trigonometric identity $1 - \cos^2\theta = \sin^2\theta$. Because $\hat{\mathbf{r}}_i \cdot \hat{\mathbf{r}}_j = \cos\theta_{ij}$, we define the pairwise angular residual distance as:
 \begin{equation}
-    \mathbf{B}_h(i, j) = -\frac{\alpha_h}{\sigma_h^2 + \epsilon} \sum_{m=1}^3 \sin^2(\theta(\hat{\mathbf{r}}_{i, m}, \hat{\mathbf{r}}_{j, \text{center}}))
-    \label{eq:ara_bias}
+    d_{\text{ang}}^2(\hat{\mathbf{r}}_i, \hat{\mathbf{r}}_j) = 1 - (\hat{\mathbf{r}}_i \cdot \hat{\mathbf{r}}_j)^2 = \sin^2(\theta_{ij})
+    \label{eq:ara_derivation}
 \end{equation}
-where $\alpha_h \in \mathbb{R}$ and $\sigma_h^2 \in \mathbb{R}$ are learnable per-head gain and bandwidth parameters initialized to $0.5$, and $m \in \{1, 2, 3\}$ sums over token $i$'s Trivision ray triplet against key token $j$'s principal center ray. 
+For adjacent or nearby patches with small angular separations ($\theta_{ij} \ll 1$), Taylor expansion yields:
+\begin{equation}
+\begin{aligned}
+    \sin^2(\theta_{ij}) &= \left(\theta_{ij} - \frac{\theta_{ij}^3}{6} + \mathcal{O}(\theta_{ij}^5)\right)^2 \\
+    &= \theta_{ij}^2 - \frac{1}{3}\theta_{ij}^4 + \mathcal{O}(\theta_{ij}^6) \approx \theta_{ij}^2
+\end{aligned}
+\end{equation}
+showing that $\sin^2(\theta_{ij})$ behaves quadratically like the squared angular distance $\theta_{ij}^2$ for local patch neighborhoods. For wider angular separations across the visual field, $\sin^2(\theta_{ij})$ smoothly saturates toward $1.0$, providing an advantageous bounded attenuation that prevents extreme negative attention logits from destabilizing the softmax distribution. Furthermore, the gradient with respect to the ray dot product $z = \hat{\mathbf{r}}_i \cdot \hat{\mathbf{r}}_j$ is:
+\begin{equation}
+    \frac{\partial}{\partial z} \left( 1 - z^2 \right) = -2z
+\end{equation}
+which is smooth, bounded, and strictly non-singular over $z \in [-1, 1]$.
+
+We define the Angular Residual Attention bias $\mathbf{B} \in \mathbb{R}^{N \times N}$ between patch tokens $i$ and $j$ as:
+\begin{equation}
+\begin{split}
+    \mathbf{B}(i, j) &= -\lambda \cdot \sin^2(\theta(\hat{\mathbf{r}}_{i, \text{center}}, \hat{\mathbf{r}}_{j, \text{center}})) \\
+    &= -\lambda \cdot \left( 1 - (\hat{\mathbf{r}}_{i, \text{center}} \cdot \hat{\mathbf{r}}_{j, \text{center}})^2 \right)
+\end{split}
+\label{eq:ara_bias}
+\end{equation}
+where $\lambda = \operatorname{softplus}(\lambda_{\text{raw}}) > 0$ is a strictly positive learnable penalty strength parameterized via unconstrained scalar $\lambda_{\text{raw}}$ (initialized to $\lambda_{\text{raw}} = \operatorname{softplus}^{-1}(0.5) = \ln(e^{0.5} - 1.0) \approx -0.4328$ to set the initial penalty to $\lambda = 0.5$), and $\hat{\mathbf{r}}_{i, \text{center}}$ is the principal optical center ray of patch $i$.
 
 Self-attention incorporating ARA is formulated as:
 \begin{equation}
@@ -83,9 +120,9 @@ To prevent the model from collapsing into arbitrary scale-shifted predictions, w
 \noindent\textbf{1. Raw Metric SiLog Loss ($\mathcal{L}_{\text{SiLog}}$)}:
 Unlike relative depth frameworks that normalize depth predictions per sample, our Scale-Invariant Logarithmic loss operates directly on unnormalized physical metric depths:
 \begin{equation}
-    \mathcal{L}_{\text{SiLog}} = \frac{1}{|V|} \sum_{i \in V} d_i^2 - \frac{\lambda}{|V|^2} \left( \sum_{i \in V} d_i \right)^2
+    \mathcal{L}_{\text{SiLog}} = \sqrt{ \frac{1}{|V|} \sum_{i \in V} d_i^2 - \frac{\lambda_{\text{var}}}{|V|^2} \left( \sum_{i \in V} d_i \right)^2 }
 \end{equation}
-where $d_i = \log(\hat{\mathbf{D}}_i) - \log(\mathbf{D}_i^*)$, $\lambda = 0.85$, and $V$ denotes valid ground-truth pixels within the operational range $[0.1\,\text{m}, 80.0\,\text{m}]$.
+where $d_i = \log(\hat{\mathbf{D}}_i) - \log(\mathbf{D}_i^*)$, with variance penalty parameter $\lambda_{\text{var}} = 0.85$, and $V$ denotes valid ground-truth pixels within the operational range of $0.1$\,m to $80.0$\,m.
 
 \noindent\textbf{2. Global Scale Consistency Loss ($\mathcal{L}_{\text{scale}}$)}:
 To explicitly supervise global metric scale, we compute the batch-averaged absolute log-median error:
@@ -110,9 +147,9 @@ The unnormalized surface normal is given by the spatial cross product:
 \begin{equation}
     \mathbf{n}^{(s)}(u, v) = \mathbf{v}_x^{(s)}(u, v) \times \mathbf{v}_y^{(s)}(u, v)
 \end{equation}
-Unit normal vectors $\hat{\mathbf{n}}^{(s)} = \mathbf{n}^{(s)} / (\|\mathbf{n}^{(s)}\|_2 + \epsilon)$ are computed for both prediction ($\hat{\mathbf{n}}_{\text{pred}}^{(s)}$) and ground truth ($\hat{\mathbf{n}}_{\text{gt}}^{(s)}$). The virtual normal loss averages cosine angular deviation over valid inner pixels $\mathcal{M}^{(s)}$ across all dilation stencils:
+Both predicted depth $\hat{\mathbf{D}}$ and ground truth $\mathbf{D}^*$ follow the identical central difference indexing and right-handed cross-product convention $\mathbf{v}_x^{(s)} \times \mathbf{v}_y^{(s)}$, ensuring consistent outward-facing normal orientation and preventing sign inversion. Unit normal vectors $\hat{\mathbf{n}}^{(s)} = \mathbf{n}^{(s)} / (\|\mathbf{n}^{(s)}\|_2 + \epsilon)$ are computed for both prediction ($\hat{\mathbf{n}}_{\text{pred}}^{(s)}$) and ground truth ($\hat{\mathbf{n}}_{\text{gt}}^{(s)}$). The virtual normal loss averages cosine angular deviation over valid inner pixels $\mathcal{M}^{(s)}$ across all dilation stencils:
 \begin{equation}
-    \mathcal{L}_{\text{vnl}} = \frac{1}{|\mathcal{S}|} \sum_{s \in \mathcal{S}} \frac{1}{|\mathcal{M}^{(s)}|} \sum_{(u, v) \in \mathcal{M}^{(s)}} \left( 1 - \hat{\mathbf{n}}_{\text{pred}}^{(s)}(u, v) \cdot \hat{\mathbf{n}}_{\text{gt}}^{(s)}(u, v) \right)
+    \mathcal{L}_{\text{vnl}} = \frac{1}{|\mathcal{S}|} \sum_{s \in \mathcal{S}} \frac{1}{|\mathcal{M}^{(s)}|} \sum_{\mathbf{p} \in \mathcal{M}^{(s)}} \left( 1 - \hat{\mathbf{n}}_{\text{pred}}^{(s)}(\mathbf{p}) \cdot \hat{\mathbf{n}}_{\text{gt}}^{(s)}(\mathbf{p}) \right)
 \end{equation}
 
 \noindent\textbf{4. Multi-Scale Sobel Edge Loss ($\mathcal{L}_{\text{edge}}$)}:
@@ -124,7 +161,10 @@ To preserve sharp depth discontinuities across occlusion boundaries, horizontal 
 \noindent\textbf{5. Multi-Task Objective}:
 The complete optimization objective combines the four complementary terms:
 \begin{equation}
-    \mathcal{L}_{\text{total}} = w_{\text{silog}} \mathcal{L}_{\text{SiLog}} + w_{\text{scale}} \mathcal{L}_{\text{scale}} + w_{\text{edge}} \mathcal{L}_{\text{edge}} + w_{\text{vnl}} \mathcal{L}_{\text{vnl}}
+\begin{split}
+    \mathcal{L}_{\text{total}} &= w_{\text{silog}} \mathcal{L}_{\text{SiLog}} + w_{\text{scale}} \mathcal{L}_{\text{scale}} \\
+    &\quad + w_{\text{edge}} \mathcal{L}_{\text{edge}} + w_{\text{vnl}} \mathcal{L}_{\text{vnl}}
+\end{split}
 \end{equation}
 where loss balancing weights are set to $w_{\text{silog}} = 1.0, w_{\text{scale}} = 0.5, w_{\text{edge}} = 0.2$, and $w_{\text{vnl}} = 0.25$.
 
@@ -150,6 +190,10 @@ Because the cropped region represents a magnified sub-cone of the optical frustu
 
 \subsection{Implementation and Training Details}
 \label{sec:training_details}
-Dioptra-DINO is implemented in PyTorch and trained on dual NVIDIA Tesla T4 GPUs ($32$\,GB total VRAM). We employ the AdamW optimizer with $\beta_1 = 0.9, \beta_2 = 0.999$, weight decay $\lambda = 0.05$, and decoupled learning rates: a base learning rate of $\eta_{\text{backbone}} = 2 \times 10^{-5}$ for the pretrained DINOv2-Small ViT backbone and $\eta_{\text{head}} = 2 \times 10^{-4}$ for newly initialized geometry and DPT decoder modules. Learning rates decay via a cosine annealing schedule over 26 epochs with a 2-epoch linear warmup. 
+Dioptra-DINO is implemented in PyTorch and trained on dual NVIDIA Tesla T4 GPUs. To guarantee full experimental reproducibility, all pseudo-random generators (PyTorch, CUDA backend, and NumPy) are initialized with a fixed seed of $42$, with deterministic cuDNN algorithms enabled. We employ the AdamW optimizer with $\beta_1 = 0.9, \beta_2 = 0.999$, weight decay $\lambda = 0.05$, and decoupled learning rates: a base learning rate of $\eta_{\text{backbone}} = 2 \times 10^{-5}$ for the pretrained DINOv2-Small ViT backbone and $\eta_{\text{head}} = 2 \times 10^{-4}$ for newly initialized geometry and DPT decoder modules. Learning rates decay via a cosine annealing schedule over 40 epochs with a 2-epoch linear warmup. 
 
-The batch size is set to 8 per GPU with gradient accumulation across 4 steps, yielding an effective batch size of 32. Mixed-precision arithmetic (FP16) via PyTorch AMP is enabled throughout training, with gradient norms clipped to $1.0$. Total training over 26 epochs ($18,464$ samples per epoch) required approximately $36$ GPU-hours.
+The batch size is set to 8 per device with gradient accumulation across 4 steps, yielding an effective batch size of $32$ ($8 \times 4$). Mixed-precision arithmetic (FP16) via PyTorch AMP is enabled throughout training, with gradient norms clipped to $1.0$. Training completed across all 40 epochs, with total loss converging steadily from $0.6033$ (Epoch 1) to $0.2607$ (Epoch 40). Model checkpoints were saved after each epoch, with the final best checkpoint (\texttt{dioptra\_dino\_best.pt}, $105.05$\,MB) selected for evaluation.
+
+\noindent\textbf{Dataset Partitioning and Leakage Safeguards}: 
+Training is conducted on TartanAir warehouse sequences, specifically restricted to the \texttt{carwelding}, \texttt{industrialhangar}, and \texttt{supermarket} environments ($28{,}416$ paired RGB-depth frames). The test benchmark trajectory (\texttt{abandonedfactory/Easy/P010}, $200$ frames) and stress probes (\texttt{abandonedfactory/Hard/P011}) are strictly held out from training; no frames, camera paths, or spatial scenes from \texttt{abandonedfactory} were ever encountered during optimization. We note, however, that while synthetic environments feature distinct spatial topologies, they share underlying Unreal Engine 4 asset shaders. Genuine domain transfer to physical sensors is evaluated separately in Section~\ref{sec:public_transfer}.
+

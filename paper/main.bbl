@@ -109,5 +109,24 @@ Bhat, Shariq Farooq and Birkl, Reiner and Wofk, Diana and Wonka, Peter and M{\"u
 Bochkovskiy, Aleksei and Kotovenko, Dmytro and Kovalenko, Serhii and Xiao, Tete and Koltun, Vladlen.
 \newblock Depth Pro: Sharp monocular metric depth in less than a second.
 \newblock In {\em arXiv preprint arXiv:2410.02073}, 2024.
+\bibitem{piccinelli2025unidepth2}
+Piccinelli, Luigi and Yang, Yung-Hsu and Sakaridis, Christos and Van~Gool, Luc.
+\newblock UniDepthV2: Universal monocular metric depth estimation.
+\newblock In {\em IEEE Transactions on Pattern Analysis and Machine Intelligence (TPAMI)}, 2025.
+
+\bibitem{wang2024moge}
+Wang, Ruicheng and Gao, Sicheng and Shen, Chunhua and Dai, Jifeng.
+\newblock MoGe: Mixture of geometry experts for generalizable monocular 3D reconstruction.
+\newblock In {\em Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)}, 2025.
+
+\bibitem{yin2024metric3dv2}
+Yin, Wei and Zhang, Chi and Chen, Hao and Cai, Zhipeng and Yu, Gang and Wang, Kaixuan and Shen, Chunhua.
+\newblock Metric3D v2: A versatile monocular geometric foundation model for zero-shot metric depth and surface normal estimation.
+\newblock In {\em IEEE Transactions on Pattern Analysis and Machine Intelligence (TPAMI)}, 2024.
+
+\bibitem{yin2019enforcing}
+Yin, Wei and Liu, Yifan and Shen, Chunhua and Yan, Youliang.
+\newblock Enforcing geometric constraints of virtual normal for depth prediction.
+\newblock In {\em Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)}, pages 5684--5693, 2019.
 
 \end{thebibliography}

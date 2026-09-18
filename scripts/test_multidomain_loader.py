@@ -47,25 +47,26 @@ def run_tests():
         with h5py.File(os.path.join(temp_dir, 'hypersim_pack', 'hypersim', 'scene_001', 'scene_cam_00_geometry_hdf5', 'frame.0001.depth_meters.hdf5'), 'w') as f:
             f.create_dataset('dataset', data=np.full((768, 1024), 3.25, dtype=np.float32))
 
-        # Tartan
+        # Tartan (with sky pixel > 1000m to verify float32 preservation)
         os.makedirs(os.path.join(temp_dir, 'tartan_mock', 'warehouse_stereo', 'warehouse', 'Data_easy', 'P000', 'image_lcam_front'), exist_ok=True)
         os.makedirs(os.path.join(temp_dir, 'tartan_mock', 'warehouse_stereo', 'warehouse', 'Data_easy', 'P000', 'depth_lcam_front'), exist_ok=True)
         PILImage.fromarray(np.random.randint(0, 255, (480, 640, 3), dtype=np.uint8)).save(
             os.path.join(temp_dir, 'tartan_mock', 'warehouse_stereo', 'warehouse', 'Data_easy', 'P000', 'image_lcam_front', '000000_lcam_front.png')
         )
         depth_float = np.full((480, 640), 5.5, dtype=np.float32)
+        depth_float[0, 0] = 10000.0  # Sky pixel! Must NOT trigger / 1000.0
         depth_rgba = np.ascontiguousarray(depth_float).view(np.uint8).reshape((480, 640, 4))
         PILImage.fromarray(depth_rgba).save(
             os.path.join(temp_dir, 'tartan_mock', 'warehouse_stereo', 'warehouse', 'Data_easy', 'P000', 'depth_lcam_front', '000000_lcam_front_depth.png')
         )
 
-        # NYU
-        os.makedirs(os.path.join(temp_dir, 'nyu_mock', 'nyu_data', 'data', 'nyu2_train'), exist_ok=True)
+        # NYU (Real format: nyu2_train/<scene>_out/<frame>.jpg and <frame>.png)
+        os.makedirs(os.path.join(temp_dir, 'nyu_mock', 'nyu_data', 'data', 'nyu2_train', 'scene_001_out'), exist_ok=True)
         PILImage.fromarray(np.random.randint(0, 255, (480, 640, 3), dtype=np.uint8)).save(
-            os.path.join(temp_dir, 'nyu_mock', 'nyu_data', 'data', 'nyu2_train', '00001_colors.png')
+            os.path.join(temp_dir, 'nyu_mock', 'nyu_data', 'data', 'nyu2_train', 'scene_001_out', '00001.jpg')
         )
         PILImage.fromarray(np.full((480, 640), 2500, dtype=np.uint16)).save(
-            os.path.join(temp_dir, 'nyu_mock', 'nyu_data', 'data', 'nyu2_train', '00001_depth.png')
+            os.path.join(temp_dir, 'nyu_mock', 'nyu_data', 'data', 'nyu2_train', 'scene_001_out', '00001.png')
         )
 
         # KITTI
@@ -117,8 +118,9 @@ def run_tests():
             elif domain == "tartan":
                 raw_d = np.array(PILImage.open(depth_src))
                 d = np.ascontiguousarray(raw_d).view(np.float32).squeeze(-1)
-                assert np.isclose(d.mean(), 5.5), f"TartanAir IEEE-754 depth mismatch: {d.mean()}"
-                print(f"  ✓ TartanAir IEEE-754 float32 depth decoded: {d.mean():.2f}m")
+                # Ensure valid non-sky depth is 5.5m (NOT 0.0055m!)
+                assert np.isclose(d[10, 10], 5.5), f"TartanAir IEEE-754 depth scale corrupted: {d[10, 10]}"
+                print(f"  ✓ TartanAir IEEE-754 float32 depth decoded cleanly with sky pixel preserved: {d[10, 10]:.2f}m")
 
             K = ds.K_CANONICAL[domain]
             print(f"  ✓ Intrinsics for {domain}: fx={K[0, 0]:.1f}, fy={K[1, 1]:.1f}, cx={K[0, 2]:.1f}, cy={K[1, 2]:.1f}")

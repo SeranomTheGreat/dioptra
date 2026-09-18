@@ -1,0 +1,33 @@
+{
+  "id": "volsiai/notebookff7e204f6e",
+  "id_no": 133507982,
+  "title": "notebookff7e204f6e",
+  "code_file": "notebookff7e204f6e.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "keywords": [
+    "gpu"
+  ],
+  "dataset_sources": [
+    "yumnamharryson/tartanair-warehouse-stereo-suite",
+    "yumnamharryson/tartanground-office-stereo-depth",
+    "yumnamharryson/tartanground-oldindustrialcity-stereo-depth",
+    "yumnamharryson/tartanground-hospital-stereo-depth",
+    "yumnamharryson/tartanair-indoors-hospital",
+    "yumnamharryson/tartanair-indoors-abandonedschool",
+    "yumnamharryson/tartanair-indoors-restaurant",
+    "yumnamharryson/tartanair-indoors-office2",
+    "volsiai/hypersim-pack",
+    "pandrii000/dasvo-tartanair-rgb-d-validation-split",
+    "soumikrakshit/nyu-depth-v2",
+    "alextitto/kitti-rgb-depth-20k-subset",
+    "volsiai/dioptra-dino-epoch-13"
+  ],
+  "kernel_sources": [],
+  "competition_sources": [],
+  "model_sources": []
+}

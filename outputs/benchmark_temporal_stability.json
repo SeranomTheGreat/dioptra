@@ -1,0 +1,52 @@
+{
+  "Dioptra-DINO (Ours)": {
+    "mean_scale": 1.000295837521553,
+    "median_scale": 0.9990151524543762,
+    "std_scale": 0.026091042616061433,
+    "mean_interframe_jitter": 0.014569727919209543,
+    "max_interframe_jitter": 0.08117324113845825,
+    "max_scale_excursion": 0.08283841609954845,
+    "pct_within_5pct": 93.0,
+    "pct_within_10pct": 100.0
+  },
+  "UniDepth-V2 ViT-S": {
+    "mean_scale": 0.9625613912940025,
+    "median_scale": 0.9587877094745636,
+    "std_scale": 0.03876814340073944,
+    "mean_interframe_jitter": 0.018616386394404882,
+    "max_interframe_jitter": 0.08903443813323964,
+    "max_scale_excursion": 0.12251782417297363,
+    "pct_within_5pct": 56.00000000000001,
+    "pct_within_10pct": 96.0
+  },
+  "Metric3D ViT-S": {
+    "mean_scale": 0.6843443366885186,
+    "median_scale": 0.7254375219345093,
+    "std_scale": 0.15886704840913254,
+    "mean_interframe_jitter": 0.041813539200691724,
+    "max_interframe_jitter": 0.21297377347946167,
+    "max_scale_excursion": 0.6381233930587769,
+    "pct_within_5pct": 2.5,
+    "pct_within_10pct": 7.5
+  },
+  "Depth Anything V2 (Indoor)": {
+    "mean_scale": 1.0638978618383408,
+    "median_scale": 1.1678069829940796,
+    "std_scale": 0.23779535301896473,
+    "mean_interframe_jitter": 0.04306037731506118,
+    "max_interframe_jitter": 0.2022724151611328,
+    "max_scale_excursion": 0.4355514645576477,
+    "pct_within_5pct": 3.5000000000000004,
+    "pct_within_10pct": 6.5
+  },
+  "ZoeDepth ZoeD_NK": {
+    "mean_scale": 1.6741570721566676,
+    "median_scale": 1.712518334388733,
+    "std_scale": 0.5269848746162823,
+    "mean_interframe_jitter": 0.08189545144986868,
+    "max_interframe_jitter": 1.7062303125858307,
+    "max_scale_excursion": 2.3730826377868652,
+    "pct_within_5pct": 0.0,
+    "pct_within_10pct": 0.0
+  }
+}

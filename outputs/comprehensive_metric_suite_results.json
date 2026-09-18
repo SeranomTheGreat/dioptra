@@ -1,0 +1,124 @@
+{
+  "summary": {
+    "dioptra_dino": {
+      "model": "Dioptra-DINO (Ours)",
+      "alignment": "Direct Metric (K)",
+      "abs_rel": 0.05546296803280711,
+      "sq_rel": 0.20787394376471638,
+      "rmse": 2.3963203793764114,
+      "a1": 97.05590945314422,
+      "scale_ratio": 1.000295837521553,
+      "fps": 38.025723451271816
+    },
+    "unidepth_v2_direct": {
+      "model": "UniDepth-V2 ViT-Small",
+      "alignment": "Direct Metric (K)",
+      "abs_rel": 0.11904078733175993,
+      "sq_rel": 9.357497156858445,
+      "rmse": 16.736356644630433,
+      "a1": 94.70484188634617,
+      "scale_ratio": 0.9625613912940025,
+      "fps": 5.429753202410473
+    },
+    "metric3d_direct": {
+      "model": "Metric3D ViT-Small",
+      "alignment": "Direct Metric (K)",
+      "abs_rel": 0.3268921497091651,
+      "sq_rel": 2.1997764041274785,
+      "rmse": 7.192011324167251,
+      "a1": 26.51582433202604,
+      "scale_ratio": 0.6843443366885186,
+      "fps": 1.8237967011278529
+    },
+    "metric3d_median": {
+      "model": "Metric3D ViT-Small",
+      "alignment": "Oracle Median Scale",
+      "abs_rel": 0.16253988962620497,
+      "sq_rel": 1.3079105332866312,
+      "rmse": 6.018594437837601,
+      "a1": 78.46492252111602,
+      "scale_ratio": 0.9999999862909317,
+      "fps": 1.8237967011278529
+    },
+    "da_metric_outdoor_direct": {
+      "model": "Depth Anything V2-S Metric",
+      "alignment": "Direct Metric (VKITTI2)",
+      "abs_rel": 1.0559408894181253,
+      "sq_rel": 9.93390399158001,
+      "rmse": 9.676700811386109,
+      "a1": 8.931372704253555,
+      "scale_ratio": 2.026875231862068,
+      "fps": 8.487627346901892
+    },
+    "da_metric_indoor_direct": {
+      "model": "Depth Anything V2-S Metric",
+      "alignment": "Direct Metric (Hypersim)",
+      "abs_rel": 0.2544747703149915,
+      "sq_rel": 1.669515897333622,
+      "rmse": 7.21609857916832,
+      "a1": 51.20326799930922,
+      "scale_ratio": 1.0638978618383408,
+      "fps": 8.487627346901892
+    },
+    "zoedepth_direct": {
+      "model": "ZoeDepth ZoeD_NK",
+      "alignment": "Direct Metric (Bins)",
+      "abs_rel": 0.7904059313237667,
+      "sq_rel": 5.194639757871628,
+      "rmse": 7.525254977941513,
+      "a1": 8.18511790358209,
+      "scale_ratio": 1.6741570721566676,
+      "fps": 0.720551731865227
+    },
+    "da_rel_midas_affine": {
+      "model": "Depth Anything V2-S Rel",
+      "alignment": "Oracle MiDaS Affine",
+      "abs_rel": 0.09639396984130144,
+      "sq_rel": 0.658958921097219,
+      "rmse": 4.006221967339516,
+      "a1": 90.78472177614516,
+      "scale_ratio": 0.996231724023819,
+      "fps": 8.576658495255261
+    },
+    "da_rel_median": {
+      "model": "Depth Anything V2-S Rel",
+      "alignment": "Disparity Median Scale",
+      "abs_rel": 0.10098304033279419,
+      "sq_rel": 0.6321548517048359,
+      "rmse": 3.653881350159645,
+      "a1": 90.83791209048823,
+      "scale_ratio": 1.0000000023841857,
+      "fps": 8.576658495255261
+    }
+  },
+  "fps_stats": {
+    "dioptra_dino": {
+      "latency_ms": 26.29798749999992,
+      "fps": 38.025723451271816
+    },
+    "unidepth_v2": {
+      "latency_ms": 184.1704333000001,
+      "fps": 5.429753202410473
+    },
+    "metric3d": {
+      "latency_ms": 548.30672705,
+      "fps": 1.8237967011278529
+    },
+    "da_metric_outdoor": {
+      "latency_ms": 117.81855625000013,
+      "fps": 8.487627346901892
+    },
+    "da_metric_indoor": {
+      "latency_ms": 117.81855625000013,
+      "fps": 8.487627346901892
+    },
+    "zoedepth": {
+      "latency_ms": 1387.8254062500002,
+      "fps": 0.720551731865227
+    },
+    "da_relative": {
+      "latency_ms": 116.59552500000032,
+      "fps": 8.576658495255261
+    }
+  }
+}

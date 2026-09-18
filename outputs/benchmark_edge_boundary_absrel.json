@@ -1,0 +1,62 @@
+{
+  "dioptra": {
+    "model_label": "Dioptra-DINO (Ours)",
+    "boundary_metrics": {
+      "absrel": 0.10114478930830956,
+      "rmse": 4.458622422218323,
+      "delta1": 89.6350968950893
+    },
+    "interior_metrics": {
+      "absrel": 0.041892294473946094,
+      "rmse": 0.9086211562156677,
+      "delta1": 99.23507266910592
+    },
+    "global_absrel": 0.05557956203818321,
+    "edge_degradation_ratio": 2.4144002240605817
+  },
+  "unidepth": {
+    "model_label": "UniDepth-V2 ViT-Small",
+    "boundary_metrics": {
+      "absrel": 0.33771928697824477,
+      "rmse": 39.18175090789795,
+      "delta1": 81.97954319264056
+    },
+    "interior_metrics": {
+      "absrel": 0.0849068034440279,
+      "rmse": 2.8590054899454116,
+      "delta1": 96.3126164981239
+    },
+    "global_absrel": 0.1393756052106619,
+    "edge_degradation_ratio": 3.977528696220303
+  },
+  "depth_anything": {
+    "model_label": "Depth Anything V2 (Affine)",
+    "boundary_metrics": {
+      "absrel": 0.16105733290314675,
+      "rmse": 7.481707954406739,
+      "delta1": 78.70207533949488
+    },
+    "interior_metrics": {
+      "absrel": 0.07014354195445777,
+      "rmse": 2.5014778006076814,
+      "delta1": 94.35183792270796
+    },
+    "global_absrel": 0.0893101690709591,
+    "edge_degradation_ratio": 2.2961103111475842
+  },
+  "metric3d": {
+    "model_label": "Metric3D ViT-Small",
+    "boundary_metrics": {
+      "absrel": 0.5432893779873847,
+      "rmse": 15.3014190864563,
+      "delta1": 5.562890235646217
+    },
+    "interior_metrics": {
+      "absrel": 0.4774599635601044,
+      "rmse": 6.913746638298035,
+      "delta1": 5.913523872143409
+    },
+    "global_absrel": 0.49059296190738677,
+    "edge_degradation_ratio": 1.1378741843770355
+  }
+}

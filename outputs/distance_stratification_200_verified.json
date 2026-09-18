@@ -1,0 +1,42 @@
+{
+  "Near Navigation Zone": {
+    "span": [
+      0.1,
+      5.0
+    ],
+    "abs_rel": 0.0604,
+    "rmse": 0.355,
+    "d1": 97.61,
+    "frames": 189
+  },
+  "Mid Object Interaction": {
+    "span": [
+      5.0,
+      15.0
+    ],
+    "abs_rel": 0.0483,
+    "rmse": 0.895,
+    "d1": 98.26,
+    "frames": 200
+  },
+  "Far Architectural Zone": {
+    "span": [
+      15.0,
+      30.0
+    ],
+    "abs_rel": 0.1287,
+    "rmse": 3.915,
+    "d1": 84.01,
+    "frames": 199
+  },
+  "Deep Background": {
+    "span": [
+      30.0,
+      80.0
+    ],
+    "abs_rel": 0.1393,
+    "rmse": 9.636,
+    "d1": 79.7,
+    "frames": 195
+  }
+}

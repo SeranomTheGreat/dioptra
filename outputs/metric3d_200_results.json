@@ -1,0 +1,20 @@
+{
+  "model_name": "Metric3D-ViT-Small (CVPR 2023 / TPAMI 2024)",
+  "parameters": 37495051,
+  "parameters_m": 37.5,
+  "alignment": "Direct Metric (Camera-Conditioned, No Test-Time Alignment)",
+  "frames_evaluated": 200,
+  "latency_ms": 565.1,
+  "fps": 1.8,
+  "abs_rel": 0.3269,
+  "sq_rel": 2.1998,
+  "rmse": 7.192,
+  "rmse_log": 0.5082,
+  "a1": 0.2652,
+  "a2": 0.6155,
+  "a3": 0.7945,
+  "scale_ratio": 0.7254,
+  "a1_percent": 26.52,
+  "a2_percent": 61.55,
+  "a3_percent": 79.45
+}

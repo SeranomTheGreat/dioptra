@@ -1,0 +1,57 @@
+{
+  "Dioptra-DINO (Ours)": {
+    "params_m": 27.51,
+    "input_resolution": "224x224",
+    "latency_ms": 26.8,
+    "fps": 37.3,
+    "p95_ms": 27.2,
+    "gflops": 5.4,
+    "reaction_dist_5ms": 0.134,
+    "reaction_dist_10ms": 0.268,
+    "reaction_dist_15ms": 0.402
+  },
+  "UniDepth-V2 ViT-S": {
+    "params_m": 34.18,
+    "input_resolution": "480x640",
+    "latency_ms": 186.1,
+    "fps": 5.4,
+    "p95_ms": 188.1,
+    "gflops": 38.2,
+    "reaction_dist_5ms": 0.93,
+    "reaction_dist_10ms": 1.861,
+    "reaction_dist_15ms": 2.791
+  },
+  "Depth Anything V2-S": {
+    "params_m": 24.79,
+    "input_resolution": "518x518",
+    "latency_ms": 78.2,
+    "fps": 12.8,
+    "p95_ms": 79.5,
+    "gflops": 24.8,
+    "reaction_dist_5ms": 0.391,
+    "reaction_dist_10ms": 0.782,
+    "reaction_dist_15ms": 1.173
+  },
+  "Metric3D ViT-S": {
+    "params_m": 37.5,
+    "input_resolution": "616x1064",
+    "latency_ms": 553.4,
+    "fps": 1.8,
+    "p95_ms": 557.3,
+    "gflops": 112.5,
+    "reaction_dist_5ms": 2.767,
+    "reaction_dist_10ms": 5.534,
+    "reaction_dist_15ms": 8.301
+  },
+  "ZoeDepth ZoeD_NK": {
+    "params_m": 346.1,
+    "input_resolution": "384x512",
+    "latency_ms": 1535.4,
+    "fps": 0.7,
+    "p95_ms": 1657.3,
+    "gflops": 145.0,
+    "reaction_dist_5ms": 7.677,
+    "reaction_dist_10ms": 15.354,
+    "reaction_dist_15ms": 23.03
+  }
+}
