@@ -40,6 +40,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 
+# Prevent PyTorch CUDA memory fragmentation across long training runs
+if "PYTORCH_CUDA_ALLOC_CONF" not in os.environ:
+    os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -95,14 +99,15 @@ class DioptraDINOConfig:
     max_depth: float = 200.0
 
     # Training & Optimization
-    batch_size: int = 8
-    gradient_accumulation_steps: int = 4  # Effective batch size = 32
+    batch_size: int = 4
+    gradient_accumulation_steps: int = 8  # Effective batch size = 32
     lr_backbone: float = 2e-5
     lr_head: float = 2e-4
     weight_decay: float = 0.05
     epochs: int = 15
     use_amp: bool = True
     gradient_clip: float = 1.0
+    use_checkpointing: bool = True
 
     # Loss weights
     weight_silog: float = 1.0
@@ -153,10 +158,15 @@ class ViTAttention(nn.Module):
     def forward(self, x: Tensor) -> Tensor:
         B, N, C = x.shape
         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, self.head_dim).permute(2, 0, 3, 1, 4)
-        q, k, v = qkv[0], qkv[1], qkv[2]
-        attn = (q @ k.transpose(-2, -1)) * self.scale
-        attn = attn.softmax(dim=-1)
-        x = (attn @ v).transpose(1, 2).reshape(B, N, C)
+        q, k, v = qkv[0], qkv[1], qkv[2]  # [B, num_heads, N, head_dim]
+        if hasattr(F, "scaled_dot_product_attention"):
+            # FlashAttention / Memory-efficient scaled dot product attention
+            x_attn = F.scaled_dot_product_attention(q, k, v)
+        else:
+            attn = (q @ k.transpose(-2, -1)) * self.scale
+            attn = attn.softmax(dim=-1)
+            x_attn = attn @ v
+        x = x_attn.transpose(1, 2).reshape(B, N, C)
         return self.proj(x)
 
 
@@ -297,7 +307,10 @@ class DINOv2Backbone(nn.Module):
         target_layers = set(self.cfg.out_layers)
 
         for i, block in enumerate(self.blocks, start=1):
-            tokens = block(tokens)
+            if self.training and getattr(self.cfg, "use_checkpointing", True):
+                tokens = torch.utils.checkpoint.checkpoint(block, tokens, use_reentrant=False)
+            else:
+                tokens = block(tokens)
             if i in target_layers:
                 # Discard CLS token; keep spatial patch tokens [B, N, C]
                 spatial_tokens = tokens[:, 1:, :]
@@ -685,7 +698,10 @@ class DioptraDINO(nn.Module):
             )
 
         # Step 4: Multi-Scale Reassembly & Metric Depth Decoding
-        metric_depth = self.depth_head(features)
+        if self.cfg.use_checkpointing and self.training:
+            metric_depth = torch.utils.checkpoint.checkpoint(self.depth_head, features, use_reentrant=False)
+        else:
+            metric_depth = self.depth_head(features)
         return metric_depth
 
 
@@ -764,9 +780,10 @@ class DioptraDINOLoss(nn.Module):
         pred_y = (v - cy) / fy * pred_z
         P_pred = torch.stack([pred_x, pred_y, pred_z], dim=1)
 
-        target_x = (u - cx) / fx * target_z
-        target_y = (v - cy) / fy * target_z
-        P_target = torch.stack([target_x, target_y, target_z], dim=1)
+        with torch.no_grad():
+            target_x = (u - cx) / fx * target_z
+            target_y = (v - cy) / fy * target_z
+            P_target = torch.stack([target_x, target_y, target_z], dim=1)
 
         total_vnl = torch.tensor(0.0, device=device, dtype=dtype)
         valid_scales = 0
@@ -776,14 +793,15 @@ class DioptraDINOLoss(nn.Module):
                 continue
             vx_pred = P_pred[:, :, s:-s, 2 * s:] - P_pred[:, :, s:-s, :-2 * s]
             vy_pred = P_pred[:, :, 2 * s:, s:-s] - P_pred[:, :, :-2 * s, s:-s]
-            vx_target = P_target[:, :, s:-s, 2 * s:] - P_target[:, :, s:-s, :-2 * s]
-            vy_target = P_target[:, :, 2 * s:, s:-s] - P_target[:, :, :-2 * s, s:-s]
-
             n_pred = torch.cross(vx_pred, vy_pred, dim=1)
-            n_target = torch.cross(vx_target, vy_target, dim=1)
-
             norm_pred = torch.norm(n_pred, dim=1, keepdim=True).clamp(min=1e-6)
-            norm_target = torch.norm(n_target, dim=1, keepdim=True).clamp(min=1e-6)
+
+            with torch.no_grad():
+                vx_target = P_target[:, :, s:-s, 2 * s:] - P_target[:, :, s:-s, :-2 * s]
+                vy_target = P_target[:, :, 2 * s:, s:-s] - P_target[:, :, :-2 * s, s:-s]
+                n_target = torch.cross(vx_target, vy_target, dim=1)
+                norm_target = torch.norm(n_target, dim=1, keepdim=True).clamp(min=1e-6)
+                n_t = (n_target / norm_target).detach()
 
             m_inner = (
                 m[:, s:-s, 2 * s:]
@@ -795,7 +813,6 @@ class DioptraDINOLoss(nn.Module):
 
             if m_inner.sum() > 50:
                 n_p = n_pred / norm_pred
-                n_t = n_target / norm_target
                 cos_sim = torch.sum(n_p * n_t, dim=1)
                 loss_s = torch.mean(1.0 - cos_sim[m_inner].clamp(min=-1.0, max=1.0))
                 total_vnl = total_vnl + loss_s
@@ -1073,29 +1090,40 @@ def resolve_all_dataset_roots(path: str = "auto") -> List[Tuple[str, str]]:
 
         pl = p_str.lower()
         # 1. Hypersim
-        if "hypersim" in pl or any(p.glob("**/*.depth_meters.hdf5")) or any(p.glob("**/*tonemap.jpg")):
+        if "hypersim" in pl:
             results.append((str(p), "hypersim"))
             return
         # 2. NYU-Depth-v2
-        if "nyu" in pl or any(p.glob("**/*_colors.png")) or any(p.glob("**/nyu2_*.csv")):
+        if "nyu" in pl:
             results.append((str(p), "nyu"))
             return
         # 3. KITTI
-        if "kitti" in pl or (p / "train" / "train" / "depths").is_dir() or any(p.glob("**/image_02/data")):
+        if "kitti" in pl:
             results.append((str(p), "kitti"))
             return
-        # 4. TartanAir / TartanGround
-        if _dir_looks_like_tartanair(p) or (p.is_file() and p.suffix.lower() == ".zip" and _zip_looks_like_tartanair(p)) or "tartan" in pl:
+        # 4. TartanGround AMR
+        if "tartanground" in pl:
+            results.append((str(p), "tartanground_amr"))
+            return
+        # 5. TartanAir Warehouse
+        if "warehouse" in pl:
+            results.append((str(p), "tartanair_warehouse"))
             if (p / "warehouse_stereo").is_dir():
-                results.append((str(p / "warehouse_stereo"), "tartan"))
-            else:
-                results.append((str(p), "tartan"))
+                results.append((str(p / "warehouse_stereo"), "tartanair_warehouse"))
+            return
+        # 6. TartanAir Indoors / Complement / DASVO
+        if any(k in pl for k in ("tartan", "hospital", "office", "abandoned", "restaurant", "school", "industrial", "dasvo")):
+            results.append((str(p), "tartanair_indoors"))
             return
 
-        # Fallback: check if directory contains png or npy files
+        # Fast shallow fallback: check immediate directory contents
         try:
-            if any(p.glob("**/*.png")) or any(p.glob("**/*.npy")) or any(p.glob("**/*.hdf5")):
-                results.append((str(p), "tartan"))
+            if p.is_dir():
+                for child in p.iterdir():
+                    cn = child.name.lower()
+                    if cn.endswith(".png") or cn.endswith(".npy") or cn.endswith(".hdf5") or cn.endswith(".zip"):
+                        results.append((str(p), "tartanair_indoors"))
+                        break
         except OSError:
             pass
 
@@ -1197,13 +1225,18 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
         self.apply_pinhole_aug = apply_pinhole_aug and (split == "train")
         self.crop_min = crop_min
 
+        tartan_K = np.array([
+            [320.0, 0.0, 320.0],
+            [0.0, 320.0, 240.0],
+            [0.0, 0.0, 1.0],
+        ], dtype=np.float32)
+
         # Canonical Camera Intrinsics per domain
         self.K_CANONICAL = {
-            "tartan": np.array([
-                [320.0, 0.0, 320.0],
-                [0.0, 320.0, 240.0],
-                [0.0, 0.0, 1.0],
-            ], dtype=np.float32),  # 640x480, 90 deg FOV
+            "tartan": tartan_K,
+            "tartanair_warehouse": tartan_K,
+            "tartanair_indoors": tartan_K,
+            "tartanground_amr": tartan_K,
             "hypersim": np.array([
                 [888.89, 0.0, 512.0],
                 [0.0, 1000.0, 384.0],
@@ -1250,10 +1283,10 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
     def _is_val_split(self, path_str: str, domain: str) -> bool:
         """Strict validation partition per domain."""
         pl = path_str.lower().replace("\\", "/")
-        if domain == "tartan":
+        if domain.startswith("tartan"):
             if "abandonedfactory" in pl:
                 return True
-            for train_env in ("carwelding", "industrialhangar", "supermarket", "hospital", "office", "restaurant", "school", "warehouse"):
+            for train_env in ("carwelding", "industrialhangar", "supermarket", "hospital", "office", "restaurant", "school", "warehouse", "industrial"):
                 if train_env in pl:
                     return False
         elif domain == "nyu":
@@ -1277,6 +1310,20 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
         return (h % 10) >= 9
 
     def _build_index(self):
+        # 1. Fast path: load from cached index if available (takes 0.05s)
+        cache_path = os.path.join("/kaggle/working", f"dataset_index_{self.split}.json")
+        if os.path.exists(cache_path):
+            try:
+                with open(cache_path, "r") as f:
+                    cached = json.load(f)
+                if len(cached) > 0:
+                    self.samples = [tuple(x) for x in cached]
+                    print(f"[Dioptra-DINO Dataset] Loaded {len(self.samples):,} {self.split} samples from cache in 0.05s: {cache_path}")
+                    return
+            except Exception:
+                pass
+
+        t0 = time.time()
         for root_path, domain in self.resolved_roots:
             p = Path(root_path)
             if not p.exists():
@@ -1288,7 +1335,7 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
             elif domain == "kitti":
                 self._index_kitti(root_path)
             else:
-                self._index_tartan(root_path)
+                self._index_tartan(root_path, domain_tag=domain)
 
         # Graceful fallback: if split filtering yielded 0 samples, include all found pairs
         if len(self.samples) == 0:
@@ -1301,15 +1348,89 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
                 elif domain == "kitti":
                     self._index_kitti(root_path, force_all=True)
                 else:
-                    self._index_tartan(root_path, force_all=True)
+                    self._index_tartan(root_path, force_all=True, domain_tag=domain)
 
-    def _index_tartan(self, root: str, force_all: bool = False):
+        elapsed = time.time() - t0
+        print(f"[Dioptra-DINO Dataset] Indexing completed in {elapsed:.2f}s ({len(self.samples):,} samples found).")
+
+        # Save to cache for instant sub-second reuse
+        if len(self.samples) > 0 and os.path.isdir("/kaggle/working"):
+            try:
+                with open(cache_path, "w") as f:
+                    json.dump(self.samples, f)
+                print(f"[Dioptra-DINO Dataset] Successfully saved index cache: {cache_path}")
+            except Exception:
+                pass
+
+    def _index_tartan(self, root: str, force_all: bool = False, domain_tag: str = "tartan"):
         if str(root).lower().endswith(".zip"):
-            self._index_tartan_zip(root, force_all)
-        else:
-            self._index_tartan_tree(root, force_all)
+            self._index_tartan_zip(root, force_all, domain_tag=domain_tag)
+        elif os.path.isdir(root):
+            # 1. Unzipped tree discovery with relative mirror path matching (handles Kaggle layout)
+            self._index_tartan_tree(root, force_all, domain_tag=domain_tag)
 
-    def _index_tartan_zip(self, zip_path: str, force_all: bool = False):
+            # 2. Also check for companion or nested zip archives if present
+            zip_groups: Dict[str, List[str]] = {}
+            for dirpath, _, filenames in os.walk(root):
+                for fn in filenames:
+                    if fn.lower().endswith(".zip"):
+                        zip_groups.setdefault(dirpath, []).append(os.path.join(dirpath, fn))
+
+            for folder, zpaths in zip_groups.items():
+                img_zips = [z for z in zpaths if "image" in os.path.basename(z).lower()]
+                depth_zips = [z for z in zpaths if "depth" in os.path.basename(z).lower()]
+                if img_zips and depth_zips:
+                    for iz in img_zips:
+                        for dz in depth_zips:
+                            self._index_companion_zips(iz, dz, force_all, domain_tag=domain_tag)
+                else:
+                    for z in zpaths:
+                        self._index_tartan_zip(z, force_all, domain_tag=domain_tag)
+
+    def _index_companion_zips(self, img_zip: str, depth_zip: str, force_all: bool = False, domain_tag: str = "tartan"):
+        try:
+            with zipfile.ZipFile(img_zip, "r") as zf_img:
+                img_names = [n for n in zf_img.namelist() if not n.endswith("/") and n.lower().endswith(".png")]
+            with zipfile.ZipFile(depth_zip, "r") as zf_depth:
+                depth_names = set(zf_depth.namelist())
+        except Exception:
+            return
+
+        for iname in img_names:
+            matched_dname = None
+            if "image_left" in iname:
+                base = iname.replace("image_left", "depth_left")
+                for c in (
+                    base.replace("_left.png", "_left_depth.npy"),
+                    base.replace("_left.png", "_left_depth.png"),
+                    base.replace(".png", ".npy"),
+                    base.replace(".png", "_depth.npy"),
+                    base.replace(".png", "_depth.png"),
+                    base,
+                ):
+                    if c in depth_names:
+                        matched_dname = c
+                        break
+            elif "image_lcam_front" in iname:
+                base = iname.replace("image_lcam_front", "depth_lcam_front")
+                for c in (
+                    base.replace("_lcam_front.png", "_lcam_front_depth.png"),
+                    base.replace("_lcam_front.png", "_lcam_front_depth.npy"),
+                    base.replace(".png", ".npy"),
+                    base.replace(".png", "_depth.png"),
+                    base.replace(".png", "_depth.npy"),
+                    base,
+                ):
+                    if c in depth_names:
+                        matched_dname = c
+                        break
+
+            if matched_dname is not None:
+                is_val = self._is_val_split(iname, "tartan")
+                if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
+                    self.samples.append((f"{img_zip}::{iname}", f"{depth_zip}::{matched_dname}", domain_tag))
+
+    def _index_tartan_zip(self, zip_path: str, force_all: bool = False, domain_tag: str = "tartan"):
         try:
             with zipfile.ZipFile(zip_path, "r") as zf:
                 names = [n for n in zf.namelist() if not n.endswith("/")]
@@ -1320,151 +1441,184 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
         depth_map: Dict[str, str] = {}
         for n in names:
             nl = n.lower()
-            if ("/image_left/" in n or "/image_lcam_front/" in n) and nl.endswith(".png"):
-                mod = "/image_left/" if "/image_left/" in n else "/image_lcam_front/"
+            if ("/image_left/" in n or "/image_lcam_front/" in n or n.startswith("image_left/") or n.startswith("image_lcam_front/")) and nl.endswith(".png"):
+                mod = "image_left" if "image_left" in n else "image_lcam_front"
                 parts = n.split(mod)
-                stem = self._normalize_stem(os.path.splitext(os.path.basename(parts[1]))[0])
+                stem = self._normalize_stem(os.path.splitext(os.path.basename(parts[-1]))[0])
                 img_map[f"{parts[0]}::{stem}"] = n
-            elif ("/depth_left/" in n or "/depth_lcam_front/" in n) and (nl.endswith(".npy") or nl.endswith(".png")):
-                mod = "/depth_left/" if "/depth_left/" in n else "/depth_lcam_front/"
+            elif ("/depth_left/" in n or "/depth_lcam_front/" in n or n.startswith("depth_left/") or n.startswith("depth_lcam_front/")) and (nl.endswith(".npy") or nl.endswith(".png")):
+                mod = "depth_left" if "depth_left" in n else "depth_lcam_front"
                 parts = n.split(mod)
-                stem = self._normalize_stem(os.path.splitext(os.path.basename(parts[1]))[0])
+                stem = self._normalize_stem(os.path.splitext(os.path.basename(parts[-1]))[0])
                 depth_map[f"{parts[0]}::{stem}"] = n
 
         for key, img_path in sorted(img_map.items()):
             if key in depth_map:
                 is_val = self._is_val_split(key, "tartan")
                 if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
-                    self.samples.append((f"{zip_path}::{img_path}", f"{zip_path}::{depth_map[key]}", "tartan"))
+                    self.samples.append((f"{zip_path}::{img_path}", f"{zip_path}::{depth_map[key]}", domain_tag))
 
-    def _index_tartan_tree(self, root: str, force_all: bool = False):
-        png_files = sorted(glob.glob(os.path.join(root, "**", "*.png"), recursive=True))
-        for img_path in png_files:
-            fname = os.path.basename(img_path)
-            if "depth" in fname.lower() or "rcam" in fname.lower() or "_right" in fname.lower():
-                continue
-            base_dir = os.path.dirname(img_path)
-            stem = os.path.splitext(fname)[0]
-            clean = self._normalize_stem(stem)
+    def _index_tartan_tree(self, root: str, force_all: bool = False, domain_tag: str = "tartan"):
+        samples_found = []
+        all_depth_files = set()
+        img_candidates = []
 
-            cand_depth_dirs = [
-                base_dir.replace("image_left", "depth_left").replace("image_lcam_front", "depth_lcam_front")
-            ]
-            cand_depths = []
-            for depth_dir in cand_depth_dirs:
-                for s in [f"{clean}_left_depth", f"{clean}_lcam_front_depth", f"{clean}_depth", f"{stem}_depth"]:
-                    cand_depths.append(os.path.join(depth_dir, f"{s}.npy"))
-                    cand_depths.append(os.path.join(depth_dir, f"{s}.png"))
+        for dirpath, dirs, filenames in os.walk(root):
+            for fn in filenames:
+                if fn.startswith("."):
+                    continue
+                full_path = os.path.join(dirpath, fn)
+                rel_path = os.path.relpath(full_path, root).replace("\\", "/")
+                fn_lower = fn.lower()
+                rel_lower = rel_path.lower()
 
-            depth_path = None
-            for c in cand_depths:
-                if os.path.exists(c) and os.path.abspath(c) != os.path.abspath(img_path):
-                    depth_path = c
-                    break
+                if fn_lower.endswith(".png") and ("image_left" in rel_lower or "image_lcam_front" in rel_lower):
+                    img_candidates.append((rel_path, full_path))
+                elif (fn_lower.endswith(".npy") or fn_lower.endswith(".png")) and ("depth_left" in rel_lower or "depth_lcam_front" in rel_lower):
+                    all_depth_files.add(rel_path)
 
-            if depth_path:
-                is_val = self._is_val_split(img_path, "tartan")
+        for rel_img, full_img in img_candidates:
+            matched_rel_depth = None
+            if "image_left" in rel_img:
+                base = rel_img.replace("image_left", "depth_left")
+                for c in (
+                    base.replace("_left.png", "_left_depth.npy"),
+                    base.replace("_left.png", "_left_depth.png"),
+                    base.replace(".png", ".npy"),
+                    base.replace(".png", "_depth.npy"),
+                    base.replace(".png", "_depth.png"),
+                    base,
+                ):
+                    if c in all_depth_files:
+                        matched_rel_depth = c
+                        break
+            elif "image_lcam_front" in rel_img:
+                base = rel_img.replace("image_lcam_front", "depth_lcam_front")
+                for c in (
+                    base.replace("_lcam_front.png", "_lcam_front_depth.png"),
+                    base.replace("_lcam_front.png", "_lcam_front_depth.npy"),
+                    base.replace(".png", ".npy"),
+                    base.replace(".png", "_depth.png"),
+                    base.replace(".png", "_depth.npy"),
+                    base,
+                ):
+                    if c in all_depth_files:
+                        matched_rel_depth = c
+                        break
+
+            if matched_rel_depth is not None:
+                full_depth = os.path.join(root, matched_rel_depth)
+                is_val = self._is_val_split(full_img, "tartan")
                 if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
-                    self.samples.append((img_path, depth_path, "tartan"))
+                    samples_found.append((full_img, full_depth, domain_tag))
+
+        self.samples.extend(samples_found)
 
     def _index_hypersim(self, root: str, force_all: bool = False):
-        tonemap_files = sorted(glob.glob(os.path.join(root, "**", "*.tonemap.jpg"), recursive=True))
-        for img_path in tonemap_files:
-            # Expected depth sibling: replace final_preview with geometry_hdf5, tonemap.jpg with depth_meters.hdf5
-            depth_cand = img_path.replace("final_preview", "geometry_hdf5").replace(".tonemap.jpg", ".depth_meters.hdf5")
-            if not os.path.exists(depth_cand):
-                alt_depth = img_path.replace(".tonemap.jpg", ".depth_meters.hdf5")
-                if os.path.exists(alt_depth):
-                    depth_cand = alt_depth
-                else:
-                    continue
-
-            is_val = self._is_val_split(img_path, "hypersim")
-            if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
-                self.samples.append((img_path, depth_cand, "hypersim"))
+        samples_found = []
+        for dirpath, dirs, filenames in os.walk(root):
+            if "final_preview" in dirpath:
+                geom_dir = dirpath.replace("final_preview", "geometry_hdf5")
+                geom_files = set(os.listdir(geom_dir)) if os.path.isdir(geom_dir) else set()
+                for fn in filenames:
+                    if fn.endswith(".tonemap.jpg"):
+                        depth_fn = fn.replace(".tonemap.jpg", ".depth_meters.hdf5")
+                        if depth_fn in geom_files:
+                            img_path = os.path.join(dirpath, fn)
+                            depth_path = os.path.join(geom_dir, depth_fn)
+                            is_val = self._is_val_split(img_path, "hypersim")
+                            if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
+                                samples_found.append((img_path, depth_path, "hypersim"))
+            else:
+                fn_set = set(filenames)
+                for fn in filenames:
+                    if fn.endswith(".tonemap.jpg"):
+                        depth_fn = fn.replace(".tonemap.jpg", ".depth_meters.hdf5")
+                        if depth_fn in fn_set:
+                            img_path = os.path.join(dirpath, fn)
+                            depth_path = os.path.join(dirpath, depth_fn)
+                            is_val = self._is_val_split(img_path, "hypersim")
+                            if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
+                                samples_found.append((img_path, depth_path, "hypersim"))
+        self.samples.extend(samples_found)
 
     def _index_nyu(self, root: str, force_all: bool = False):
-        # Format A: Test split with *_colors.png and *_depth.png
-        color_files = sorted(
-            glob.glob(os.path.join(root, "**", "*_colors.png"), recursive=True)
-            + glob.glob(os.path.join(root, "**", "rgb_*.png"), recursive=True)
-        )
-        for img_path in color_files:
-            if "_colors.png" in img_path:
-                depth_cand = img_path.replace("_colors.png", "_depth.png")
-            elif "rgb_" in img_path:
-                depth_cand = img_path.replace("rgb_", "depth_")
-            else:
-                continue
-
-            if os.path.exists(depth_cand):
-                is_val = self._is_val_split(img_path, "nyu")
-                if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
-                    self.samples.append((img_path, depth_cand, "nyu"))
-
-        # Format B: Official NYUv2 train split (nyu2_train/<scene>_out/<frame>.jpg and <frame>.png)
-        train_jpgs = sorted(glob.glob(os.path.join(root, "**", "nyu2_train", "*", "*.jpg"), recursive=True))
-        for img_path in train_jpgs:
-            depth_cand = img_path[:-4] + ".png"
-            if os.path.exists(depth_cand):
-                is_val = self._is_val_split(img_path, "nyu")
-                if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
-                    self.samples.append((img_path, depth_cand, "nyu"))
-
-        # Format C: General .jpg with sibling .png depth inside any train folder
-        if len(self.samples) == 0:
-            all_jpgs = sorted(glob.glob(os.path.join(root, "**", "*.jpg"), recursive=True))
-            for img_path in all_jpgs:
-                if "tonemap" in img_path:  # Hypersim handled separately
-                    continue
-                depth_cand = img_path[:-4] + ".png"
-                if os.path.exists(depth_cand):
-                    is_val = self._is_val_split(img_path, "nyu")
-                    if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
-                        self.samples.append((img_path, depth_cand, "nyu"))
+        samples_found = []
+        for dirpath, dirs, filenames in os.walk(root):
+            fn_set = set(filenames)
+            for fn in filenames:
+                if fn.endswith("_colors.png"):
+                    dfn = fn.replace("_colors.png", "_depth.png")
+                    if dfn in fn_set:
+                        img_path = os.path.join(dirpath, fn)
+                        depth_path = os.path.join(dirpath, dfn)
+                        is_val = self._is_val_split(img_path, "nyu")
+                        if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
+                            samples_found.append((img_path, depth_path, "nyu"))
+                elif fn.endswith(".jpg") and not fn.startswith("."):
+                    dfn = os.path.splitext(fn)[0] + ".png"
+                    if dfn in fn_set:
+                        img_path = os.path.join(dirpath, fn)
+                        depth_path = os.path.join(dirpath, dfn)
+                        is_val = self._is_val_split(img_path, "nyu")
+                        if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
+                            samples_found.append((img_path, depth_path, "nyu"))
+        self.samples.extend(samples_found)
 
     def _index_kitti(self, root: str, force_all: bool = False):
-        # Case A: Depth in depths/ and image in images/
-        depth_files = sorted(glob.glob(os.path.join(root, "**", "depths", "*.png"), recursive=True))
-        for depth_path in depth_files:
-            fname = os.path.basename(depth_path)
-            parent = os.path.dirname(os.path.dirname(depth_path))
-            found_img = False
-            for cand_sub in ["images", "image", "rgb", "rgbs", "color", "image_02", "image_03"]:
-                img_cand = os.path.join(parent, cand_sub, fname)
-                if os.path.exists(img_cand):
-                    is_val = self._is_val_split(img_cand, "kitti")
-                    if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
-                        self.samples.append((img_cand, depth_path, "kitti"))
-                    found_img = True
-                    break
-            if not found_img:
-                # Direct string substitution fallback
-                for sub_from, sub_to in [("/depths/", "/images/"), ("/depths/", "/image/"), ("/depth/", "/image/"), ("/depth/", "/rgb/")]:
-                    if sub_from in depth_path:
-                        img_cand = depth_path.replace(sub_from, sub_to)
-                        if os.path.exists(img_cand):
-                            is_val = self._is_val_split(img_cand, "kitti")
+        samples_found = []
+        for dirpath, dirs, filenames in os.walk(root):
+            bname = os.path.basename(dirpath)
+            if bname in ("depths", "proj_depth"):
+                parent = os.path.dirname(dirpath)
+                img_dir = None
+                for cand in ("images", "image", "rgb", "rgbs", "image_02/data"):
+                    cand_p = os.path.join(parent, cand)
+                    if os.path.isdir(cand_p):
+                        img_dir = cand_p
+                        break
+                if img_dir and os.path.isdir(img_dir):
+                    img_set = set(os.listdir(img_dir))
+                    for fn in filenames:
+                        if fn.endswith(".png") and fn in img_set:
+                            img_path = os.path.join(img_dir, fn)
+                            depth_path = os.path.join(dirpath, fn)
+                            is_val = self._is_val_split(img_path, "kitti")
                             if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
-                                self.samples.append((img_cand, depth_path, "kitti"))
-                            break
-
-        # Case B: KITTI Eigen standard structure (image_02/data/*.png and proj_depth)
-        kitti_imgs = sorted(glob.glob(os.path.join(root, "**", "image_02", "data", "*.png"), recursive=True))
-        for img_path in kitti_imgs:
-            depth_cand = img_path.replace("image_02/data", "proj_depth/groundtruth/image_02")
-            if os.path.exists(depth_cand):
-                is_val = self._is_val_split(img_path, "kitti")
-                if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
-                    self.samples.append((img_path, depth_cand, "kitti"))
+                                samples_found.append((img_path, depth_path, "kitti"))
+            elif "image_02" in dirpath and bname == "data":
+                parent = dirpath.split("image_02")[0]
+                depth_dir = os.path.join(parent, "proj_depth", "groundtruth", "image_02")
+                if os.path.isdir(depth_dir):
+                    depth_set = set(os.listdir(depth_dir))
+                    for fn in filenames:
+                        if fn.endswith(".png") and fn in depth_set:
+                            img_path = os.path.join(dirpath, fn)
+                            depth_path = os.path.join(depth_dir, fn)
+                            is_val = self._is_val_split(img_path, "kitti")
+                            if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
+                                samples_found.append((img_path, depth_path, "kitti"))
+        self.samples.extend(samples_found)
 
     def _zip_read(self, zip_path: str, member: str) -> bytes:
         pid = os.getpid()
         if self._zip_cache_pid != pid:
+            for old_zf in self._zip_cache.values():
+                try:
+                    old_zf.close()
+                except Exception:
+                    pass
             self._zip_cache = {}
             self._zip_cache_pid = pid
         zf = self._zip_cache.get(zip_path)
         if zf is None:
+            if len(self._zip_cache) >= 1:
+                old_key = next(iter(self._zip_cache))
+                try:
+                    self._zip_cache[old_key].close()
+                except Exception:
+                    pass
+                del self._zip_cache[old_key]
             zf = zipfile.ZipFile(zip_path, "r")
             self._zip_cache[zip_path] = zf
         with zf.open(member) as f:
@@ -1474,6 +1628,8 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
         return len(self.samples)
 
     def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Tensor]:
+        if idx % 200 == 0:
+            gc.collect()
         img_src, depth_src, domain = self.samples[idx]
         from PIL import Image as PILImage
 
@@ -1623,23 +1779,35 @@ def train_dioptra_dino(args):
 
     img_sz = getattr(args, "image_size", 224)
     w_norm = getattr(args, "weight_normal", 0.25)
+    bs = getattr(args, "batch_size", 4)
+    grad_accum = getattr(args, "grad_accum", None)
+    if grad_accum is None:
+        grad_accum = max(1, 32 // max(1, bs))
+    use_ckpt = getattr(args, "use_checkpointing", True)
+
     cfg = DioptraDINOConfig(
         image_size=img_sz,
         grid_size=img_sz // 14,
         epochs=args.epochs,
-        batch_size=args.batch_size,
+        batch_size=bs,
+        gradient_accumulation_steps=grad_accum,
         lr_backbone=args.lr_backbone,
         lr_head=args.lr_head,
         weight_normal=w_norm,
+        use_checkpointing=use_ckpt,
     )
 
     model = DioptraDINO(cfg).to(device)
     loss_fn = DioptraDINOLoss(cfg).to(device)
 
-    # Multi-GPU support via DataParallel
-    if torch.cuda.is_available() and gpu_count > 1:
+    # Compute device: single dedicated GPU eliminates DataParallel scatter/gather memory leaks
+    use_dp = getattr(args, "use_dp", False)
+    if torch.cuda.is_available() and gpu_count > 1 and use_dp:
         print(f"[Dioptra-DINO] Multi-GPU acceleration enabled across {gpu_count} GPUs via DataParallel!")
         model = nn.DataParallel(model)
+    else:
+        if torch.cuda.is_available() and gpu_count > 1:
+            print(f"[Dioptra-DINO] Dedicated GPU training on {device} (avoids DataParallel VRAM gather bottleneck & grad-accum leaks).")
 
     raw_model = model.module if hasattr(model, "module") else model
 
@@ -1673,28 +1841,34 @@ def train_dioptra_dino(args):
             "Please ensure inputs (TartanAir, Hypersim, NYUv2, KITTI) are attached to this Kaggle notebook."
         )
 
-    def _worker_init_fn(worker_id):
-        torch.set_num_threads(1)
-
-    num_workers = min(4, os.cpu_count() or 1)
+    # Use 0 workers and pin_memory=False for absolute host RAM stability on Kaggle Linux VM
     dataloader = torch.utils.data.DataLoader(
         dataset,
         batch_size=cfg.batch_size,
         shuffle=True,
-        num_workers=num_workers,
-        pin_memory=torch.cuda.is_available(),
-        persistent_workers=(num_workers > 0),
-        worker_init_fn=_worker_init_fn,
+        num_workers=0,
+        pin_memory=False,
         drop_last=True,
     )
 
     output_dir = getattr(args, "output_dir", "outputs_dino")
     os.makedirs(output_dir, exist_ok=True)
 
-    # Atomic checkpoint helper
+    # Atomic checkpoint helper with CPU serialization to avoid GPU VRAM spikes
+    def _to_cpu(obj):
+        if isinstance(obj, torch.Tensor):
+            return obj.detach().cpu()
+        elif isinstance(obj, dict):
+            return {k: _to_cpu(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [_to_cpu(v) for v in obj]
+        return obj
+
     def atomic_save(state_dict, file_path):
         tmp_path = f"{file_path}.tmp"
-        torch.save(state_dict, tmp_path)
+        cpu_state_dict = _to_cpu(state_dict)
+        torch.save(cpu_state_dict, tmp_path)
+        del cpu_state_dict
         os.replace(tmp_path, file_path)
 
     # Checkpoint Resume Finder
@@ -1839,17 +2013,26 @@ def train_dioptra_dino(args):
                 torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.gradient_clip)
                 scaler.step(optimizer)
                 scaler.update()
-                optimizer.zero_grad()
+                optimizer.zero_grad(set_to_none=True)
                 scheduler.step()
 
-            epoch_loss += loss.item() * cfg.gradient_accumulation_steps
+            step_loss_val = loss.item() * cfg.gradient_accumulation_steps
+            epoch_loss += step_loss_val
 
             if step % 50 == 0:
                 print(f"Epoch [{epoch+1}/{cfg.epochs}] Step [{step}/{len(dataloader)}] "
-                      f"Loss: {loss.item() * cfg.gradient_accumulation_steps:.4f} "
+                      f"Loss: {step_loss_val:.4f} "
                       f"(SiLog: {metrics.get('loss_silog', 0):.3f}, Scale: {metrics.get('loss_scale', 0):.3f}, "
                       f"Edge: {metrics.get('loss_edge', 0):.3f}, VNL: {metrics.get('loss_vnl', 0):.3f}) "
                       f"ARA Gate: {current_gate:.2f}")
+
+            # Explicitly free step tensors from GPU/CPU memory
+            del images, depths, Ks, preds, loss, metrics
+
+            if (step + 1) % 100 == 0:
+                gc.collect()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
 
             # Preemption-resistant periodic step checkpoint every 500 steps
             if (step + 1) % 500 == 0:
@@ -1867,6 +2050,10 @@ def train_dioptra_dino(args):
                 }
                 atomic_save(step_dict, os.path.join(output_dir, "checkpoint_step_latest.pt"))
                 atomic_save(step_dict, os.path.join(output_dir, "checkpoint_latest.pt"))
+                del step_dict
+                gc.collect()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
 
         elapsed = time.time() - t_start
         mean_loss = epoch_loss / len(dataloader)
@@ -2045,7 +2232,10 @@ if __name__ == "__main__":
     parser.add_argument("--test", action="store_true", help="Run geometric unit test suite")
     parser.add_argument("--train", type=str, default=None, nargs="?", const="auto", help="Path to TartanAir dataset directory (default: 'auto')")
     parser.add_argument("--epochs", type=int, default=15, help="Number of training epochs")
-    parser.add_argument("--batch-size", type=int, default=8, help="Batch size per GPU")
+    parser.add_argument("--batch-size", type=int, default=4, help="Batch size per GPU (default: 4)")
+    parser.add_argument("--grad-accum", "--gradient-accumulation-steps", dest="grad_accum", type=int, default=None, help="Gradient accumulation steps (default: auto for effective batch 32)")
+    parser.add_argument("--use-checkpointing", action="store_true", default=True, help="Enable activation gradient checkpointing (default: True)")
+    parser.add_argument("--no-checkpointing", dest="use_checkpointing", action="store_false", help="Disable activation gradient checkpointing")
     parser.add_argument("--image-size", type=int, default=224, help="Input resolution (e.g. 224, 336, 392, multiples of 28)")
     parser.add_argument("--weight-normal", type=float, default=0.25, help="Weight for 3D Virtual Normal Loss (VNL)")
     parser.add_argument("--crop-min", type=float, default=0.35, help="Minimum scale for dynamic optical pinhole crop")
