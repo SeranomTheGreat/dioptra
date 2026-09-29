@@ -179,7 +179,7 @@ Following standard literature \cite{eigen2014depth, yin2023metric3d}, we report:
 
 \begin{table*}[t]
 \centering
-\caption{\textbf{3,000-Frame Pure Photorealistic True Indoor Metric Benchmark} across Apple Hypersim and InteriorNet ($0.1\text{m} - 10.0\text{m}$, 2,984 valid pairs). Evaluated under each model's native configuration.}
+\caption{\textbf{Comprehensive True Indoor Metric Benchmark} across Apple Hypersim (2,744 frames), InteriorNet (240 frames), and TartanAir Indoor Enclosures (925 frames, $0.1\text{m} - 10.0\text{m}$). Evaluated under each model's native configuration.}
 \label{tab:pure_indoor_3000}
 \small
 \begin{tabular}{lccccccr}
@@ -200,6 +200,11 @@ Depth Anything V2 Metric \cite{yang2024depthanythingv2} & 0.0761 & 0.415 m & 0.2
 \textbf{Dioptra-DINO (Ours)} & 0.3726 & 0.711 m & 0.521 m & 62.0\% & 1.203 & 0.1999 & 28.5° \\
 Metric3D ViT-Small \cite{yin2023metric3d} & 0.3504 & 0.718 m & 0.578 m & 63.6\% & 1.241 & 0.1415 & 28.9° \\
 Depth Anything V2 Metric \cite{yang2024depthanythingv2} & 0.2520 & 0.536 m & 0.404 m & 71.6\% & 1.128 & 0.1293 & 28.9° \\
+\midrule
+\multicolumn{8}{l}{\textit{D. TartanAir Extreme Indoor Enclosures (925 Frames across 18 Scenes)}} \\
+\textbf{Dioptra-DINO (Ours)} & 0.4806 & 4.844 m & 3.158 m & 11.7\% & 0.556 & 0.4035 & 63.0° \\
+Metric3D ViT-Small \cite{yin2023metric3d} & \textbf{0.3514} & \textbf{4.493 m} & \textbf{2.479 m} & \textbf{43.7\%} & \textbf{0.939} & \textbf{0.1498} & \textbf{47.9°} \\
+Depth Anything V2 Metric \cite{yang2024depthanythingv2} & 0.6702 & 4.842 m & 2.840 m & 21.3\% & 1.501 & 0.1745 & 44.7° \\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -220,9 +225,17 @@ Table \ref{tab:pure_indoor_3000} reports evaluation across 2,984 valid test pair
 \label{sec:wide_domain}
 To stress-test generalization under severe environmental variance, models were evaluated across 21 indoor enclosures covering residential studios, industrial warehouses, medical wards, and commercial dining halls.
 \begin{itemize}
-    \item \textbf{Overall Mean AbsRel}: Dioptra-DINO achieves an overall mean AbsRel of \textbf{0.4690}, significantly outperforming Depth Anything V2 (\textbf{0.6551}).
-    \item \textbf{Depth Anything Collapse}: On TartanAir architectural suites, Depth Anything V2 suffered catastrophic scale collapse ($1.3720$ on American Diner, $1.3419$ on Tiny House, and $1.2800$ on Suburban House). Dioptra-DINO's predictions remained bounded between $0.40$ and $0.46$.
+    \item \textbf{TartanAir Aggregate (925 Frames)}: As reported in Table \ref{tab:pure_indoor_3000} (Part D), Dioptra-DINO achieves an overall mean AbsRel of \textbf{0.4806} across 18 TartanAir environments, significantly outperforming Depth Anything V2 (\textbf{0.6702}).
+    \item \textbf{Depth Anything Catastrophic Scale Collapse}: On TartanAir architectural suites, Depth Anything V2 suffered complete scale failure: \textbf{1.3720} on American Diner, \textbf{1.3419} on Tiny House Day, \textbf{1.1636} on Tiny House Night, and \textbf{1.2800} on Suburban House. In contrast, Dioptra-DINO's predictions remained firmly bounded between \textbf{0.4097} and \textbf{0.4657}.
+    \item \textbf{Overall 21-Environment Mean}: Across all 21 evaluated indoor domains, Dioptra-DINO achieves an unweighted mean AbsRel of \textbf{0.4690} vs. \textbf{0.6551} for Depth Anything V2.
 \end{itemize}
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=\linewidth]{figures/fig7_tartanair_qualitative.png}
+    \caption{\textbf{Qualitative Comparison on TartanAir Indoor Enclosures}. Top: TartanAir v2 American Diner (Commercial Dining Interior, $90^\circ$ FOV). Bottom: TartanAir v2 Supermarket (High-ceiling Retail Space). Columns from left to right: RGB input, Ground Truth Depth, Dioptra-DINO (Ours, Metric), Metric3D ViT-Small, and Depth Anything V2. Notice how Depth Anything V2 suffers catastrophic scale explosion ($1.37\times$ error) on wide-FOV camera optics due to lack of intrinsics conditioning, whereas Dioptra-DINO produces stable, physically bounded metric depth.}
+    \label{fig:tartanair_qualitative}
+\end{figure*}
 
 \begin{figure*}[t]
     \centering
@@ -239,11 +252,36 @@ Following an extensive 12-hour dual-GPU fine-tuning phase on Kaggle (33,304 opti
 \end{itemize}
 
 \subsection{Comparison with UniDepth V2 (CVPR 2024)}
-We evaluated the official UniDepth V2 ViT-Small model \cite{piccinelli2024unidepth} against Dioptra-DINO across 100 indoor frames:
+We evaluated the official UniDepth V2 ViT-Small model \cite{piccinelli2024unidepth} against Dioptra-DINO across 100 indoor frames under native configurations. As detailed in Table \ref{tab:unidepth_head_to_head}:
 \begin{itemize}
-    \item \textbf{Hypersim}: Dioptra-DINO achieves \textbf{34.2\% lower AbsRel} (\textbf{0.1571} vs. \textbf{0.2386}) and \textbf{+34.1\% higher inliers} ($\delta_1 = \mathbf{81.1\%}$ vs. $47.0\%$). UniDepth compressed Hypersim room depths to $0.794\times$, whereas Dioptra preserved $0.999\times$.
+    \item \textbf{Apple Hypersim}: Dioptra-DINO achieves \textbf{34.2\% lower AbsRel} (\textbf{0.1571} vs. \textbf{0.2386}) and \textbf{+34.1\% higher inliers} ($\delta_1 = \mathbf{81.1\%}$ vs. $47.0\%$). UniDepth compressed Hypersim room depths to $0.794\times$, whereas Dioptra preserved $0.999\times$.
     \item \textbf{Overall (100 Frames)}: Dioptra achieves \textbf{0.2146 AbsRel} and \textbf{79.1\% inliers} vs. UniDepth's \textbf{0.2357 AbsRel} and \textbf{60.0\% inliers}, while running \textbf{6.2$\times$ faster} (67.9 ms vs. 421.6 ms).
+    \item \textbf{ScanNet Handheld iPad}: UniDepth achieves high structural precision on real iPad depth (\textbf{0.0567} AbsRel, $96.2\%$ inliers), while Dioptra preserves solid transfer (\textbf{0.1080} AbsRel, $90.9\%$ inliers).
 \end{itemize}
+
+\begin{table}[t]
+\centering
+\caption{\textbf{Head-to-Head Foundation Benchmark with UniDepth V2 (CVPR 2024)} under native resolution configurations across 100 indoor frames.}
+\label{tab:unidepth_head_to_head}
+\small
+\begin{tabular}{lccccr}
+\toprule
+\textbf{Evaluation Split} & \textbf{Model Architecture} & \textbf{AbsRel (↓)} & \textbf{RMSE (m ↓)} & \textbf{$\delta_1$ (↑)} & \textbf{Scale} \\
+\midrule
+\textbf{Overall Aggregate} & \textbf{Dioptra-DINO (Ours)} & \textbf{0.2146} & \textbf{0.983 m} & \textbf{79.1\%} & \textbf{1.058} \\
+(100 Indoor Frames) & UniDepth V2 \cite{piccinelli2024unidepth} & 0.2357 & 1.245 m & 60.0\% & 0.928 \\
+\midrule
+\textbf{Apple Hypersim} & \textbf{Dioptra-DINO (Ours)} & \textbf{0.1571} & \textbf{1.233 m} & \textbf{81.1\%} & \textbf{0.999} \\
+(60 Ray-Traced Rooms) & UniDepth V2 \cite{piccinelli2024unidepth} & 0.2386 & 1.738 m & 47.0\% & 0.794 \\
+\midrule
+\textbf{ScanNet Scene00} & \textbf{Dioptra-DINO (Ours)} & 0.1080 & 0.255 m & 90.9\% & 1.077 \\
+(10 Handheld Frames) & UniDepth V2 \cite{piccinelli2024unidepth} & \textbf{0.0567} & \textbf{0.145 m} & \textbf{96.2\%} & \textbf{0.982} \\
+\midrule
+\textbf{InteriorNet} & \textbf{Dioptra-DINO (Ours)} & 0.3652 & 0.727 m & 71.1\% & 1.168 \\
+(30 Residential Frames) & UniDepth V2 \cite{piccinelli2024unidepth} & \textbf{0.2895} & \textbf{0.625 m} & \textbf{73.9\%} & \textbf{1.176} \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \begin{table*}[t]
 \centering

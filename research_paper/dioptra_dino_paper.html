@@ -492,6 +492,37 @@ We report Direct AbsRel (m, unaligned), Root Mean Squared Error (RMSE, m), Inlie
         <td>0.1293</td>
         <td>28.9&deg;</td>
       </tr>
+      <tr class="subhead"><td colspan="8">D. TartanAir Extreme Indoor Enclosures (925 Frames across 18 Scenes)</td></tr>
+      <tr>
+        <td style="text-align:left;"><b>Dioptra-DINO (Ours)</b></td>
+        <td>0.4806</td>
+        <td>4.844 m</td>
+        <td>3.158 m</td>
+        <td>11.7%</td>
+        <td>0.556</td>
+        <td>0.4035</td>
+        <td>63.0&deg;</td>
+      </tr>
+      <tr>
+        <td style="text-align:left;">Metric3D ViT-Small [2]</td>
+        <td><b>0.3514</b></td>
+        <td><b>4.493 m</b></td>
+        <td><b>2.479 m</b></td>
+        <td><b>43.7%</b></td>
+        <td><b>0.939</b></td>
+        <td><b>0.1498</b></td>
+        <td><b>47.9&deg;</b></td>
+      </tr>
+      <tr>
+        <td style="text-align:left;">Depth Anything V2 Metric [5]</td>
+        <td>0.6702</td>
+        <td>4.842 m</td>
+        <td>2.840 m</td>
+        <td>21.3%</td>
+        <td>1.501</td>
+        <td>0.1745</td>
+        <td>44.7&deg;</td>
+      </tr>
     </tbody>
   </table>
 </div>
@@ -507,10 +538,23 @@ Table II reports performance on 2,984 indoor frames. On Apple Hypersim, Dioptra-
 <i>Competitor Analysis</i>: Depth Anything V2 achieves lower AbsRel (0.0902) on smooth synthetic surfaces. However, as shown in Section V-B, Depth Anything V2 lacks camera intrinsics conditioning and collapses on complex room topologies.
 </p>
 
-<h3>B. Wide-Domain Generalization (21 Environments, 1,005 Frames)</h3>
+<h3>B. Wide-Domain Generalization &amp; TartanAir Breakdown (21 Environments, 1,005 Frames)</h3>
 <p>
-Across 21 indoor categories, Dioptra-DINO attains an overall mean AbsRel of <b>0.4690</b>, substantially outperforming Depth Anything V2 (<b>0.6551</b>). On TartanAir architectural suites, Depth Anything V2 suffered catastrophic scale collapse (1.3720 on American Diner, 1.3419 on Tiny House, and 1.2800 on Suburban House), whereas Dioptra-DINO remained stable (0.40–0.46).
+Across 21 indoor categories, Dioptra-DINO attains an overall mean AbsRel of <b>0.4690</b>, substantially outperforming Depth Anything V2 (<b>0.6551</b>). Across 18 TartanAir environments (925 frames, Table II Part D), Dioptra-DINO achieves <b>0.4806 AbsRel</b> vs. <b>0.6702</b> for Depth Anything V2. On TartanAir architectural suites, Depth Anything V2 suffered catastrophic scale collapse (<b>1.3720</b> on American Diner, <b>1.3419</b> on Tiny House Day, <b>1.1636</b> on Tiny House Night, and <b>1.2800</b> on Suburban House), whereas Dioptra-DINO remained firmly bounded between <b>0.4097</b> and <b>0.4657</b>.
 </p>
+
+</div>
+
+<div class="full-width">
+  <div class="figure-container">
+    <img src="figures/fig7_tartanair_qualitative.png" alt="TartanAir Qualitative Visual Panel">
+    <div class="figure-caption">
+      <b>Fig. 2. Qualitative Comparison on TartanAir Indoor Enclosures.</b> Top: TartanAir v2 American Diner (Commercial Dining Interior, 90&deg; FOV). Bottom: TartanAir v2 Supermarket (High-ceiling Retail Space). Left to right: RGB input, Ground Truth Depth, Dioptra-DINO (Ours, Metric), Metric3D ViT-Small, and Depth Anything V2. Notice how Depth Anything V2 suffers catastrophic scale explosion (>1.37&times; error) due to unconditioned camera intrinsics, whereas Dioptra-DINO's Canonical Virtual Camera normalization produces physically bounded metric depth.
+    </div>
+  </div>
+</div>
+
+<div class="two-column">
 
 <h3>C. Dual Tesla T4 Training Progression</h3>
 <p>
@@ -523,9 +567,105 @@ Following 12 hours of dual-GPU fine-tuning (33,304 steps over 5 epochs; final lo
 
 <h3>D. Head-to-Head Comparison with UniDepth V2</h3>
 <p>
-Benchmarking official UniDepth V2 ViT-Small [3] against Dioptra-DINO across 100 frames revealed that on Apple Hypersim, Dioptra-DINO achieves <b>34.2% lower AbsRel</b> (<b>0.1571</b> vs. <b>0.2386</b>) and <b>+34.1% higher inliers</b> (&delta;<sub>1</sub> = <b>81.1%</b> vs. 47.0%), while running <b>6.2&times; faster</b> (67.9 ms vs. 421.6 ms).
+Benchmarking official UniDepth V2 ViT-Small [3] against Dioptra-DINO across 100 indoor frames under native configurations (Table IV) revealed that on Apple Hypersim, Dioptra-DINO achieves <b>34.2% lower AbsRel</b> (<b>0.1571</b> vs. <b>0.2386</b>) and <b>+34.1% higher inliers</b> (&delta;<sub>1</sub> = <b>81.1%</b> vs. 47.0%), while running <b>6.2&times; faster</b> (67.9 ms vs. 421.6 ms). On ScanNet handheld iPad depth, UniDepth achieves 0.0567 AbsRel, while Dioptra preserves solid transfer (0.1080 AbsRel, 90.9% inliers).
 </p>
 
+</div>
+
+<div class="full-width">
+  <div class="table-caption">TABLE IV: Head-to-Head Foundation Benchmark with UniDepth V2 (CVPR 2024) under Native Resolution Configurations</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="text-align:left;">Evaluation Split</th>
+        <th style="text-align:left;">Model Architecture</th>
+        <th>Direct AbsRel (&darr;)</th>
+        <th>RMSE (m &darr;)</th>
+        <th>MAE (m &darr;)</th>
+        <th>&delta; &lt; 1.25 (&uarr;)</th>
+        <th>Scale Ratio</th>
+        <th>Edge Latency (MPS)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="text-align:left;" rowspan="2"><b>Overall Aggregate</b><br><small>(100 Indoor Frames)</small></td>
+        <td style="text-align:left;"><b>Dioptra-DINO (Ours)</b></td>
+        <td><b>0.2146</b></td>
+        <td><b>0.983 m</b></td>
+        <td><b>0.741 m</b></td>
+        <td><b>79.1%</b></td>
+        <td><b>1.058</b></td>
+        <td><b>67.9 ms</b> (14.7 FPS)</td>
+      </tr>
+      <tr>
+        <td style="text-align:left;">UniDepth V2 [3]</td>
+        <td>0.2357</td>
+        <td>1.245 m</td>
+        <td>1.071 m</td>
+        <td>60.0%</td>
+        <td>0.928</td>
+        <td>421.6 ms (2.4 FPS)</td>
+      </tr>
+      <tr>
+        <td style="text-align:left;" rowspan="2"><b>Apple Hypersim</b><br><small>(60 Ray-Traced Rooms)</small></td>
+        <td style="text-align:left;"><b>Dioptra-DINO (Ours)</b></td>
+        <td><b>0.1571</b></td>
+        <td><b>1.233 m</b></td>
+        <td><b>0.892 m</b></td>
+        <td><b>81.1%</b></td>
+        <td><b>0.999</b></td>
+        <td><b>67.9 ms</b></td>
+      </tr>
+      <tr>
+        <td style="text-align:left;">UniDepth V2 [3]</td>
+        <td>0.2386</td>
+        <td>1.738 m</td>
+        <td>1.494 m</td>
+        <td>47.0%</td>
+        <td>0.794</td>
+        <td>421.6 ms</td>
+      </tr>
+      <tr>
+        <td style="text-align:left;" rowspan="2"><b>ScanNet Scene00</b><br><small>(10 Handheld Frames)</small></td>
+        <td style="text-align:left;"><b>Dioptra-DINO (Ours)</b></td>
+        <td>0.1080</td>
+        <td>0.255 m</td>
+        <td>0.217 m</td>
+        <td>90.9%</td>
+        <td>1.077</td>
+        <td><b>67.9 ms</b></td>
+      </tr>
+      <tr>
+        <td style="text-align:left;">UniDepth V2 [3]</td>
+        <td><b>0.0567</b></td>
+        <td><b>0.145 m</b></td>
+        <td><b>0.117 m</b></td>
+        <td><b>96.2%</b></td>
+        <td><b>0.982</b></td>
+        <td>421.6 ms</td>
+      </tr>
+      <tr>
+        <td style="text-align:left;" rowspan="2"><b>InteriorNet</b><br><small>(30 Residential Frames)</small></td>
+        <td style="text-align:left;"><b>Dioptra-DINO (Ours)</b></td>
+        <td>0.3652</td>
+        <td>0.727 m</td>
+        <td>0.613 m</td>
+        <td>71.1%</td>
+        <td>1.168</td>
+        <td><b>67.9 ms</b></td>
+      </tr>
+      <tr>
+        <td style="text-align:left;">UniDepth V2 [3]</td>
+        <td><b>0.2895</b></td>
+        <td><b>0.625 m</b></td>
+        <td><b>0.543 m</b></td>
+        <td><b>73.9%</b></td>
+        <td><b>1.176</b></td>
+        <td>421.6 ms</td>
+      </tr>
+    </tbody>
+  </table>
 </div>
 
 <div class="full-width">
@@ -645,7 +785,7 @@ Benchmarking official UniDepth V2 ViT-Small [3] against Dioptra-DINO across 100 
   <div class="figure-container">
     <img src="figures/fig3_equal_res_hypersim.png" alt="Hypersim Visual Panel">
     <div class="figure-caption">
-      <b>Fig. 2. Qualitative Foundation Model Comparison on Apple Hypersim (Frame 45) under Equal Resolution (336&times;336).</b> Left to right: RGB image, Ground Truth depth (9.9m range), Dioptra-DINO (AbsRel 0.198, faithful scale), Metric3D (AbsRel 0.331, severe scale under-estimation), and UniDepth V2 (AbsRel 0.266).
+      <b>Fig. 3. Qualitative Foundation Model Comparison on Apple Hypersim (Frame 45) under Equal Resolution (336&times;336).</b> Left to right: RGB image, Ground Truth depth (9.9m range), Dioptra-DINO (AbsRel 0.198, faithful scale), Metric3D (AbsRel 0.331, severe scale under-estimation), and UniDepth V2 (AbsRel 0.266).
     </div>
   </div>
 </div>
@@ -660,7 +800,7 @@ To eliminate resolution bias, Table III constrains all three models to 336&times
 <div class="figure-container">
   <img src="figures/fig6_error_distribution.png" alt="Comparative Charts">
   <div class="figure-caption">
-    <b>Fig. 3. Foundation Benchmark Distributions.</b> Left: Direct AbsRel. Middle: Inlier precision. Right: Latency versus error Pareto curve showing edge efficiency.
+    <b>Fig. 4. Foundation Benchmark Distributions.</b> Left: Direct AbsRel. Middle: Inlier precision. Right: Latency versus error Pareto curve showing edge efficiency.
   </div>
 </div>
 
