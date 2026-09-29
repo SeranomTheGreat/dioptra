@@ -76,3 +76,8 @@ dataset_index_train.json
 *.pdf
 !research_paper/dioptra_dino_paper.pdf
 
+# Paper build artifacts
+research_paper/pdf_pages/
+research_paper/*.html
+research_paper/neurips_peer_review.md
+
