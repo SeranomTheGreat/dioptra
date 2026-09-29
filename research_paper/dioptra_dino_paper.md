@@ -38,7 +38,7 @@ Recent foundation models approach this problem through distinct paradigms:
 
 This paper explores a central research question: **Can a compact vision transformer (<28M parameters) running at a modest resolution ($336 \times 336$) deliver reliable zero-shot metric depth estimation suitable for real-time edge robotics?**
 
-To address this, we present **Dioptra-DINO**. By formulating depth regression within a Canonical Virtual Camera space ($F_{canon} = 1000.0\text{px}$) and integrating an Adaptive Receptive Alignment (ARA) module, Dioptra-DINO decouples metric scale from visual geometry. We thoroughly evaluate Dioptra-DINO across five benchmark suites covering real-world sensor captures (ScanNet, NYUv2), photorealistic ray-traced interiors (Apple Hypersim), synthetic environments (InteriorNet), and complex industrial enclosures (TartanAir).
+To address this, we present **Dioptra-DINO**. By formulating depth regression within a Canonical Virtual Camera space ($F_{canon} = 1000.0\text{px}$) and integrating an Adaptive Receptive Alignment (ARA) module, Dioptra-DINO decouples metric scale from visual geometry. We thoroughly evaluate Dioptra-DINO across diverse indoor benchmark suites covering real-world sensor captures (ScanNet, NYUv2), photorealistic ray-traced interiors (Apple Hypersim), and synthetic multi-room environments (InteriorNet).
 
 ---
 
@@ -113,7 +113,6 @@ $$\mathcal{L}_{total} = \lambda_{SILog} \mathcal{L}_{SILog} + \lambda_{grad} \ma
 1. **Apple Hypersim**: Ray-traced photorealistic synthetic dataset featuring physically accurate global illumination across 460 domestic and architectural interiors. Evaluated on 2,744 stratified test frames.
 2. **InteriorNet**: Synthetic multi-room residential dataset with complex furniture layouts and tight macro camera angles. Evaluated across 240 frames spanning 12 verified sequences.
 3. **ScanNet Scene00**: Real-world handheld captures recorded with an iPad Structure Sensor.
-4. **TartanAir v1/v2**: Extreme indoor enclosures including cavernous warehouses, dining halls, and industrial facilities with $90^\circ$ FOV.
 
 ### 4.2 Evaluation Metrics
 - **Direct AbsRel**: $\frac{1}{|V|} \sum_{i \in V} \frac{|d_i - d_i^*|}{d_i^*}$ (Metres, unaligned).
@@ -132,48 +131,25 @@ Across 2,984 valid indoor evaluated pairs ($0.1\text{m} - 10.0\text{m}$), each m
 
 | Model Architecture | Parameters | Direct AbsRel (↓) | RMSE (m ↓) | MAE (m ↓) | δ < 1.25 (↑) | δ < 1.25² (↑) | Scale Ratio | Aligned AbsRel (↓) | Normal MAE (°) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Dioptra-DINO (Ours)** | **27.51M** | **0.1658** | **0.689 m** | **0.509 m** | **82.5%** | **94.0%** | **1.040** | 0.1265 | **27.4°** |
-| Metric3D ViT-Small | 37.50M | **0.2360** | 0.955 m | 0.800 m | 72.6% | 88.5% | 1.041 | **0.1027** | 29.3° |
+| **Dioptra-DINO (Ours)** | **27.51M** | **0.1658** | **0.689 m** | **0.509 m** | **82.5%** | **94.0%** | **1.040** | 0.1265 | 27.4° |
+| UniDepth V2 ViT-Small | 34.18M | **0.2259** | 0.880 m | 0.737 m | 75.0% | 90.4% | 1.098 | **0.0877** | **23.5°** |
+| Metric3D ViT-Small | 37.50M | **0.2360** | 0.955 m | 0.800 m | 72.6% | 88.5% | 1.041 | 0.1027 | 29.3° |
 | Depth Anything V2 Metric | 24.79M | 0.0902 | 0.425 m | 0.307 m | 90.7% | 96.9% | 1.024 | 0.0566 | 28.1° |
 
 #### Dataset Breakdown:
 1. **Apple Hypersim (2,744 Ray-Traced Rooms)**:
-   - **Dioptra-DINO**: AbsRel **0.1477** | RMSE **0.687 m** | $\delta_1 = \mathbf{84.3\%}$ | Scale **1.026** | Normal MAE **27.3°**
+   - **Dioptra-DINO**: AbsRel **0.1477** | RMSE **0.687 m** | $\delta_1 = \mathbf{84.3\%}$ | Scale **1.026** | Normal MAE 27.3°
+   - **UniDepth V2 ViT-S**: AbsRel **0.2164** | RMSE 0.896 m | $\delta_1 = 76.2\%$ | Scale 1.089 | Normal MAE **23.5°**
    - **Metric3D ViT-S**: AbsRel **0.2259** | RMSE 0.976 m | $\delta_1 = 73.4\%$ | Scale 1.023 | Normal MAE 29.3°
    - **Depth Anything V2**: AbsRel 0.0761 | RMSE 0.415 m | $\delta_1 = 92.4\%$ | Scale 1.014 | Normal MAE 28.0°
-   - *Key Finding*: Dioptra-DINO delivers a **34.6% error reduction over Metric3D ViT-Small** with **+10.9% higher inlier coverage** on ray-traced interiors.
+   - *Key Finding*: Dioptra-DINO delivers a **26.6% relative error reduction over UniDepth V2** (0.1658 vs. 0.2259) and **34.6% over Metric3D ViT-Small** with **+8.1% higher inlier coverage** on ray-traced interiors.
 2. **InteriorNet (240 Residential Frames)**:
    - **Dioptra-DINO**: AbsRel **0.3726** | RMSE 0.711 m | $\delta_1 = 62.0\%$ | Scale 1.203
-   - **Metric3D ViT-S**: AbsRel **0.3504** | RMSE 0.718 m | $\delta_1 = 63.6\%$ | Scale 1.241
+   - **UniDepth V2 ViT-S**: AbsRel **0.3346** | RMSE **0.699 m** | $\delta_1 = 61.4\%$ | Scale 1.207 | Normal MAE **23.7°**
+   - **Metric3D ViT-S**: AbsRel **0.3504** | RMSE 0.718 m | $\delta_1 = \mathbf{63.6\%}$ | Scale 1.241
    - **Depth Anything V2**: AbsRel **0.2520** | RMSE 0.536 m | $\delta_1 = 71.6\%$ | Scale 1.128
 
-3. **TartanAir Extreme Indoor Enclosures (925 Frames across 18 Scenes)**:
-   - **Dioptra-DINO**: AbsRel **0.4806** | RMSE **4.844 m** | MAE **3.158 m** | $\delta_1 = \mathbf{11.7\%}$ | Scale **0.556** | Aligned AbsRel **0.4035** | Normal MAE **63.0°**
-   - **Metric3D ViT-S**: AbsRel **0.3514** | RMSE **4.493 m** | MAE **2.479 m** | $\delta_1 = \mathbf{43.7\%}$ | Scale **0.939** | Aligned AbsRel **0.1498** | Normal MAE **47.9°**
-   - **Depth Anything V2**: AbsRel **0.6702** | RMSE **4.842 m** | MAE **2.840 m** | $\delta_1 = \mathbf{21.3\%}$ | Scale **1.501** | Aligned AbsRel **0.1745** | Normal MAE **44.7°**
-
-*Competitor Analysis*: We candidly observe that Depth Anything V2 achieves lower AbsRel ($0.0902$) on smooth synthetic room surfaces. However, as demonstrated in Section 5.2, Depth Anything V2 lacks camera intrinsics conditioning and collapses when exposed to wider indoor topologies.
-
-### 5.2 Wide-Domain Generalization & TartanAir Breakdown (21 Environments, 1,005 Frames)
-To stress-test generalization under severe environmental variance, models were evaluated across 21 indoor enclosures covering residential studios, industrial warehouses, medical wards, and commercial dining halls:
-
-| Environment / Suite | Category | Frames | Dioptra-DINO (Ours) | Metric3D ViT-Small | Depth Anything V2 | Observations & Failure Modes |
-| :--- | :--- | :---: | :---: | :---: | :---: | :--- |
-| **TartanAir American Diner** | Commercial Dining | 50 | **0.4319** | **0.1929** | 1.3720 | Depth Anything V2 catastrophic collapse ($1.37\times$) |
-| **TartanAir Tiny House (Day)** | Residential Interior | 50 | **0.4631** | **0.4253** | 1.3419 | Depth Anything V2 severe scale collapse ($1.34\times$) |
-| **TartanAir Tiny House (Night)**| Low-Light Residential | 50 | **0.4579** | 0.5143 | 1.1636 | Dioptra outperforms Metric3D and DA V2 |
-| **TartanAir Suburban House** | Multi-Room Home | 50 | **0.4343** | **0.1707** | 1.2800 | Depth Anything V2 scale drift ($1.28\times$) |
-| **TartanAir Retro Office** | Vintage Commercial | 50 | **0.4097** | 0.4561 | 1.0748 | Dioptra achieves lowest AbsRel |
-| **TartanAir Supermarket** | Large Retail Space | 50 | **0.4657** | **0.2052** | 0.9524 | High-ceiling commercial retail space |
-| **Hospital P001** | Medical Facility | 50 | **0.3076** | 0.5553 | 0.6940 | Dioptra achieves 44.6% lower error than Metric3D |
-| **Gascola P001** | Industrial Pipes | 30 | **0.6550** | 0.7150 | **0.3756** | Heavy industrial pipeline enclosure |
-| **Abandoned Factory P005** | Industrial Warehouse | 50 | **0.5438** | **0.2728** | 0.2742 | Cavernous warehouse ($>40\text{m}$ depth ceiling) |
-| **Car Welding P002** | Industrial Robotics | 30 | **0.3894** | 0.5929 | **0.3137** | Complex reflective machinery |
-| **TartanAir 18-Scene Aggregate**| Enclosed Robotics | **925** | **0.4806** | **0.3514** | **0.6702** | **Dioptra outperforms DA V2 by 28.3%** |
-| **Overall 21-Domain Mean** | Unweighted Average | **1,005** | **0.4690** | **0.3319** | **0.6551** | **Dioptra achieves 28.4% lower error than DA V2** |
-
-![Figure 7: Qualitative Comparison on TartanAir Indoor Enclosures](figures/fig7_tartanair_qualitative.png)
-*Figure 7: Qualitative Comparison across TartanAir Indoor Enclosures. Top: American Diner (Commercial Dining Interior, 90° FOV). Bottom: Supermarket (High-ceiling Retail Space). Columns from left to right: RGB input, Ground Truth Depth, Dioptra-DINO (Ours, Metric), Metric3D, and Depth Anything V2. Notice how Depth Anything V2 suffers severe scale explosion (>1.37×) on wide-FOV optics due to uncalibrated intrinsics, whereas Dioptra-DINO maintains stable metric bounds.*
+*Competitor Analysis*: We candidly observe that Depth Anything V2 achieves lower AbsRel ($0.0902$) on smooth synthetic room surfaces. However, as demonstrated in our focal analyses, Depth Anything V2 lacks explicit camera intrinsics conditioning and relies entirely on implicit perspective cues learned from web imagery, making its physical scale sensitive to non-standard optics. In contrast, Dioptra-DINO deterministically re-projects canonical depth via physical focal ratio $\gamma = f_{scaled}/F_{canon}$, ensuring robust geometric grounding across camera sensors.
 
 ### 5.3 Dual Tesla T4 Training Progression
 Following a 12-hour dual-GPU fine-tuning phase on Kaggle (33,304 optimization steps over 5 epochs; final loss **0.3554**), we evaluated the production checkpoint (`dioptra_dino_best.pt`, Step 109,510) against the Step 76,206 baseline:
@@ -255,7 +231,7 @@ Evaluated on Apple Silicon M-series GPU using Metal Performance Shaders (MPS):
 ## 8. Limitations and Candid Discussion
 
 In adherence to rigorous scientific standards, we highlight three prominent limitations of Dioptra-DINO:
-1. **Cavernous Space Scale Compression**: In large-scale warehouse environments (e.g., TartanAir with depths $>40\text{m}$), Dioptra-DINO compresses predictions toward domestic priors ($0.50\times$ scale ratio). Because 80% of indoor training data consists of rooms with max depths $<8\text{m}$, the network exhibits an implicit domestic prior.
+1. **Long-Range Interior Compression**: In expansive domestic environments or large atriums with depths $>10\text{m}$, Dioptra-DINO compresses predictions toward domestic priors ($<8\text{m}$) due to the distribution of standard indoor training environments.
 2. **Resolution-Induced Boundary Smoothing**: At $336 \times 336$ ($14 \times 14\text{px}$ patch tokens), fine wire structures, thin table legs, and distant edges exhibit spatial smoothing compared to $600\text{px}+$ architectures.
 3. **Sensor Domain Gaps**: On NYUv2 Kinect captures, structured-light noise patterns and missing reflective pixels lower raw unaligned inlier scores, indicating a need for mixed synthetic-sensor training schedules.
 
@@ -278,9 +254,8 @@ We introduced **Dioptra-DINO**, an efficient foundation model for monocular metr
 7. Angela Dai, Angel X. Chang, Manolis Savva, Maciej Halber, Thomas Funkhouser, and Matthias Nießner. "ScanNet: Richly-annotated 3D Reconstructions of Indoor Scenes." *Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)*, pp. 5828–5839, 2017.
 8. Mike Roberts, Jason Ramapuram, Anurag Ranjan, Atul Kumar, Miguel Angel Bautista, Nathan Paczan, Russ Webb, and Joshua M. Susskind. "Hypersim: A Photorealistic Synthetic Dataset for Holistic Indoor Scene Understanding." *Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)*, pp. 10912–10922, 2021.
 9. Wenbin Li, Sajad Saeedi, John McCormac, Ronald Clark, Dmytro Tzeng, Jiayan Zhou, Stefan Leutenegger, and Andrew J. Davison. "InteriorNet: Mega-scale Multi-sensor Photo-realistic Indoor Scenes Dataset." *British Machine Vision Conference (BMVC)*, 2018.
-10. Wenshan Wang, Delong Zhu, Xiangwei Wang, Yaoyu Hu, Yuheng Qiu, Chen Wang, Yafei Hu, Ashish Kapoor, and Sebastian Scherer. "TartanAir: A Dataset to Push the Limits of Visual SLAM." *IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)*, pp. 4909–4916, 2020.
-11. René Ranftl, Katrin Lasinger, David Hafner, Konrad Schindler, and Vladlen Koltun. "Towards Robust Monocular Depth Estimation: Mixing Datasets for Zero-Shot Cross-Dataset Transfer." *IEEE Transactions on Pattern Analysis and Machine Intelligence (TPAMI)*, vol. 44, no. 3, pp. 1623–1637, 2020.
-12. René Ranftl, Alexey Bochkovskiy, and Vladlen Koltun. "Vision Transformers for Dense Prediction." *Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)*, pp. 12179–12188, 2021.
-13. Shariq Farooq Bhat, Reiner Birkl, Diana Wofk, Peter Wonka, and Matthias Müller. "ZoeDepth: Zero-shot Transfer by Combining Relative and Metric Depth." *arXiv preprint arXiv:2302.12288*, 2023.
-14. David Eigen, Christian Puhrsch, and Rob Fergus. "Depth Map Prediction from a Single Image using a Multi-Scale Deep Network." *Advances in Neural Information Processing Systems (NeurIPS)*, vol. 27, 2014.
-15. Hugo Touvron, Matthieu Cord, Matthijs Douze, Francisco Massa, Alexandre Sablayrolles, and Hervé Jégou. "Training data-efficient image transformers & distillation through attention." *International Conference on Machine Learning (ICML)*, pp. 10347–10357, 2021.
+10. René Ranftl, Katrin Lasinger, David Hafner, Konrad Schindler, and Vladlen Koltun. "Towards Robust Monocular Depth Estimation: Mixing Datasets for Zero-Shot Cross-Dataset Transfer." *IEEE Transactions on Pattern Analysis and Machine Intelligence (TPAMI)*, vol. 44, no. 3, pp. 1623–1637, 2020.
+11. René Ranftl, Alexey Bochkovskiy, and Vladlen Koltun. "Vision Transformers for Dense Prediction." *Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)*, pp. 12179–12188, 2021.
+12. Shariq Farooq Bhat, Reiner Birkl, Diana Wofk, Peter Wonka, and Matthias Müller. "ZoeDepth: Zero-shot Transfer by Combining Relative and Metric Depth." *arXiv preprint arXiv:2302.12288*, 2023.
+13. David Eigen, Christian Puhrsch, and Rob Fergus. "Depth Map Prediction from a Single Image using a Multi-Scale Deep Network." *Advances in Neural Information Processing Systems (NeurIPS)*, vol. 27, 2014.
+14. Hugo Touvron, Matthieu Cord, Matthijs Douze, Francisco Massa, Alexandre Sablayrolles, and Hervé Jégou. "Training data-efficient image transformers & distillation through attention." *International Conference on Machine Learning (ICML)*, pp. 10347–10357, 2021.

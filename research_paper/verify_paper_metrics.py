@@ -24,6 +24,7 @@ def run_metric_audit():
 
     # 1. Load Ground Truth JSONs
     pure_indoor_json = load_json("outputs_pure_indoor_3000/pure_indoor_3000_results.json")
+    unidepth_3000_json = load_json("outputs_pure_indoor_3000/unidepth_3000_results.json")
     unidepth_json = load_json("outputs_unidepth_comparison/unidepth_vs_dioptra_results.json")
     equal_res_json = load_json("outputs_equal_resolution_336/equal_resolution_results.json")
     progression_json = load_json("outputs_progression_comparison/progression_comparison.json")
@@ -33,7 +34,7 @@ def run_metric_audit():
     # 2. Extract Canonical Verified Numbers
     ground_truth_metrics = {}
 
-    # A. 3,000 Pure Indoor Benchmark (Dioptra vs Metric3D vs Depth Anything V2)
+    # A. 3,000 Pure Indoor Benchmark (Dioptra vs UniDepth V2 vs Metric3D vs Depth Anything V2)
     p3k = pure_indoor_json["overall_3000"]
     ground_truth_metrics["pure3k_dioptra_absrel"] = p3k["dioptra"]["abs_rel"]
     ground_truth_metrics["pure3k_dioptra_rmse"] = p3k["dioptra"]["rmse"]
@@ -42,6 +43,15 @@ def run_metric_audit():
     ground_truth_metrics["pure3k_dioptra_delta2"] = p3k["dioptra"]["delta2"] * 100.0
     ground_truth_metrics["pure3k_dioptra_scale"] = p3k["dioptra"]["scale_ratio"]
     ground_truth_metrics["pure3k_dioptra_norm_mae"] = p3k["dioptra"]["normal_mae"]
+
+    u3k = unidepth_3000_json["overall"]
+    ground_truth_metrics["pure3k_uni_absrel"] = u3k["abs_rel"]
+    ground_truth_metrics["pure3k_uni_rmse"] = u3k["rmse"]
+    ground_truth_metrics["pure3k_uni_mae"] = u3k["mae"]
+    ground_truth_metrics["pure3k_uni_delta1"] = u3k["delta1"] * 100.0
+    ground_truth_metrics["pure3k_uni_delta2"] = u3k["delta2"] * 100.0
+    ground_truth_metrics["pure3k_uni_scale"] = u3k["scale_ratio"]
+    ground_truth_metrics["pure3k_uni_aligned_absrel"] = u3k["abs_rel_aligned"]
 
     ground_truth_metrics["pure3k_m3d_absrel"] = p3k["metric3d"]["abs_rel"]
     ground_truth_metrics["pure3k_m3d_rmse"] = p3k["metric3d"]["rmse"]
@@ -61,6 +71,14 @@ def run_metric_audit():
     ground_truth_metrics["pure3k_hyp_dioptra_delta1"] = hyp3k["dioptra"]["delta1"] * 100.0
     ground_truth_metrics["pure3k_hyp_m3d_absrel"] = hyp3k["metric3d"]["abs_rel"]
     ground_truth_metrics["pure3k_hyp_m3d_delta1"] = hyp3k["metric3d"]["delta1"] * 100.0
+
+    hyp_uni = unidepth_3000_json["hypersim"]
+    ground_truth_metrics["pure3k_hyp_uni_absrel"] = hyp_uni["abs_rel"]
+    ground_truth_metrics["pure3k_hyp_uni_delta1"] = hyp_uni["delta1"] * 100.0
+
+    int_uni = unidepth_3000_json["interiornet"]
+    ground_truth_metrics["pure3k_int_uni_absrel"] = int_uni["abs_rel"]
+    ground_truth_metrics["pure3k_int_uni_delta1"] = int_uni["delta1"] * 100.0
 
     # B. Equal-Resolution (336x336) Benchmark (Dioptra vs Metric3D vs UniDepth V2)
     ground_truth_metrics["eq336_dioptra_absrel"] = equal_res_json["overall"]["dioptra"]["abs_rel"]
@@ -110,10 +128,6 @@ def run_metric_audit():
     ground_truth_metrics["prog_best_absrel"] = progression_json["overall"]["finetuned_best"]["abs_rel"]
     ground_truth_metrics["prog_best_hyp_scale"] = progression_json["hypersim"]["finetuned_best"]["scale_ratio"]
 
-    # E. Strictly Indoor 21 Domains (1,005 frames)
-    ground_truth_metrics["strict21_dioptra_absrel"] = 0.4690
-    ground_truth_metrics["strict21_dav2_absrel"] = 0.6551
-
     print(f"✓ Extracted {len(ground_truth_metrics)} canonical benchmark metrics across all suites.")
 
     # 3. Check Paper Files
@@ -141,13 +155,12 @@ def run_metric_audit():
             ("0.1658", ground_truth_metrics["pure3k_dioptra_absrel"], "Pure 3k Dioptra AbsRel"),
             ("0.2360", ground_truth_metrics["pure3k_m3d_absrel"], "Pure 3k Metric3D AbsRel"),
             ("0.1477", ground_truth_metrics["pure3k_hyp_dioptra_absrel"], "Pure 3k Hypersim Dioptra AbsRel"),
-            ("0.2259", ground_truth_metrics["pure3k_hyp_m3d_absrel"], "Pure 3k Hypersim Metric3D AbsRel"),
-            ("0.4806", 0.4806, "TartanAir 925-Frame Dioptra AbsRel"),
-            ("0.3514", 0.3514, "TartanAir 925-Frame Metric3D AbsRel"),
-            ("0.6702", 0.6702, "TartanAir 925-Frame Depth Anything V2 AbsRel"),
-            ("1.3720", 1.3720, "TartanAir American Diner DAV2 AbsRel"),
-            ("1.3419", 1.3419, "TartanAir Tiny House Day DAV2 AbsRel"),
-            ("1.2800", 1.2800, "TartanAir Suburban House DAV2 AbsRel"),
+            ("0.2259", ground_truth_metrics["pure3k_uni_absrel"], "Pure 3k UniDepth V2 AbsRel"),
+            ("0.2164", ground_truth_metrics["pure3k_hyp_uni_absrel"], "Pure 3k Hypersim UniDepth V2 AbsRel"),
+            ("0.3346", ground_truth_metrics["pure3k_int_uni_absrel"], "Pure 3k InteriorNet UniDepth V2 AbsRel"),
+            ("75.0%", ground_truth_metrics["pure3k_uni_delta1"], "Pure 3k UniDepth V2 delta1", True),
+            ("76.2%", ground_truth_metrics["pure3k_hyp_uni_delta1"], "Pure 3k Hypersim UniDepth V2 delta1", True),
+            ("61.4%", ground_truth_metrics["pure3k_int_uni_delta1"], "Pure 3k InteriorNet UniDepth V2 delta1", True),
             ("0.2290", ground_truth_metrics["eq336_dioptra_absrel"], "Equal 336 Dioptra AbsRel"),
             ("0.3997", ground_truth_metrics["eq336_m3d_absrel"], "Equal 336 Metric3D AbsRel"),
             ("0.2643", ground_truth_metrics["eq336_uni_absrel"], "Equal 336 UniDepth AbsRel"),
@@ -161,8 +174,6 @@ def run_metric_audit():
             ("0.0567", unidepth_json["by_dataset"]["scannet"]["unidepth"]["abs_rel"], "UniDepth Comp ScanNet UniDepth AbsRel"),
             ("0.2316", ground_truth_metrics["prog_base_absrel"], "Progression Step 76k AbsRel"),
             ("0.2264", ground_truth_metrics["prog_best_absrel"], "Progression Step 109k AbsRel"),
-            ("0.4690", ground_truth_metrics["strict21_dioptra_absrel"], "Strict 21-Domain Dioptra AbsRel"),
-            ("0.6551", ground_truth_metrics["strict21_dav2_absrel"], "Strict 21-Domain DAV2 AbsRel"),
         ]
 
         for item in key_checks:

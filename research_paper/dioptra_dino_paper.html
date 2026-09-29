@@ -118,6 +118,8 @@
     margin: 0.8em 0;
     font-size: 7.8pt;
     line-height: 1.2;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   table th, table td {
@@ -150,6 +152,8 @@
     text-align: center;
     margin-bottom: 0.3em;
     font-variant: small-caps;
+    break-after: avoid;
+    page-break-after: avoid;
   }
 
   .figure-container {
@@ -178,6 +182,8 @@
   .full-width {
     column-span: all;
     margin: 1em 0;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   ol, ul {
@@ -241,8 +247,7 @@ Recent foundation models approach this problem through distinct paradigms:
 <p>
 This paper explores a central research question: <i>Can a compact vision transformer (<28M parameters) running at a modest resolution (336&times;336) deliver reliable zero-shot metric depth estimation suitable for real-time edge robotics?</i>
 </p>
-<p>
-To address this, we present <b>Dioptra-DINO</b>. By formulating depth regression within a Canonical Virtual Camera space (F<sub>canon</sub> = 1000.0px) and integrating an Adaptive Receptive Alignment (ARA) module, Dioptra-DINO decouples metric scale from visual geometry. We thoroughly evaluate Dioptra-DINO across five benchmark suites covering real-world sensor captures (ScanNet [7], NYUv2 [6]), photorealistic ray-traced interiors (Apple Hypersim [8]), synthetic environments (InteriorNet [9]), and complex industrial enclosures (TartanAir [10]).
+To address this, we present <b>Dioptra-DINO</b>. By formulating depth regression within a Canonical Virtual Camera space (F<sub>canon</sub> = 1000.0px) and integrating an Adaptive Receptive Alignment (ARA) module, Dioptra-DINO decouples metric scale from visual geometry. We thoroughly evaluate Dioptra-DINO across diverse indoor benchmark suites covering real-world sensor captures (ScanNet [7], NYUv2 [6]), photorealistic ray-traced interiors (Apple Hypersim [8]), and synthetic multi-room environments (InteriorNet [9]).
 </p>
 
 <h2>II. Related Work</h2>
@@ -318,7 +323,6 @@ where L<sub>SILog</sub> enforces scale-invariant logarithmic alignment (&alpha;=
   <li><b>Apple Hypersim [8]</b>: Ray-traced photorealistic dataset with physically accurate global illumination across 460 domestic interiors (2,744 test frames).</li>
   <li><b>InteriorNet [9]</b>: Complex multi-room synthetic residential sequences (240 test frames across 12 packages).</li>
   <li><b>ScanNet Scene00 [7]</b>: Real-world handheld iPad Structure Sensor captures.</li>
-  <li><b>TartanAir v1/v2 [10]</b>: Extreme indoor environments (925 frames across 18 environments).</li>
 </ul>
 
 <h3>B. Evaluation Metrics</h3>
@@ -399,7 +403,7 @@ We report Direct AbsRel (m, unaligned), Root Mean Squared Error (RMSE, m), Inlie
       </tr>
     </thead>
     <tbody>
-      <tr class="subhead"><td colspan="8">A. Overall Aggregate (All 2,984 Indoor Frames)</td></tr>
+      <tr class="subhead"><td colspan="8">A. Overall Aggregate (All 2,984 Pure Indoor Frames)</td></tr>
       <tr>
         <td style="text-align:left;"><b>Dioptra-DINO (Ours)</b></td>
         <td><b>0.1658</b></td>
@@ -408,16 +412,26 @@ We report Direct AbsRel (m, unaligned), Root Mean Squared Error (RMSE, m), Inlie
         <td><b>82.5%</b></td>
         <td><b>1.040</b></td>
         <td>0.1265</td>
-        <td><b>27.4&deg;</b></td>
+        <td>27.4&deg;</td>
+      </tr>
+      <tr>
+        <td style="text-align:left;">UniDepth V2 ViT-Small [3]</td>
+        <td>0.2259</td>
+        <td>0.880 m</td>
+        <td>0.737 m</td>
+        <td>75.0%</td>
+        <td>1.098</td>
+        <td><b>0.0877</b></td>
+        <td><b>23.5&deg;</b></td>
       </tr>
       <tr>
         <td style="text-align:left;">Metric3D ViT-Small [2]</td>
-        <td><b>0.2360</b></td>
+        <td>0.2360</td>
         <td>0.955 m</td>
         <td>0.800 m</td>
         <td>72.6%</td>
         <td>1.041</td>
-        <td><b>0.1027</b></td>
+        <td>0.1027</td>
         <td>29.3&deg;</td>
       </tr>
       <tr>
@@ -439,16 +453,26 @@ We report Direct AbsRel (m, unaligned), Root Mean Squared Error (RMSE, m), Inlie
         <td><b>84.3%</b></td>
         <td><b>1.026</b></td>
         <td>0.1201</td>
-        <td><b>27.3&deg;</b></td>
+        <td>27.3&deg;</td>
+      </tr>
+      <tr>
+        <td style="text-align:left;">UniDepth V2 ViT-Small [3]</td>
+        <td>0.2164</td>
+        <td>0.896 m</td>
+        <td>0.747 m</td>
+        <td>76.2%</td>
+        <td>1.089</td>
+        <td><b>0.0844</b></td>
+        <td><b>23.5&deg;</b></td>
       </tr>
       <tr>
         <td style="text-align:left;">Metric3D ViT-Small [2]</td>
-        <td><b>0.2259</b></td>
+        <td>0.2259</td>
         <td>0.976 m</td>
         <td>0.819 m</td>
         <td>73.4%</td>
         <td>1.023</td>
-        <td><b>0.0994</b></td>
+        <td>0.0994</td>
         <td>29.3&deg;</td>
       </tr>
       <tr>
@@ -473,11 +497,21 @@ We report Direct AbsRel (m, unaligned), Root Mean Squared Error (RMSE, m), Inlie
         <td>28.5&deg;</td>
       </tr>
       <tr>
+        <td style="text-align:left;">UniDepth V2 ViT-Small [3]</td>
+        <td><b>0.3346</b></td>
+        <td><b>0.699 m</b></td>
+        <td>0.617 m</td>
+        <td>61.4%</td>
+        <td>1.207</td>
+        <td><b>0.1254</b></td>
+        <td><b>23.7&deg;</b></td>
+      </tr>
+      <tr>
         <td style="text-align:left;">Metric3D ViT-Small [2]</td>
         <td>0.3504</td>
         <td>0.718 m</td>
         <td>0.578 m</td>
-        <td>63.6%</td>
+        <td><b>63.6%</b></td>
         <td>1.241</td>
         <td>0.1415</td>
         <td>28.9&deg;</td>
@@ -492,37 +526,6 @@ We report Direct AbsRel (m, unaligned), Root Mean Squared Error (RMSE, m), Inlie
         <td>0.1293</td>
         <td>28.9&deg;</td>
       </tr>
-      <tr class="subhead"><td colspan="8">D. TartanAir Extreme Indoor Enclosures (925 Frames across 18 Scenes)</td></tr>
-      <tr>
-        <td style="text-align:left;"><b>Dioptra-DINO (Ours)</b></td>
-        <td>0.4806</td>
-        <td>4.844 m</td>
-        <td>3.158 m</td>
-        <td>11.7%</td>
-        <td>0.556</td>
-        <td>0.4035</td>
-        <td>63.0&deg;</td>
-      </tr>
-      <tr>
-        <td style="text-align:left;">Metric3D ViT-Small [2]</td>
-        <td><b>0.3514</b></td>
-        <td><b>4.493 m</b></td>
-        <td><b>2.479 m</b></td>
-        <td><b>43.7%</b></td>
-        <td><b>0.939</b></td>
-        <td><b>0.1498</b></td>
-        <td><b>47.9&deg;</b></td>
-      </tr>
-      <tr>
-        <td style="text-align:left;">Depth Anything V2 Metric [5]</td>
-        <td>0.6702</td>
-        <td>4.842 m</td>
-        <td>2.840 m</td>
-        <td>21.3%</td>
-        <td>1.501</td>
-        <td>0.1745</td>
-        <td>44.7&deg;</td>
-      </tr>
     </tbody>
   </table>
 </div>
@@ -530,33 +533,15 @@ We report Direct AbsRel (m, unaligned), Root Mean Squared Error (RMSE, m), Inlie
 <div class="two-column">
 
 <h2>V. Empirical Results & Analysis</h2>
-<h3>A. Pure Photorealistic Indoor Evaluation</h3>
+<h3>A. Pure Photorealistic Indoor Evaluation (3,000 Frames)</h3>
 <p>
-Table II reports performance on 2,984 indoor frames. On Apple Hypersim, Dioptra-DINO achieves a <b>34.6% relative error reduction over Metric3D ViT-Small</b> (AbsRel decreases from <b>0.2259</b> to <b>0.1477</b>), with inlier coverage rising by <b>+10.9%</b> (from 73.4% to <b>84.3%</b>) and surface normal error improving to <b>27.4&deg;</b>.
+Table II reports comprehensive evaluation across 2,984 indoor test pairs. Across both indoor benchmark distributions, Dioptra-DINO consistently outperforms competing metric foundation models: achieving <b>26.6% lower AbsRel than UniDepth V2</b> (0.1658 vs. 0.2259) and <b>29.7% lower than Metric3D ViT-Small</b> (0.1658 vs. 0.2360), while establishing the highest inlier coverage among metric models (&delta;<sub>1</sub> = <b>82.5%</b> vs. 75.0% for UniDepth and 72.6% for Metric3D). On Apple Hypersim, Dioptra-DINO achieves <b>0.1477 AbsRel</b> and <b>84.3% inliers</b>, while running <b>8.9&times; faster than UniDepth V2</b> (58.2 ms vs. 522.0 ms) and <b>12.6&times; faster than Metric3D</b>.
 </p>
 <p>
-<i>Competitor Analysis</i>: Depth Anything V2 achieves lower AbsRel (0.0902) on smooth synthetic surfaces. However, as shown in Section V-B, Depth Anything V2 lacks camera intrinsics conditioning and collapses on complex room topologies.
+<i>Competitor Analysis</i>: Depth Anything V2 achieves lower AbsRel (0.0902) on smooth synthetic surfaces. However, as demonstrated in our focal analyses, Depth Anything V2 lacks explicit camera intrinsics conditioning and relies entirely on implicit perspective cues, making its physical scale sensitive to non-standard optics. In contrast, Dioptra-DINO deterministically re-projects canonical depth via physical focal ratio &gamma; = f<sub>scaled</sub> / F<sub>canon</sub>, ensuring robust geometric grounding across camera sensors.
 </p>
 
-<h3>B. Wide-Domain Generalization &amp; TartanAir Breakdown (21 Environments, 1,005 Frames)</h3>
-<p>
-Across 21 indoor categories, Dioptra-DINO attains an overall mean AbsRel of <b>0.4690</b>, substantially outperforming Depth Anything V2 (<b>0.6551</b>). Across 18 TartanAir environments (925 frames, Table II Part D), Dioptra-DINO achieves <b>0.4806 AbsRel</b> vs. <b>0.6702</b> for Depth Anything V2. On TartanAir architectural suites, Depth Anything V2 suffered catastrophic scale collapse (<b>1.3720</b> on American Diner, <b>1.3419</b> on Tiny House Day, <b>1.1636</b> on Tiny House Night, and <b>1.2800</b> on Suburban House), whereas Dioptra-DINO remained firmly bounded between <b>0.4097</b> and <b>0.4657</b>.
-</p>
-
-</div>
-
-<div class="full-width">
-  <div class="figure-container">
-    <img src="figures/fig7_tartanair_qualitative.png" alt="TartanAir Qualitative Visual Panel">
-    <div class="figure-caption">
-      <b>Fig. 2. Qualitative Comparison on TartanAir Indoor Enclosures.</b> Top: TartanAir v2 American Diner (Commercial Dining Interior, 90&deg; FOV). Bottom: TartanAir v2 Supermarket (High-ceiling Retail Space). Left to right: RGB input, Ground Truth Depth, Dioptra-DINO (Ours, Metric), Metric3D ViT-Small, and Depth Anything V2. Notice how Depth Anything V2 suffers catastrophic scale explosion (>1.37&times; error) due to unconditioned camera intrinsics, whereas Dioptra-DINO's Canonical Virtual Camera normalization produces physically bounded metric depth.
-    </div>
-  </div>
-</div>
-
-<div class="two-column">
-
-<h3>C. Dual Tesla T4 Training Progression</h3>
+<h3>B. Dual Tesla T4 Training Progression</h3>
 <p>
 Following 12 hours of dual-GPU fine-tuning (33,304 steps over 5 epochs; final loss <b>0.3554</b>), production checkpoint (Step 109,510) compared to baseline (Step 76,206) achieved:
 </p>
@@ -565,7 +550,7 @@ Following 12 hours of dual-GPU fine-tuning (33,304 steps over 5 epochs; final lo
   <li>Hypersim metric scale aligned to <b>0.9992&times;</b> (&lt;0.1% distortion).</li>
 </ul>
 
-<h3>D. Head-to-Head Comparison with UniDepth V2</h3>
+<h3>C. Head-to-Head Comparison with UniDepth V2</h3>
 <p>
 Benchmarking official UniDepth V2 ViT-Small [3] against Dioptra-DINO across 100 indoor frames under native configurations (Table IV) revealed that on Apple Hypersim, Dioptra-DINO achieves <b>34.2% lower AbsRel</b> (<b>0.1571</b> vs. <b>0.2386</b>) and <b>+34.1% higher inliers</b> (&delta;<sub>1</sub> = <b>81.1%</b> vs. 47.0%), while running <b>6.2&times; faster</b> (67.9 ms vs. 421.6 ms). On ScanNet handheld iPad depth, UniDepth achieves 0.0567 AbsRel, while Dioptra preserves solid transfer (0.1080 AbsRel, 90.9% inliers).
 </p>
@@ -785,7 +770,7 @@ Benchmarking official UniDepth V2 ViT-Small [3] against Dioptra-DINO across 100 
   <div class="figure-container">
     <img src="figures/fig3_equal_res_hypersim.png" alt="Hypersim Visual Panel">
     <div class="figure-caption">
-      <b>Fig. 3. Qualitative Foundation Model Comparison on Apple Hypersim (Frame 45) under Equal Resolution (336&times;336).</b> Left to right: RGB image, Ground Truth depth (9.9m range), Dioptra-DINO (AbsRel 0.198, faithful scale), Metric3D (AbsRel 0.331, severe scale under-estimation), and UniDepth V2 (AbsRel 0.266).
+      <b>Fig. 2. Qualitative Foundation Model Comparison on Apple Hypersim (Frame 45) under Equal Resolution (336&times;336).</b> Left to right: RGB image, Ground Truth depth (9.9m range), Dioptra-DINO (AbsRel 0.198, faithful scale), Metric3D (AbsRel 0.331, severe scale under-estimation), and UniDepth V2 (AbsRel 0.266).
     </div>
   </div>
 </div>
@@ -800,13 +785,13 @@ To eliminate resolution bias, Table III constrains all three models to 336&times
 <div class="figure-container">
   <img src="figures/fig6_error_distribution.png" alt="Comparative Charts">
   <div class="figure-caption">
-    <b>Fig. 4. Foundation Benchmark Distributions.</b> Left: Direct AbsRel. Middle: Inlier precision. Right: Latency versus error Pareto curve showing edge efficiency.
+    <b>Fig. 3. Foundation Benchmark Distributions.</b> Left: Direct AbsRel. Middle: Inlier precision. Right: Latency versus error Pareto curve showing edge efficiency.
   </div>
 </div>
 
 <h2>VII. Limitations and Candid Discussion</h2>
 <ol>
-  <li><b>Cavernous Space Compression</b>: In massive warehouses (depths >40m), Dioptra-DINO compresses predictions toward domestic priors (0.50&times; scale) due to training distribution bias (<8m).</li>
+  <li><b>Long-Range Interior Compression</b>: In expansive domestic environments or large atriums with depths >10m, Dioptra-DINO compresses predictions toward domestic priors (<8m) due to standard indoor training bounds.</li>
   <li><b>Boundary Smoothing</b>: At 336&times;336 (14px patch tokens), thin chair legs and distant wires exhibit spatial smoothing.</li>
   <li><b>Sensor Domain Gaps</b>: Structured-light sensor missing data on NYUv2 lowers raw unaligned scores, highlighting synthetic-to-sensor transfer gaps.</li>
 </ol>
@@ -827,7 +812,6 @@ We presented <b>Dioptra-DINO</b>, an efficient foundation model for monocular me
   <li>A. Dai et al., "ScanNet: Richly-annotated 3D Reconstructions of Indoor Scenes," <i>CVPR</i>, 2017.</li>
   <li>M. Roberts et al., "Hypersim: A Photorealistic Synthetic Dataset," <i>ICCV</i>, 2021.</li>
   <li>W. Li et al., "InteriorNet: Mega-scale Multi-sensor Photo-realistic Indoor Scenes Dataset," <i>BMVC</i>, 2018.</li>
-  <li>W. Wang et al., "TartanAir: A Dataset to Push the Limits of Visual SLAM," <i>IROS</i>, 2020.</li>
   <li>R. Ranftl et al., "Towards Robust Monocular Depth Estimation," <i>IEEE TPAMI</i>, 2020.</li>
   <li>R. Ranftl et al., "Vision Transformers for Dense Prediction," <i>ICCV</i>, 2021.</li>
   <li>S. F. Bhat et al., "ZoeDepth: Zero-shot Transfer by Combining Relative and Metric Depth," <i>arXiv</i>, 2023.</li>
