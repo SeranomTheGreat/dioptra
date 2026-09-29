@@ -13,7 +13,7 @@ Monocular metric depth estimation on autonomous mobile robots presents an acute 
 
 In this work, we present **Dioptra-DINO**, an edge-efficient 27.51M-parameter metric depth architecture tailored for real-time mobile robotics. Dioptra-DINO couples a self-supervised DINOv2-Small backbone with Canonical Virtual Camera Normalization ($F_{canon} = 1000.0\text{px}$) and Trivision Ray FiLM Modulation, operating natively at $336 \times 336$ resolution. Evaluated under a standardized latency protocol (FP16, batch size 1 on Apple Silicon GPU), Dioptra-DINO processes frames in **58.2 ms (17.2 FPS)** with under **240 MB VRAM**. Compared to heavyweight baselines running at their native resolutions, Dioptra-DINO achieves a **7.2× speedup over native UniDepth V2** (421.6 ms) and **12.9× speedup over native Metric3D** (753.5 ms); when all models are constrained to an identical $336 \times 336$ budget, Dioptra-DINO remains **1.9× faster than UniDepth** (108.2 ms) and **1.3× faster than Metric3D** (76.1 ms).
 
-On 2,744 in-domain held-out Apple Hypersim indoor frames, Dioptra-DINO attains **0.1477 AbsRel** and **84.3% inlier precision** ($\delta_1$). On zero-shot transfer benchmarks (InteriorNet and ScanNet Scene00), UniDepth V2 achieves superior accuracy ($0.0567$ vs. $0.1080$ AbsRel on ScanNet real sensor depth), demonstrating the limits of compact models. However, Dioptra-DINO establishes the Pareto frontier for edge robotics, providing real-time $17\text{ FPS}$ metric guidance where heavyweight models induce control lag. We release complete code, benchmark protocols, and weights.
+On 2,744 held-out Apple Hypersim indoor frames (in-domain, as Dioptra was pre-trained on Hypersim training scenes), Dioptra-DINO attains **0.1477 AbsRel** and **84.3% inlier precision** ($\delta_1$). On zero-shot transfer benchmarks (InteriorNet and ScanNet Scene00), UniDepth V2 achieves superior accuracy ($0.0907$ vs. $0.1080$ AbsRel on ScanNet Scene00 real sensor depth at $336 \times 336$), demonstrating the limits of compact models. However, Dioptra-DINO establishes the Pareto frontier for edge robotics, providing real-time $17\text{ FPS}$ metric guidance where heavyweight models induce control lag. We release complete code, benchmark protocols, and weights.
 
 ---
 
@@ -128,7 +128,7 @@ All latency and throughput measurements are evaluated under an identical protoco
 
 ### Benchmark Analysis
 1. **In-Domain Hypersim Performance**: On 2,744 ray-traced Hypersim frames, Dioptra-DINO attains **0.1477 AbsRel** and **84.3% inliers** ($\delta_1$), outperforming Metric3D ViT-Small ($0.2259$ AbsRel, $73.4\%$ inliers) by **34.6% lower error** and UniDepth V2 ($0.2164$ AbsRel, $76.2\%$ inliers) by **31.7% lower error**. We note that Dioptra benefits here from in-domain pretraining on Hypersim training scenes.
-2. **Zero-Shot Transfer Realities**: On InteriorNet (240 zero-shot frames), UniDepth V2 attains lower error (**0.3346 AbsRel**) than Dioptra ($0.3726$), and on ScanNet Scene00 real sensor depth (Table III), UniDepth achieves **0.0567 AbsRel** vs. Dioptra's $0.1080$. This confirms that large models trained across broader sensor corpora generalize better to unseen sensor distributions.
+2. **Zero-Shot Transfer Realities**: On InteriorNet (240 zero-shot frames), UniDepth V2 attains lower error (**0.3346 AbsRel**) than Dioptra ($0.3726$), and on ScanNet Scene00 real sensor depth under equal $336 \times 336$ resolution (Table III), UniDepth achieves **0.0907 AbsRel** vs. Dioptra's $0.1080$. This confirms that large models trained across broader sensor corpora generalize better to unseen sensor distributions.
 3. **Robotic Edge Trade-Off**: Running natively at $336 \times 336$ in **58.2 ms (17.2 FPS)**, Dioptra-DINO is **7.2× faster than native UniDepth V2** (421.6 ms / 2.4 FPS) and **12.9× faster than native Metric3D** (753.5 ms / 1.3 FPS), establishing an efficient real-time operating point.
 
 ---
@@ -178,7 +178,7 @@ Table IV presents component knockout evaluations on held-out TartanAir trajector
 
 1. **10-Metre Range Limit**: The model clamps depth to $10.0\text{m}$. In expansive atriums or long hallways $>10\text{m}$, predictions compress toward indoor priors, which must be accounted for in high-speed navigation.
 2. **Patch Token Boundary Smoothing**: At $336 \times 336$ ($14\text{px}$ tokens), thin chair legs and distant wires exhibit spatial smoothing compared to $1000\text{px}+$ models.
-3. **Sensor Domain Gap**: On raw sensor depth captures (ScanNet Scene00 handheld iPad ToF), UniDepth V2 attains lower absolute error ($0.0567$ vs. $0.1080$ AbsRel), reflecting its extensive training across broad real-world sensor datasets.
+3. **Sensor Domain Gap**: On raw sensor depth captures under equal $336 \times 336$ resolution (ScanNet Scene00 handheld iPad ToF), UniDepth V2 attains lower absolute error ($0.0907$ vs. $0.1080$ AbsRel), reflecting its extensive training across broad real-world sensor datasets.
 
 ---
 
