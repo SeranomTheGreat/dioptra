@@ -294,9 +294,9 @@ Metric3D ViT-Small \cite{yin2023metric3d} & 336 $\times$ 336 & 0.4414 & 3.046 m 
 
 \begin{figure*}[t]
     \centering
-    \includegraphics[width=\linewidth]{figures/fig3_equal_res_hypersim.png}
-    \caption{\textbf{Qualitative Comparison on Apple Hypersim (Frame 45) under Equal Resolution ($336 \times 336$)}. Left to right: RGB input, Ground Truth ($9.9\text{m}$ max depth), Dioptra-DINO (AbsRel $0.198$), Metric3D (AbsRel $0.331$, exhibiting severe scale under-estimation), and UniDepth V2 (AbsRel $0.266$).}
-    \label{fig:hypersim_vis}
+    \includegraphics[width=\linewidth]{figures/fig2_equal_res_scannet.png}
+    \caption{\textbf{Qualitative Foundation Model Comparison on Real-World ScanNet Scene00 under Equal Resolution ($336 \times 336$)}. Left to right: RGB sensor input, Ground Truth ($2.6\text{m}$ max depth), Dioptra-DINO (AbsRel \textbf{0.055}, demonstrating faithful physical scale recovery and planar desk reconstruction), Metric3D (AbsRel $0.379$, exhibiting severe scale collapse to $\approx 1\text{m}$), and UniDepth V2 (AbsRel $0.106$, exhibiting $2\times$ higher metric error).}
+    \label{fig:scannet_vis}
 \end{figure*}
 
 \subsection{Equal-Resolution Foundation Benchmark (@ 336 $\times$ 336)}

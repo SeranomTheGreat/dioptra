@@ -206,8 +206,8 @@ To eliminate spatial resolution as a confounding variable and establish an **abs
    - **UniDepth V2**: AbsRel **0.2748** | RMSE 0.621 m | $\delta_1 = \mathbf{74.2\%}$ | Scale 1.117
    - **Metric3D ViT-S**: AbsRel **0.3211** | RMSE 1.189 m | $\delta_1 = 30.7\%$ | Scale 0.756
 
-![Figure 3: Equal-Resolution Qualitative Comparison on Hypersim](figures/fig3_equal_res_hypersim.png)
-![Figure 2: Equal-Resolution Qualitative Comparison on ScanNet](figures/fig2_equal_res_scannet.png)
+![Figure 2: Equal-Resolution Qualitative Comparison on Real-World ScanNet Scene00 (Dioptra AbsRel 0.055 vs. Metric3D 0.379 vs. UniDepth 0.106)](figures/fig2_equal_res_scannet.png)
+![Figure 3: Equal-Resolution Qualitative Comparison on Apple Hypersim](figures/fig3_equal_res_hypersim.png)
 ![Figure 4: Equal-Resolution Qualitative Comparison on InteriorNet](figures/fig4_equal_res_interior.png)
 
 ---
