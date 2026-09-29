@@ -71,7 +71,7 @@ python scripts/train_dino_ablation.py --ablation no-dynamic-crop --epochs 40 --b
 
 ## 4. Or Run via Jupyter Notebook
 
-You can open and execute [`notebooks/ablation_dino_kaggle.ipynb`](file:///Users/krishnakant/Downloads/tesseract_kaggle_code_v16/notebooks/ablation_dino_kaggle.ipynb). Each ablation is organized into a single executable cell.
+You can open and execute [`notebooks/ablation_dino_kaggle.ipynb`](notebooks/ablation_dino_kaggle.ipynb). Each ablation is organized into a single executable cell.
 
 ---
 

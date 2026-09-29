@@ -3,7 +3,7 @@ from PIL import Image
 import torchvision.transforms.functional as TF
 from dataclasses import replace
 
-sys.path.insert(0, "/Users/krishnakant/Downloads/tesseract_kaggle_code_v16")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from dioptra_dino import DioptraDINO, DioptraDINOConfig
 from scripts.eval_dino import load_model as load_dino_model, preprocess_sample, compute_metrics
 from dioptra import Tesseract, TesseractConfig, load_pretrained_weights

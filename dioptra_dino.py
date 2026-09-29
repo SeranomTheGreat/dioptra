@@ -24,6 +24,7 @@ import gc
 import glob
 import hashlib
 import io
+import json
 import math
 import os
 import random
@@ -114,6 +115,14 @@ class DioptraDINOConfig:
     weight_scale: float = 0.5
     weight_edge: float = 0.2
     weight_normal: float = 0.25
+    # TPU static graphs: masked-sum formulations with fixed tensor shapes
+    # (boolean indexing yields per-batch variable sizes => XLA recompile storm).
+    tpu_static_loss: bool = False
+
+
+# Guarantee DioptraDINOConfig is available in __main__ for unpickling across all workers/processes
+if "__main__" in sys.modules and not hasattr(sys.modules["__main__"], "DioptraDINOConfig"):
+    setattr(sys.modules["__main__"], "DioptraDINOConfig", DioptraDINOConfig)
 
 
 # ---------------------------------------------------------------------------
@@ -718,15 +727,71 @@ class DioptraDINOLoss(nn.Module):
 
     def silog_loss(self, pred: Tensor, target: Tensor, mask: Tensor) -> Tensor:
         """Scale-invariant log loss with 0.85 variance penalty."""
-        d = torch.log(pred[mask]) - torch.log(target[mask])
+        if getattr(self.cfg, "tpu_static_loss", False):
+            # Static shapes: masked sums (algebraically identical to indexed means).
+            mf = mask.float()
+            n = mf.sum().clamp(min=1.0)
+            d = (torch.log(pred.clamp(min=1e-4)) - torch.log(target.clamp(min=1e-4))) * mf
+            loss = d.pow(2).sum() / n - 0.85 * (d.sum() / n) ** 2
+            return torch.sqrt(loss.clamp(min=1e-8))
+        d = torch.log(pred[mask].clamp(min=1e-4)) - torch.log(target[mask].clamp(min=1e-4))
         loss = torch.mean(d ** 2) - 0.85 * (torch.mean(d) ** 2)
         return torch.sqrt(loss.clamp(min=1e-8))
 
     def scale_loss(self, pred: Tensor, target: Tensor, mask: Tensor) -> Tensor:
-        """Explicit log-median metric scale consistency loss."""
+        """Multi-bin depth-stratified metric scale consistency loss."""
+        if getattr(self.cfg, "tpu_static_loss", False):
+            # Static shapes: branchless masked log-mean consistency across depth tiers
+            mf = mask.float()
+            n = mf.sum().clamp(min=1.0)
+            lp = (torch.log(pred.clamp(min=1e-5)) * mf).sum() / n
+            lt = (torch.log(target.clamp(min=1e-5)) * mf).sum() / n
+            l_global = torch.abs(lp - lt)
+            gate_g = (n > 50).float()
+
+            # Tier 1: Near-field [0.1m - 2.5m] (prevents min-depth floor collapse)
+            m_near = mask & (target <= 2.5)
+            mf_near = m_near.float()
+            n_near = mf_near.sum()
+            lp_near = (torch.log(pred.clamp(min=1e-5)) * mf_near).sum() / n_near.clamp(min=1.0)
+            lt_near = (torch.log(target.clamp(min=1e-5)) * mf_near).sum() / n_near.clamp(min=1.0)
+            l_near = torch.abs(lp_near - lt_near)
+            gate_near = (n_near > 50).float()
+
+            # Tier 2: Mid-to-far field [2.5m - 10.0m+] (preserves room and structural scale)
+            m_far = mask & (target > 2.5)
+            mf_far = m_far.float()
+            n_far = mf_far.sum()
+            lp_far = (torch.log(pred.clamp(min=1e-5)) * mf_far).sum() / n_far.clamp(min=1.0)
+            lt_far = (torch.log(target.clamp(min=1e-5)) * mf_far).sum() / n_far.clamp(min=1.0)
+            l_far = torch.abs(lp_far - lt_far)
+            gate_far = (n_far > 50).float()
+
+            total_loss = l_global * gate_g + 0.5 * l_near * gate_near + 0.5 * l_far * gate_far
+            total_w = gate_g + 0.5 * gate_near + 0.5 * gate_far
+            return total_loss / total_w.clamp(min=1.0)
+
+        # Dynamic shape path (GPU / MPS / CPU)
         pred_med = torch.median(pred[mask])
         target_med = torch.median(target[mask])
-        return torch.abs(torch.log(pred_med.clamp(min=1e-5)) - torch.log(target_med.clamp(min=1e-5)))
+        l_glob = torch.abs(torch.log(pred_med.clamp(min=1e-5)) - torch.log(target_med.clamp(min=1e-5)))
+
+        m_near = mask & (target <= 2.5)
+        m_far = mask & (target > 2.5)
+        parts = [l_glob]
+        weights = [1.0]
+
+        if m_near.sum() > 50:
+            l_near = torch.abs(torch.log(torch.median(pred[m_near]).clamp(min=1e-5)) - torch.log(torch.median(target[m_near]).clamp(min=1e-5)))
+            parts.append(l_near)
+            weights.append(0.5)
+
+        if m_far.sum() > 50:
+            l_far = torch.abs(torch.log(torch.median(pred[m_far]).clamp(min=1e-5)) - torch.log(torch.median(target[m_far]).clamp(min=1e-5)))
+            parts.append(l_far)
+            weights.append(0.5)
+
+        return sum(p * w for p, w in zip(parts, weights)) / sum(weights)
 
     def edge_loss(self, pred: Tensor, target: Tensor, mask: Tensor) -> Tensor:
         """Multi-scale spatial gradient loss for sharp structural boundaries."""
@@ -739,9 +804,30 @@ class DioptraDINOLoss(nn.Module):
         mask_y = mask[:, :, 1:, :] & mask[:, :, :-1, :]
         mask_x = mask[:, :, :, 1:] & mask[:, :, :, :-1]
 
+        if getattr(self.cfg, "tpu_static_loss", False):
+            # Static shapes: masked sums (algebraically identical to indexed means).
+            my, mx = mask_y.float(), mask_x.float()
+            loss_y = (torch.abs(dy_pred - dy_target) * my).sum() / my.sum().clamp(min=1.0)
+            loss_x = (torch.abs(dx_pred - dx_target) * mx).sum() / mx.sum().clamp(min=1.0)
+            return loss_y + loss_x
         loss_y = torch.mean(torch.abs(dy_pred[mask_y] - dy_target[mask_y]))
         loss_x = torch.mean(torch.abs(dx_pred[mask_x] - dx_target[mask_x]))
         return loss_y + loss_x
+
+    @staticmethod
+    def _cross_31(a: Tensor, b: Tensor) -> Tensor:
+        """Manual 3-vector cross product on dim=1 ([B,3,...] tensors).
+
+        Mathematically identical to torch.cross(a, b, dim=1), but built only
+        from elementwise mul/sub so autograd stays on differentiable XLA
+        lowerings (torch.cross has no Autograd kernel on the XLA backend and
+        falls through with silently wrong gradients).
+        """
+        return torch.stack([
+            a[:, 1] * b[:, 2] - a[:, 2] * b[:, 1],
+            a[:, 2] * b[:, 0] - a[:, 0] * b[:, 2],
+            a[:, 0] * b[:, 1] - a[:, 1] * b[:, 0],
+        ], dim=1)
 
     def virtual_normal_loss(
         self, pred: Tensor, target: Tensor, mask: Tensor, K: Optional[Tensor] = None
@@ -787,19 +873,21 @@ class DioptraDINOLoss(nn.Module):
 
         total_vnl = torch.tensor(0.0, device=device, dtype=dtype)
         valid_scales = 0
+        total_w = torch.tensor(0.0, device=device, dtype=dtype)
+        static = bool(getattr(self.cfg, "tpu_static_loss", False))
 
         for s in [1, 2, 4]:
             if H <= 2 * s or W <= 2 * s:
                 continue
             vx_pred = P_pred[:, :, s:-s, 2 * s:] - P_pred[:, :, s:-s, :-2 * s]
             vy_pred = P_pred[:, :, 2 * s:, s:-s] - P_pred[:, :, :-2 * s, s:-s]
-            n_pred = torch.cross(vx_pred, vy_pred, dim=1)
+            n_pred = self._cross_31(vx_pred, vy_pred)
             norm_pred = torch.norm(n_pred, dim=1, keepdim=True).clamp(min=1e-6)
 
             with torch.no_grad():
                 vx_target = P_target[:, :, s:-s, 2 * s:] - P_target[:, :, s:-s, :-2 * s]
                 vy_target = P_target[:, :, 2 * s:, s:-s] - P_target[:, :, :-2 * s, s:-s]
-                n_target = torch.cross(vx_target, vy_target, dim=1)
+                n_target = self._cross_31(vx_target, vy_target)
                 norm_target = torch.norm(n_target, dim=1, keepdim=True).clamp(min=1e-6)
                 n_t = (n_target / norm_target).detach()
 
@@ -811,6 +899,20 @@ class DioptraDINOLoss(nn.Module):
                 & (norm_target.squeeze(1) > 1e-4)
             )
 
+            if static:
+                # Branchless static-shape gate: identical math to the >50 guard
+                # (mean over valid, 0 weight otherwise), no host branch, no
+                # Python-int divisor (both would recompile XLA per batch).
+                n_p = n_pred / norm_pred
+                cos_sim = torch.sum(n_p * n_t, dim=1)
+                inner_f = m_inner.float()
+                cnt = inner_f.sum()
+                loss_s = ((1.0 - cos_sim.clamp(min=-1.0, max=1.0)) * inner_f).sum() / cnt.clamp(min=1.0)
+                gate = (cnt > 50).float()
+                total_vnl = total_vnl + loss_s * gate
+                total_w = total_w + gate
+                continue
+
             if m_inner.sum() > 50:
                 n_p = n_pred / norm_pred
                 cos_sim = torch.sum(n_p * n_t, dim=1)
@@ -818,17 +920,31 @@ class DioptraDINOLoss(nn.Module):
                 total_vnl = total_vnl + loss_s
                 valid_scales += 1
 
+        if static:
+            return total_vnl / total_w.clamp(min=1.0)
         if valid_scales > 0:
             return total_vnl / float(valid_scales)
-        return torch.tensor(0.0, device=device, dtype=dtype)
+        return pred.sum() * 0.0
 
     def forward(
-        self, pred: Tensor, target: Tensor, image: Optional[Tensor] = None, K: Optional[Tensor] = None
+        self, pred: Tensor, target: Tensor, image: Optional[Tensor] = None, K: Optional[Tensor] = None,
+        sync_metrics: bool = True,
     ) -> Tuple[Tensor, Dict[str, float]]:
-        """Compute total multi-task loss across valid pixels."""
+        """Compute total multi-task loss across valid pixels.
+
+        Args:
+            sync_metrics: If False, skip .item() metric materialization and return {}.
+                REQUIRED for the TPU path: each .item() forces a host-device sync
+                barrier that stalls all XLA cores. Callers needing logs pass
+                sync_metrics=True only on throttled (master, every-N) steps.
+        """
         mask = (target >= self.cfg.min_depth) & (target <= self.cfg.max_depth) & ~torch.isnan(target)
-        if mask.sum() < 100:
-            return torch.tensor(0.0, device=pred.device, requires_grad=True), {}
+        static = bool(getattr(self.cfg, "tpu_static_loss", False))
+        if not static and mask.sum() < 100:
+            return pred.sum() * 0.0, {}
+        # Static path: in-graph 0/1 gate instead of a host branch (the branch
+        # would trace a second graph variant and recompile per batch).
+        gate = (mask.sum() >= 100).float() if static else None
 
         l_silog = self.silog_loss(pred, target, mask)
         l_scale = self.scale_loss(pred, target, mask)
@@ -841,7 +957,11 @@ class DioptraDINOLoss(nn.Module):
             + self.cfg.weight_edge * l_edge
             + self.cfg.weight_normal * l_vnl
         )
+        if static:
+            total_loss = total_loss * gate
 
+        if not sync_metrics:
+            return total_loss, {}
         metrics = {
             "loss_total": total_loss.item(),
             "loss_silog": l_silog.item(),
@@ -862,41 +982,62 @@ def apply_dynamic_pinhole_crop(
     K: np.ndarray,
     crop_size_range: Tuple[float, float] = (0.35, 1.0),
     out_size: int = 224,
+    enable_aspect_jitter: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Random crop simulating optical zoom / focal length variation.
+    """Random crop simulating optical zoom and non-square aspect ratio variation.
 
     Adjusts focal lengths fx, fy and optical center cx, cy continuously.
     """
     H, W = image.shape[:2]
-    max_square = min(H, W)
-    min_len = int(crop_size_range[0] * max_square)
-    max_len = int(crop_size_range[1] * max_square)
 
-    crop_len = random.randint(min_len, max_len)
-    top = random.randint(0, H - crop_len)
-    left = random.randint(0, W - crop_len)
+    if enable_aspect_jitter and random.random() < 0.7:
+        # Anisotropic Aspect-Ratio Jitter (between 0.75 and 1.33)
+        ar = random.uniform(0.75, 1.33)
+        min_h = int(crop_size_range[0] * H)
+        max_h = int(crop_size_range[1] * H)
+        crop_h = random.randint(min(min_h, max_h), max(min_h, max_h))
+        crop_w = int(crop_h * ar)
+        if crop_w > W:
+            crop_w = W
+            crop_h = int(crop_w / ar)
+        if crop_h > H:
+            crop_h = H
+            crop_w = int(crop_h * ar)
+        crop_h = max(32, min(H, crop_h))
+        crop_w = max(32, min(W, crop_w))
+    else:
+        max_square = min(H, W)
+        min_len = int(crop_size_range[0] * max_square)
+        max_len = int(crop_size_range[1] * max_square)
+        crop_len = random.randint(min_len, max_len)
+        crop_h = crop_len
+        crop_w = crop_len
+
+    top = random.randint(0, H - crop_h)
+    left = random.randint(0, W - crop_w)
 
     # Crop
-    crop_img = image[top:top + crop_len, left:left + crop_len]
-    crop_depth = depth[top:top + crop_len, left:left + crop_len]
+    crop_img = image[top:top + crop_h, left:left + crop_w]
+    crop_depth = depth[top:top + crop_h, left:left + crop_w]
 
     # Adjust camera intrinsics
     K_new = K.copy().astype(np.float32)
     K_new[0, 2] -= left  # cx' = cx - left
     K_new[1, 2] -= top   # cy' = cy - top
 
-    # Rescale to network input resolution out_size x out_size
-    scale = float(out_size) / float(crop_len)
-    K_new[0, 0] *= scale
-    K_new[1, 1] *= scale
-    K_new[0, 2] *= scale
-    K_new[1, 2] *= scale
+    # Rescale to network input resolution out_size x out_size with independent per-axis scaling
+    scale_x = float(out_size) / float(crop_w)
+    scale_y = float(out_size) / float(crop_h)
+    K_new[0, 0] *= scale_x
+    K_new[1, 1] *= scale_y
+    K_new[0, 2] *= scale_x
+    K_new[1, 2] *= scale_y
 
     # Ensure crop_depth is strictly 2D float32
     if crop_depth.ndim == 3:
         crop_depth = crop_depth.squeeze()
     if crop_depth.ndim != 2:
-        crop_depth = np.zeros((crop_len, crop_len), dtype=np.float32)
+        crop_depth = np.zeros((crop_h, crop_w), dtype=np.float32)
     else:
         crop_depth = np.ascontiguousarray(crop_depth, dtype=np.float32)
 
@@ -909,8 +1050,8 @@ def apply_dynamic_pinhole_crop(
         res_depth = np.array(pil_depth)
     except Exception:
         # Robust fallback numpy nearest resize
-        y_indices = (np.linspace(0, crop_len - 1, out_size)).astype(int)
-        x_indices = (np.linspace(0, crop_len - 1, out_size)).astype(int)
+        y_indices = (np.linspace(0, crop_h - 1, out_size)).astype(int)
+        x_indices = (np.linspace(0, crop_w - 1, out_size)).astype(int)
         res_img = crop_img[np.ix_(y_indices, x_indices)]
         res_depth = crop_depth[np.ix_(y_indices, x_indices)]
 
@@ -1089,6 +1230,13 @@ def resolve_all_dataset_roots(path: str = "auto") -> List[Tuple[str, str]]:
         seen_paths.add(p_str)
 
         pl = p_str.lower()
+        if "checkpoint" in pl or "ckpt" in pl or "outputs" in pl:
+            return
+
+        # 0. ScanNet (Official / Kaggle frames)
+        if "scannet" in pl:
+            results.append((str(p), "scannet"))
+            return
         # 1. Hypersim
         if "hypersim" in pl:
             results.append((str(p), "hypersim"))
@@ -1111,8 +1259,12 @@ def resolve_all_dataset_roots(path: str = "auto") -> List[Tuple[str, str]]:
             if (p / "warehouse_stereo").is_dir():
                 results.append((str(p / "warehouse_stereo"), "tartanair_warehouse"))
             return
-        # 6. TartanAir Indoors / Complement / DASVO
-        if any(k in pl for k in ("tartan", "hospital", "office", "abandoned", "restaurant", "school", "industrial", "dasvo")):
+        # 6. TartanAir Indoors / Complement / TartanAir2 / DASVO
+        if any(k in pl for k in (
+            "tartan", "hospital", "office", "abandoned", "restaurant", "school",
+            "industrial", "dasvo", "diner", "tinyhouse", "saloon", "prison",
+            "supermarket", "retro", "brickhouse", "house", "carwelding"
+        )):
             results.append((str(p), "tartanair_indoors"))
             return
 
@@ -1129,7 +1281,11 @@ def resolve_all_dataset_roots(path: str = "auto") -> List[Tuple[str, str]]:
 
     def _is_single_dataset(p: Path) -> bool:
         pl = p.name.lower()
-        if any(k in pl for k in ("hypersim", "nyu", "kitti", "tartan", "warehouse", "hospital", "office", "abandoned", "restaurant")):
+        if any(k in pl for k in (
+            "scannet", "hypersim", "nyu", "kitti", "tartan", "warehouse", "hospital",
+            "office", "abandoned", "restaurant", "industrial", "city", "dasvo",
+            "diner", "tinyhouse", "saloon", "prison", "supermarket", "retro", "brickhouse", "house", "carwelding"
+        )):
             return True
         if (p / "image_left").is_dir() or (p / "image_lcam_front").is_dir() or (p / "warehouse_stereo").is_dir():
             return True
@@ -1159,9 +1315,19 @@ def resolve_all_dataset_roots(path: str = "auto") -> List[Tuple[str, str]]:
     if env_dir and Path(env_dir).exists():
         candidate_roots.append(Path(env_dir))
     if Path("/kaggle/input").is_dir():
+        # Support flat (/kaggle/input/<slug>), nested (/kaggle/input/datasets/<owner>/<slug>), and keyword subtrees
         for item in Path("/kaggle/input").iterdir():
-            if item.is_dir() and "dioptra-dino" not in item.name.lower():
-                candidate_roots.append(item)
+            if item.is_dir():
+                if item.name.lower() == "datasets":
+                    for owner in item.iterdir():
+                        if owner.is_dir():
+                            for ds in owner.iterdir():
+                                if ds.is_dir() and "dioptra-dino" not in ds.name.lower():
+                                    candidate_roots.append(ds)
+                elif "dioptra-dino" not in item.name.lower():
+                    candidate_roots.append(item)
+        # Shallow pass only - no deep os.walk on FUSE network mounts
+        pass
     for local_dir in [Path("data"), Path("."), Path(".."), Path("/kaggle/working")]:
         if local_dir.is_dir():
             for item in local_dir.iterdir():
@@ -1219,11 +1385,19 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
         image_size: int = 224,
         apply_pinhole_aug: bool = True,
         crop_min: float = 0.35,
+        subset_fraction: Optional[float] = None,
+        subset_seed: int = 0,
+        domain_balanced: bool = True,
+        sensor_noise_aug: bool = True,
     ):
         self.split = split
         self.image_size = image_size
         self.apply_pinhole_aug = apply_pinhole_aug and (split == "train")
         self.crop_min = crop_min
+        self.subset_fraction = subset_fraction
+        self.subset_seed = subset_seed
+        self.domain_balanced = domain_balanced and (split == "train")
+        self.sensor_noise_aug = sensor_noise_aug and (split == "train")
 
         tartan_K = np.array([
             [320.0, 0.0, 320.0],
@@ -1252,6 +1426,11 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
                 [0.0, 721.5377, 172.854],
                 [0.0, 0.0, 1.0],
             ], dtype=np.float32),  # KITTI cam2 canonical
+            "scannet": np.array([
+                [577.87, 0.0, 319.5],
+                [0.0, 577.87, 239.5],
+                [0.0, 0.0, 1.0],
+            ], dtype=np.float32),  # 640x480 ScanNet official RGB-D sensor
         }
 
         # Resolve roots
@@ -1269,6 +1448,54 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
 
         self._build_index()
         print(f"[Dioptra-DINO Dataset] Successfully indexed {len(self.samples)} {split} samples across {len(self.resolved_roots)} domain roots.")
+        self._apply_subset()
+
+        # Build domain cluster mapping for balanced sampling across physical & synthetic regimes
+        self.domain_clusters = ["scannet", "nyu", "hypersim", "tartan"]
+        self.domain_to_indices: Dict[str, List[int]] = {c: [] for c in self.domain_clusters}
+        for idx, item in enumerate(self.samples):
+            dom = item[2].lower()
+            if "scannet" in dom:
+                self.domain_to_indices["scannet"].append(idx)
+            elif "nyu" in dom:
+                self.domain_to_indices["nyu"].append(idx)
+            elif "hypersim" in dom:
+                self.domain_to_indices["hypersim"].append(idx)
+            else:
+                self.domain_to_indices["tartan"].append(idx)
+        self.active_clusters = [c for c in self.domain_clusters if len(self.domain_to_indices[c]) > 0]
+        if self.domain_balanced and len(self.active_clusters) > 1:
+            print(f"[Dioptra-DINO Dataset] Domain-balanced batching active across {len(self.active_clusters)} clusters: "
+                  + ", ".join(f"{c}: {len(self.domain_to_indices[c]):,}" for c in self.active_clusters))
+
+    @staticmethod
+    def _stratified_subset(
+        samples: List[Tuple[str, str, str]], fraction: float, seed: int = 0
+    ) -> List[Tuple[str, str, str]]:
+        """Deterministic per-domain subsample: keeps every domain represented
+        (at least 1 sample) while thinning each proportionally. Pure stdlib."""
+        import random as _random
+        by_domain: Dict[str, List[Tuple[str, str, str]]] = {}
+        for s in samples:
+            by_domain.setdefault(s[2], []).append(s)
+        rng = _random.Random(seed)
+        kept: List[Tuple[str, str, str]] = []
+        for domain in sorted(by_domain):
+            group = by_domain[domain]
+            n_keep = min(len(group), max(1, int(len(group) * fraction)))
+            kept.extend(rng.sample(group, n_keep))
+        rng.shuffle(kept)
+        return kept
+
+    def _apply_subset(self) -> None:
+        frac = self.subset_fraction
+        if frac is None or not (0.0 < frac < 1.0) or len(self.samples) == 0:
+            return
+        before = len(self.samples)
+        self.samples = self._stratified_subset(self.samples, frac, self.subset_seed)
+        n_domains = len({s[2] for s in self.samples})
+        print(f"[Dioptra-DINO Dataset] Subset {frac:.3g} (seed {self.subset_seed}): "
+              f"{before:,} -> {len(self.samples):,} samples across {n_domains} domains.")
 
     @staticmethod
     def _normalize_stem(stem: str) -> str:
@@ -1286,9 +1513,19 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
         if domain.startswith("tartan"):
             if "abandonedfactory" in pl:
                 return True
-            for train_env in ("carwelding", "industrialhangar", "supermarket", "hospital", "office", "restaurant", "school", "warehouse", "industrial"):
+            for train_env in (
+                "carwelding", "industrialhangar", "supermarket", "hospital", "office",
+                "restaurant", "school", "warehouse", "industrial", "diner", "tinyhouse",
+                "saloon", "prison", "retro", "brickhouse", "house"
+            ):
                 if train_env in pl:
                     return False
+        elif domain == "scannet":
+            # Scene-level 10% holdout (keeps whole scenes unified in either train or val)
+            parts = pl.split("/")
+            scene_key = next((p for p in parts if p.startswith("scene")), pl)
+            h = int(hashlib.md5(scene_key.encode()).hexdigest(), 16)
+            return (h % 10) == 0
         elif domain == "nyu":
             if "/nyu2_test" in pl or "/test/" in pl or "/val/" in pl:
                 return True
@@ -1310,25 +1547,37 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
         return (h % 10) >= 9
 
     def _build_index(self):
-        # 1. Fast path: load from cached index if available (takes 0.05s)
+        # 1. Fast path: load from cached index if available (takes 0.05s).
+        # Checks JSON first, then pickle fallback; ignores empty/corrupt files.
         cache_path = os.path.join("/kaggle/working", f"dataset_index_{self.split}.json")
-        if os.path.exists(cache_path):
+        cache_candidates = [cache_path, os.path.splitext(cache_path)[0] + ".pkl"]
+        for cand in cache_candidates:
             try:
-                with open(cache_path, "r") as f:
-                    cached = json.load(f)
+                if not (os.path.exists(cand) and os.path.getsize(cand) > 1024):
+                    continue
+                if cand.endswith(".pkl"):
+                    import pickle
+                    with open(cand, "rb") as f:
+                        cached = pickle.load(f)
+                else:
+                    with open(cand, "r") as f:
+                        cached = json.load(f)
                 if len(cached) > 0:
                     self.samples = [tuple(x) for x in cached]
-                    print(f"[Dioptra-DINO Dataset] Loaded {len(self.samples):,} {self.split} samples from cache in 0.05s: {cache_path}")
+                    print(f"[Dioptra-DINO Dataset] Loaded {len(self.samples):,} {self.split} samples from cache in 0.05s: {cand}")
                     return
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"[Dioptra-DINO Dataset] Note: cache {cand} unusable ({e}); continuing.")
+                continue
 
         t0 = time.time()
         for root_path, domain in self.resolved_roots:
             p = Path(root_path)
             if not p.exists():
                 continue
-            if domain == "hypersim":
+            if domain == "scannet":
+                self._index_scannet(root_path)
+            elif domain == "hypersim":
                 self._index_hypersim(root_path)
             elif domain == "nyu":
                 self._index_nyu(root_path)
@@ -1341,7 +1590,9 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
         if len(self.samples) == 0:
             print(f"[Dioptra-DINO Dataset] Warning: {self.split} split yielded 0 samples. Retrying with force_all=True...")
             for root_path, domain in self.resolved_roots:
-                if domain == "hypersim":
+                if domain == "scannet":
+                    self._index_scannet(root_path, force_all=True)
+                elif domain == "hypersim":
                     self._index_hypersim(root_path, force_all=True)
                 elif domain == "nyu":
                     self._index_nyu(root_path, force_all=True)
@@ -1353,39 +1604,43 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
         elapsed = time.time() - t0
         print(f"[Dioptra-DINO Dataset] Indexing completed in {elapsed:.2f}s ({len(self.samples):,} samples found).")
 
-        # Save to cache for instant sub-second reuse
+        # Save to cache for instant sub-second reuse (atomic write + size verification;
+        # v4 showed a silent 0-byte save, so failures are now loud with a pickle fallback).
         if len(self.samples) > 0 and os.path.isdir("/kaggle/working"):
+            saved = False
             try:
-                with open(cache_path, "w") as f:
+                tmp_path = cache_path + ".tmp"
+                with open(tmp_path, "w") as f:
                     json.dump(self.samples, f)
-                print(f"[Dioptra-DINO Dataset] Successfully saved index cache: {cache_path}")
-            except Exception:
-                pass
+                    f.flush()
+                    os.fsync(f.fileno())
+                os.replace(tmp_path, cache_path)
+                sz = os.path.getsize(cache_path)
+                if sz < 1024:
+                    raise IOError(f"index cache suspiciously small ({sz} bytes)")
+                print(f"[Dioptra-DINO Dataset] Successfully saved index cache: {cache_path} ({sz / 1e6:.1f} MB)")
+                saved = True
+            except Exception as e:
+                print(f"[Dioptra-DINO Dataset] WARNING: JSON index save failed ({e}); trying pickle fallback...")
+            if not saved:
+                try:
+                    import pickle
+                    pkl_path = os.path.splitext(cache_path)[0] + ".pkl"
+                    tmp_path = pkl_path + ".tmp"
+                    with open(tmp_path, "wb") as f:
+                        pickle.dump(self.samples, f, protocol=4)
+                        f.flush()
+                        os.fsync(f.fileno())
+                    os.replace(tmp_path, pkl_path)
+                    print(f"[Dioptra-DINO Dataset] Pickle index cache saved: {pkl_path} ({os.path.getsize(pkl_path) / 1e6:.1f} MB)")
+                except Exception as e2:
+                    print(f"[Dioptra-DINO Dataset] WARNING: index cache save failed entirely ({e2})")
 
     def _index_tartan(self, root: str, force_all: bool = False, domain_tag: str = "tartan"):
         if str(root).lower().endswith(".zip"):
             self._index_tartan_zip(root, force_all, domain_tag=domain_tag)
         elif os.path.isdir(root):
-            # 1. Unzipped tree discovery with relative mirror path matching (handles Kaggle layout)
             self._index_tartan_tree(root, force_all, domain_tag=domain_tag)
-
-            # 2. Also check for companion or nested zip archives if present
-            zip_groups: Dict[str, List[str]] = {}
-            for dirpath, _, filenames in os.walk(root):
-                for fn in filenames:
-                    if fn.lower().endswith(".zip"):
-                        zip_groups.setdefault(dirpath, []).append(os.path.join(dirpath, fn))
-
-            for folder, zpaths in zip_groups.items():
-                img_zips = [z for z in zpaths if "image" in os.path.basename(z).lower()]
-                depth_zips = [z for z in zpaths if "depth" in os.path.basename(z).lower()]
-                if img_zips and depth_zips:
-                    for iz in img_zips:
-                        for dz in depth_zips:
-                            self._index_companion_zips(iz, dz, force_all, domain_tag=domain_tag)
-                else:
-                    for z in zpaths:
-                        self._index_tartan_zip(z, force_all, domain_tag=domain_tag)
 
     def _index_companion_zips(self, img_zip: str, depth_zip: str, force_all: bool = False, domain_tag: str = "tartan"):
         try:
@@ -1460,140 +1715,169 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
 
     def _index_tartan_tree(self, root: str, force_all: bool = False, domain_tag: str = "tartan"):
         samples_found = []
-        all_depth_files = set()
-        img_candidates = []
+        for dirpath, dirs, files in os.walk(root):
+            # 1. Unzipped trajectory discovery (0.001s)
+            img_name = "image_left" if "image_left" in dirs else ("image_lcam_front" if "image_lcam_front" in dirs else None)
+            if img_name:
+                depth_name = "depth_left" if "depth_left" in dirs else ("depth_lcam_front" if "depth_lcam_front" in dirs else None)
+                if depth_name:
+                    img_dir = os.path.join(dirpath, img_name)
+                    depth_dir = os.path.join(dirpath, depth_name)
+                    if os.path.isdir(img_dir) and os.path.isdir(depth_dir):
+                        try:
+                            img_files = sorted(f for f in os.listdir(img_dir) if f.endswith(".png") and not f.startswith("."))
+                            depth_files = set(os.listdir(depth_dir))
+                            is_val = self._is_val_split(dirpath, "tartan")
+                            if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
+                                for fn in img_files:
+                                    stem = self._normalize_stem(fn[:-4])
+                                    cand = None
+                                    for c in (
+                                        f"{stem}_left_depth.npy", f"{stem}_lcam_front_depth.png",
+                                        f"{stem}_left_depth.png", f"{stem}_lcam_front_depth.npy",
+                                        f"{stem}_depth.npy", f"{stem}_depth.png",
+                                        f"{stem}.npy", f"{stem}.png",
+                                        f"{fn[:-4]}_depth.npy", f"{fn[:-4]}.npy",
+                                        f"{fn[:-4]}_depth.png", f"{fn[:-4]}.png"
+                                    ):
+                                        if c in depth_files:
+                                            cand = os.path.join(depth_dir, c)
+                                            break
+                                    if cand:
+                                        samples_found.append((os.path.join(img_dir, fn), cand, domain_tag))
+                        except OSError:
+                            pass
 
-        for dirpath, dirs, filenames in os.walk(root):
-            for fn in filenames:
-                if fn.startswith("."):
-                    continue
-                full_path = os.path.join(dirpath, fn)
-                rel_path = os.path.relpath(full_path, root).replace("\\", "/")
-                fn_lower = fn.lower()
-                rel_lower = rel_path.lower()
+            # 2. Companion zip files discovery (e.g. image_left.zip + depth_left.zip)
+            zip_files = [f for f in files if f.lower().endswith(".zip")]
+            if zip_files:
+                img_zips = [os.path.join(dirpath, f) for f in zip_files if "image" in f.lower() or "rgb" in f.lower()]
+                depth_zips = [os.path.join(dirpath, f) for f in zip_files if "depth" in f.lower()]
+                if img_zips and depth_zips:
+                    for iz in img_zips:
+                        for dz in depth_zips:
+                            self._index_companion_zips(iz, dz, force_all, domain_tag=domain_tag)
+                else:
+                    for z in zip_files:
+                        self._index_tartan_zip(os.path.join(dirpath, z), force_all, domain_tag=domain_tag)
 
-                if fn_lower.endswith(".png") and ("image_left" in rel_lower or "image_lcam_front" in rel_lower):
-                    img_candidates.append((rel_path, full_path))
-                elif (fn_lower.endswith(".npy") or fn_lower.endswith(".png")) and ("depth_left" in rel_lower or "depth_lcam_front" in rel_lower):
-                    all_depth_files.add(rel_path)
+            # 3. DIRECTORY PRUNING: Instantly prune all image and depth directories so os.walk never enters them!
+            dirs[:] = [d for d in dirs if d not in (
+                "image_left", "depth_left", "image_right", "depth_right",
+                "image_lcam_front", "depth_lcam_front", "image_rcam_front", "depth_rcam_front",
+                "final_preview", "geometry_hdf5", "disparity", "seg", "flow"
+            )]
 
-        for rel_img, full_img in img_candidates:
-            matched_rel_depth = None
-            if "image_left" in rel_img:
-                base = rel_img.replace("image_left", "depth_left")
-                for c in (
-                    base.replace("_left.png", "_left_depth.npy"),
-                    base.replace("_left.png", "_left_depth.png"),
-                    base.replace(".png", ".npy"),
-                    base.replace(".png", "_depth.npy"),
-                    base.replace(".png", "_depth.png"),
-                    base,
-                ):
-                    if c in all_depth_files:
-                        matched_rel_depth = c
+        self.samples.extend(samples_found)
+
+    def _index_scannet(self, root: str, force_all: bool = False):
+        samples_found = []
+        # Find scene folders (e.g. /kaggle/input/scannet-frames-99gb/scannet-frames/sceneXXXX_YY)
+        scenes_dir = None
+        for cand in [os.path.join(root, "scannet-frames"), root]:
+            if os.path.isdir(cand):
+                try:
+                    subdirs = [os.path.join(cand, d) for d in os.listdir(cand) if os.path.isdir(os.path.join(cand, d)) and d.startswith("scene")]
+                    if subdirs:
+                        scenes_dir = cand
                         break
-            elif "image_lcam_front" in rel_img:
-                base = rel_img.replace("image_lcam_front", "depth_lcam_front")
-                for c in (
-                    base.replace("_lcam_front.png", "_lcam_front_depth.png"),
-                    base.replace("_lcam_front.png", "_lcam_front_depth.npy"),
-                    base.replace(".png", ".npy"),
-                    base.replace(".png", "_depth.png"),
-                    base.replace(".png", "_depth.npy"),
-                    base,
-                ):
-                    if c in all_depth_files:
-                        matched_rel_depth = c
-                        break
+                except OSError:
+                    pass
+        if not scenes_dir:
+            for dirpath, dirs, _ in os.walk(root):
+                if any(d.startswith("scene") for d in dirs):
+                    scenes_dir = dirpath
+                    break
+        if not scenes_dir:
+            return
 
-            if matched_rel_depth is not None:
-                full_depth = os.path.join(root, matched_rel_depth)
-                is_val = self._is_val_split(full_img, "tartan")
-                if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
-                    samples_found.append((full_img, full_depth, domain_tag))
+        try:
+            scene_folders = sorted(os.path.join(scenes_dir, d) for d in os.listdir(scenes_dir) if os.path.isdir(os.path.join(scenes_dir, d)) and d.startswith("scene"))
+        except OSError:
+            return
 
+        for sf in scene_folders:
+            is_val = self._is_val_split(sf, "scannet")
+            if not force_all and ((self.split == "val" and not is_val) or (self.split == "train" and is_val)):
+                continue
+            try:
+                files = os.listdir(sf)
+                jpgs = sorted(f for f in files if f.endswith(".jpg"))
+                png_set = set(f for f in files if f.endswith(".png"))
+                for jf in jpgs:
+                    stem = jf[:-4]
+                    df = f"{stem}.png"
+                    if df in png_set:
+                        samples_found.append((os.path.join(sf, jf), os.path.join(sf, df), "scannet"))
+            except OSError:
+                pass
         self.samples.extend(samples_found)
 
     def _index_hypersim(self, root: str, force_all: bool = False):
         samples_found = []
-        for dirpath, dirs, filenames in os.walk(root):
-            if "final_preview" in dirpath:
-                geom_dir = dirpath.replace("final_preview", "geometry_hdf5")
-                geom_files = set(os.listdir(geom_dir)) if os.path.isdir(geom_dir) else set()
-                for fn in filenames:
-                    if fn.endswith(".tonemap.jpg"):
-                        depth_fn = fn.replace(".tonemap.jpg", ".depth_meters.hdf5")
-                        if depth_fn in geom_files:
-                            img_path = os.path.join(dirpath, fn)
-                            depth_path = os.path.join(geom_dir, depth_fn)
-                            is_val = self._is_val_split(img_path, "hypersim")
-                            if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
-                                samples_found.append((img_path, depth_path, "hypersim"))
-            else:
-                fn_set = set(filenames)
-                for fn in filenames:
-                    if fn.endswith(".tonemap.jpg"):
-                        depth_fn = fn.replace(".tonemap.jpg", ".depth_meters.hdf5")
-                        if depth_fn in fn_set:
-                            img_path = os.path.join(dirpath, fn)
-                            depth_path = os.path.join(dirpath, depth_fn)
-                            is_val = self._is_val_split(img_path, "hypersim")
-                            if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
-                                samples_found.append((img_path, depth_path, "hypersim"))
+        for dirpath, dirs, _ in os.walk(root):
+            # Support both exact 'final_preview' and scene-prefixed 'scene_cam_XX_final_preview'
+            fp_subdirs = [d for d in dirs if "final_preview" in d]
+            if fp_subdirs:
+                for fpd in fp_subdirs:
+                    fp_dir = os.path.join(dirpath, fpd)
+                    geom_dir = os.path.join(dirpath, fpd.replace("final_preview", "geometry_hdf5"))
+                    if not os.path.isdir(geom_dir):
+                        continue
+                    try:
+                        tonemaps = sorted(f for f in os.listdir(fp_dir) if f.endswith(".tonemap.jpg"))
+                        geom_files = set(os.listdir(geom_dir))
+                    except OSError:
+                        continue
+                    is_val = self._is_val_split(dirpath, "hypersim")
+                    if not force_all and ((self.split == "val" and not is_val) or (self.split == "train" and is_val)):
+                        continue
+                    for fn in tonemaps:
+                        dfn = fn.replace(".tonemap.jpg", ".depth_meters.hdf5")
+                        if dfn in geom_files:
+                            samples_found.append((os.path.join(fp_dir, fn), os.path.join(geom_dir, dfn), "hypersim"))
+                dirs[:] = [d for d in dirs if "final_preview" not in d and "geometry_hdf5" not in d]
         self.samples.extend(samples_found)
 
     def _index_nyu(self, root: str, force_all: bool = False):
         samples_found = []
-        for dirpath, dirs, filenames in os.walk(root):
-            fn_set = set(filenames)
-            for fn in filenames:
-                if fn.endswith("_colors.png"):
-                    dfn = fn.replace("_colors.png", "_depth.png")
-                    if dfn in fn_set:
-                        img_path = os.path.join(dirpath, fn)
-                        depth_path = os.path.join(dirpath, dfn)
-                        is_val = self._is_val_split(img_path, "nyu")
-                        if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
-                            samples_found.append((img_path, depth_path, "nyu"))
-                elif fn.endswith(".jpg") and not fn.startswith("."):
-                    dfn = os.path.splitext(fn)[0] + ".png"
-                    if dfn in fn_set:
-                        img_path = os.path.join(dirpath, fn)
-                        depth_path = os.path.join(dirpath, dfn)
-                        is_val = self._is_val_split(img_path, "nyu")
-                        if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
-                            samples_found.append((img_path, depth_path, "nyu"))
+        for dirpath, dirs, _ in os.walk(root):
+            bname = os.path.basename(dirpath).lower()
+            if any(k in bname for k in ("nyu2_train", "nyu2_test", "train", "test", "nyu")):
+                try:
+                    filenames = sorted(os.listdir(dirpath))
+                except OSError:
+                    continue
+                colors = [f for f in filenames if f.endswith("_colors.png")]
+                if colors:
+                    dirs.clear()
+                    fn_set = set(filenames)
+                    for fn in colors:
+                        dfn = fn.replace("_colors.png", "_depth.png")
+                        if dfn in fn_set:
+                            img_path = os.path.join(dirpath, fn)
+                            depth_path = os.path.join(dirpath, dfn)
+                            is_val = self._is_val_split(img_path, "nyu")
+                            if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
+                                samples_found.append((img_path, depth_path, "nyu"))
         self.samples.extend(samples_found)
 
     def _index_kitti(self, root: str, force_all: bool = False):
         samples_found = []
-        for dirpath, dirs, filenames in os.walk(root):
-            bname = os.path.basename(dirpath)
-            if bname in ("depths", "proj_depth"):
-                parent = os.path.dirname(dirpath)
-                img_dir = None
-                for cand in ("images", "image", "rgb", "rgbs", "image_02/data"):
-                    cand_p = os.path.join(parent, cand)
-                    if os.path.isdir(cand_p):
-                        img_dir = cand_p
-                        break
-                if img_dir and os.path.isdir(img_dir):
-                    img_set = set(os.listdir(img_dir))
-                    for fn in filenames:
-                        if fn.endswith(".png") and fn in img_set:
+        for dirpath, dirs, _ in os.walk(root):
+            if "image_02" in dirs and "proj_depth" in dirs:
+                dirs.clear()
+                img_dir = os.path.join(dirpath, "image_02", "data")
+                depth_dir = os.path.join(dirpath, "proj_depth", "groundtruth", "image_02")
+                if os.path.isdir(img_dir) and os.path.isdir(depth_dir):
+                    try:
+                        img_files = sorted(f for f in os.listdir(img_dir) if f.endswith(".png"))
+                        depth_set = set(os.listdir(depth_dir))
+                    except OSError:
+                        continue
+                    for fn in img_files:
+                        if fn in depth_set:
                             img_path = os.path.join(img_dir, fn)
-                            depth_path = os.path.join(dirpath, fn)
-                            is_val = self._is_val_split(img_path, "kitti")
-                            if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
-                                samples_found.append((img_path, depth_path, "kitti"))
-            elif "image_02" in dirpath and bname == "data":
-                parent = dirpath.split("image_02")[0]
-                depth_dir = os.path.join(parent, "proj_depth", "groundtruth", "image_02")
-                if os.path.isdir(depth_dir):
-                    depth_set = set(os.listdir(depth_dir))
-                    for fn in filenames:
-                        if fn.endswith(".png") and fn in depth_set:
-                            img_path = os.path.join(dirpath, fn)
                             depth_path = os.path.join(depth_dir, fn)
                             is_val = self._is_val_split(img_path, "kitti")
                             if force_all or (self.split == "val" and is_val) or (self.split == "train" and not is_val):
@@ -1630,7 +1914,12 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
     def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Tensor]:
         if idx % 200 == 0:
             gc.collect()
-        img_src, depth_src, domain = self.samples[idx]
+        if getattr(self, "domain_balanced", False) and len(getattr(self, "active_clusters", [])) > 1:
+            cluster = random.choice(self.active_clusters)
+            actual_idx = random.choice(self.domain_to_indices[cluster])
+            img_src, depth_src, domain = self.samples[actual_idx]
+        else:
+            img_src, depth_src, domain = self.samples[idx]
         from PIL import Image as PILImage
 
         # 1. Load RGB Image
@@ -1653,7 +1942,17 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
                 try:
                     import h5py
                     with h5py.File(depth_src, "r") as hf:
-                        depth = np.array(hf["dataset"][:], dtype=np.float32)
+                        raw_d = np.array(hf["dataset"][:], dtype=np.float32)
+                    # Convert Hypersim Euclidean ray distance to planar orthogonal Z-depth
+                    dh, dw = raw_d.shape[:2]
+                    K_h = self.K_CANONICAL["hypersim"]
+                    fx_h = K_h[0, 0] * (float(dw) / 1024.0)
+                    fy_h = K_h[1, 1] * (float(dh) / 768.0)
+                    cx_h = K_h[0, 2] * (float(dw) / 1024.0)
+                    cy_h = K_h[1, 2] * (float(dh) / 768.0)
+                    gy, gx = np.indices((dh, dw), dtype=np.float32)
+                    ray_scale = np.sqrt(1.0 + ((gx - cx_h) / fx_h) ** 2 + ((gy - cy_h) / fy_h) ** 2)
+                    depth = raw_d / ray_scale
                 except Exception:
                     depth = np.zeros((H, W), dtype=np.float32)
             elif domain == "nyu":
@@ -1664,8 +1963,12 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
                 # KITTI: 16-bit uint16 in 1/256 meters
                 raw_d = np.array(PILImage.open(depth_src)).astype(np.float32)
                 depth = raw_d / 256.0
+            elif domain == "scannet":
+                # ScanNet: 16-bit uint16 depth in millimeters (divide by 1000.0 -> meters)
+                raw_d = np.array(PILImage.open(depth_src)).astype(np.float32)
+                depth = raw_d / 1000.0
             else:
-                # TartanAir / TartanGround
+                # TartanAir / TartanGround (depth is already in meters; sky/infinity pixels > 120m are masked below)
                 if "::" in depth_src:
                     zp, mp = depth_src.split("::", 1)
                     depth_bytes = self._zip_read(zp, mp)
@@ -1676,12 +1979,8 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
                             depth = np.ascontiguousarray(raw_d).view(np.float32).squeeze(-1)
                         elif raw_d.ndim == 3:
                             depth = raw_d[..., 0].astype(np.float32)
-                            if depth.max() > 1000.0:
-                                depth = depth / 1000.0
                         else:
                             depth = raw_d.astype(np.float32)
-                            if depth.max() > 1000.0:
-                                depth = depth / 1000.0
                     else:
                         depth = np.load(io.BytesIO(depth_bytes)).astype(np.float32)
                 else:
@@ -1692,12 +1991,8 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
                             depth = np.ascontiguousarray(raw_d).view(np.float32).squeeze(-1)
                         elif raw_d.ndim == 3:
                             depth = raw_d[..., 0].astype(np.float32)
-                            if depth.max() > 1000.0:
-                                depth = depth / 1000.0
                         else:
                             depth = raw_d.astype(np.float32)
-                            if depth.max() > 1000.0:
-                                depth = depth / 1000.0
                     else:
                         depth = np.load(depth_src).astype(np.float32)
         except Exception:
@@ -1722,6 +2017,9 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
 
         # 3. Canonical Intrinsics Matrix per Domain
         K = self.K_CANONICAL.get(domain, self.K_CANONICAL["tartan"]).copy()
+        if domain.startswith("tartan") and H == W:
+            # TartanAir2 square 640x640 sensor: principal point cy = cx = 320.0
+            K[1, 2] = K[0, 2]
 
         # 4. Dynamic Pinhole Crop Augmentation (Scale focal lengths with simulated optical crop)
         if self.apply_pinhole_aug and random.random() < 0.9:
@@ -1745,6 +2043,21 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
                 img = img[np.ix_(y_idx, x_idx)]
                 depth = depth[np.ix_(y_idx, x_idx)]
 
+        # Realistic Physical Sensor Degradation on synthetic domains
+        if self.apply_pinhole_aug and getattr(self, "sensor_noise_aug", True) and (domain.startswith("tartan") or "hypersim" in domain) and random.random() < 0.4:
+            # 1. Random specular/IR dropout holes
+            num_holes = random.randint(1, 4)
+            for _ in range(num_holes):
+                rh = random.randint(int(self.image_size * 0.05), int(self.image_size * 0.20))
+                rw = random.randint(int(self.image_size * 0.05), int(self.image_size * 0.20))
+                ry = random.randint(0, max(1, self.image_size - rh))
+                rx = random.randint(0, max(1, self.image_size - rw))
+                depth[ry:ry+rh, rx:rx+rw] = 0.0
+            # 2. Distance-dependent sensor noise: sigma ~ 0.001 * z^2
+            valid_m = (depth > 0.1) & (depth < 40.0)
+            noise = np.random.normal(0, 0.001 * (depth ** 2)).astype(np.float32)
+            depth = np.where(valid_m, np.maximum(0.1, depth + noise), depth)
+
         # 5. Normalize tensors
         img_tensor = torch.from_numpy(img).float().permute(2, 0, 1) / 255.0
         for c, (mean, std) in enumerate(zip(IMAGENET_MEAN, IMAGENET_STD)):
@@ -1755,8 +2068,428 @@ class MultiDomainDINODataset(torch.utils.data.Dataset):
         return img_tensor, depth_tensor, K_tensor
 
 
-# Backwards-compatible alias for existing pipelines
-TartanAirDINODataset = MultiDomainDINODataset
+# ---------------------------------------------------------------------------
+# TartanAir Dataset Loader (Reference: volsiai epoch 1-5 training pipeline)
+# ---------------------------------------------------------------------------
+
+class TartanAirDINODataset(MultiDomainDINODataset):
+    """Robust, fast TartanAir dataset loader inheriting pruned directory scanning and multi-archive support."""
+
+    def __init__(
+        self,
+        root_dir: str = "auto",
+        split: str = "train",
+        image_size: int = 224,
+        apply_pinhole_aug: bool = True,
+        crop_min: float = 0.35,
+    ):
+        r_dir = resolve_dataset_root(root_dir)
+        if os.path.isdir(os.path.join(r_dir, "warehouse_stereo")):
+            r_dir = os.path.join(r_dir, "warehouse_stereo")
+        super().__init__(
+            root_dirs=r_dir,
+            split=split,
+            image_size=image_size,
+            apply_pinhole_aug=apply_pinhole_aug,
+            crop_min=crop_min,
+        )
+
+
+
+
+# ---------------------------------------------------------------------------
+# TPU v5e Training via PyTorch/XLA (single-process, single-core)
+# ---------------------------------------------------------------------------
+# Native bfloat16 MXU path + ParallelLoader + xm.optimizer_step + static-shape
+# loss (masked sums, gated VNL, log-mean scale): boolean mask indexing yields
+# per-batch variable tensor sizes, which recompiles the full XLA graph EVERY
+# step. All XLA imports are lazy so GPU/CPU still imports without torch_xla.
+# Static shapes everywhere: drop_last=True, fixed 336x336, K [B,3,3].
+
+
+def _get_xla_modules():
+    """Lazily import torch_xla modules. Raises RuntimeError if unavailable."""
+    try:
+        import torch_xla.core.xla_model as xm  # type: ignore
+        import torch_xla.distributed.parallel_loader as pl  # type: ignore
+        import torch_xla.distributed.xla_multiprocessing as xmp  # type: ignore
+        return xm, pl, xmp
+    except Exception as e:
+        raise RuntimeError(
+            "torch_xla is required for TPU training but could not be imported. "
+            f"Install it on the TPU VM first. Underlying error: {e}"
+        )
+
+
+def _tpu_world_size(xm) -> int:
+    for attr in ("xrt_world_size", "get_world_size"):
+        try:
+            fn = getattr(xm, attr, None)
+            if fn is not None:
+                return int(fn())
+        except Exception:
+            continue
+    return 8
+
+
+def _tpu_find_latest_checkpoint(output_dir: str) -> Optional[str]:
+    """TPU-side checkpoint finder (mirrors GPU train path, master-agnostic read)."""
+    for name in ["checkpoint_step_latest.pt", "checkpoint_latest.pt"]:
+        p = os.path.join(output_dir, name)
+        if os.path.isfile(p):
+            return p
+    epoch_cands = sorted(
+        glob.glob(os.path.join(output_dir, "dioptra_dino_epoch_*.pt")),
+        key=lambda q: int(os.path.splitext(os.path.basename(q))[0].split("_")[-1])
+        if os.path.splitext(os.path.basename(q))[0].split("_")[-1].isdigit() else 0,
+    )
+    if epoch_cands:
+        return epoch_cands[-1]
+    best_p = os.path.join(output_dir, "dioptra_dino_best.pt")
+    if os.path.isfile(best_p):
+        return best_p
+    for p in [
+        "/kaggle/input/dioptra-dino-epoch5-ckpt/checkpoint_step_latest.pt",
+        "/kaggle/input/datasets/yumnamharryson/dioptra-dino-epoch5-ckpt/checkpoint_step_latest.pt",
+        "/kaggle/input/dioptra-dino-epoch5-ckpt/dioptra_dino_epoch_4.pt",
+        "/kaggle/input/datasets/yumnamharryson/dioptra-dino-epoch5-ckpt/dioptra_dino_epoch_4.pt",
+    ]:
+        if os.path.isfile(p):
+            return p
+    for name in ["checkpoint_step_latest.pt", "checkpoint_latest.pt"]:
+        step_cands = glob.glob(f"/kaggle/input/**/{name}", recursive=True)
+        if step_cands:
+            return step_cands[0]
+    input_cands = sorted(
+        glob.glob("/kaggle/input/**/dioptra_dino_epoch_*.pt", recursive=True)
+        + glob.glob("/kaggle/input/**/dioptra_dino*.pt", recursive=True),
+        key=lambda q: int(os.path.splitext(os.path.basename(q))[0].split("_")[-1])
+        if os.path.splitext(os.path.basename(q))[0].split("_")[-1].isdigit() else 0,
+    )
+    if input_cands:
+        return input_cands[-1]
+    return None
+
+
+def _tpu_mp_fn(index: int, args) -> None:
+    """Single-process TPU worker, called directly with index=0.
+
+    Single-core training (args._tpu_single_device) with static-shape loss.
+    The legacy DistributedSampler branch is retained for multi-process hosts.
+    """
+    xm, pl, _ = _get_xla_modules()
+    import contextlib
+
+    # HDF5 file locking over network FUSE mounts is a classic indefinite-hang
+    # source (Hypersim .hdf5 reads). Must be set before DataLoader workers fork.
+    os.environ.setdefault("HDF5_USE_FILE_LOCKING", "FALSE")
+
+    single = bool(getattr(args, "_tpu_single_device", False))
+    device = xm.xla_device()
+    if single:
+        world_size, rank, is_master = 1, 0, True
+        print("[TPU] Single-core mode: training on one XLA device.")
+        try:
+            print(f"[TPU] Visible XLA devices from this process: {len(xm.get_xla_supported_devices())}")
+        except Exception as e:
+            print(f"[TPU] Device query note: {e}")
+    else:
+        world_size = _tpu_world_size(xm)
+        rank = xm.get_ordinal()
+        is_master = xm.is_master_ordinal()
+
+    img_sz = getattr(args, "image_size", 336) or 336
+    w_norm = getattr(args, "weight_normal", 0.25)
+    bs = getattr(args, "batch_size", 4) or 4
+    grad_accum = getattr(args, "grad_accum", None) or 4
+    use_ckpt_flag = getattr(args, "use_checkpointing", True)
+    use_bf16 = bool(getattr(args, "use_bfloat16", True))
+    num_workers = int(getattr(args, "num_workers", 4) or 4)
+    save_interval = int(getattr(args, "save_interval", 500) or 500)
+    output_dir = getattr(args, "output_dir", "/kaggle/working/outputs_dino")
+
+    if single:
+        # One core has 16 GB HBM: cap the micro-batch for memory safety.
+        bs = min(bs, 8)
+    cfg = DioptraDINOConfig(
+        image_size=img_sz,
+        grid_size=img_sz // 14,
+        epochs=args.epochs,
+        batch_size=bs,
+        gradient_accumulation_steps=grad_accum,
+        lr_backbone=args.lr_backbone,
+        lr_head=args.lr_head,
+        weight_normal=w_norm,
+        # torch>=2.8 non-reentrant activation checkpointing queries a
+        # `torch.xla` device module that does not exist -> AttributeError on XLA
+        # tensors. Full activations at bs<=8/336/bf16 fit easily in 16 GB HBM.
+        use_checkpointing=False,
+        # Static-shape loss: masked sums + gated VNL + log-mean scale.
+        # Boolean indexing yields per-batch variable sizes => full-graph XLA
+        # recompile on EVERY step (v8: 4hrs silence). GPU path keeps indexing.
+        tpu_static_loss=True,
+        freeze_backbone=getattr(args, "freeze_backbone", False),
+    )
+    if is_master:
+        if cfg.freeze_backbone:
+            print(f"[TPU] Level 1 Acceleration: DINOv2 backbone frozen. Training geometric head.")
+        print(f"[TPU] Activation checkpointing disabled for XLA (torch has no 'xla' device module); "
+              f"micro-batch={bs}, grad_accum={grad_accum}.")
+
+    # 1. Distributed Dataset & Sampler (drop_last=True => static shapes => 1 XLA compile)
+    dataset = MultiDomainDINODataset(
+        root_dirs=getattr(args, "train", None) or "auto",
+        split="train",
+        image_size=336 if img_sz is None else img_sz,
+        apply_pinhole_aug=True,
+        crop_min=getattr(args, "crop_min", 0.35),
+        subset_fraction=getattr(args, "subset_fraction", None),
+        subset_seed=getattr(args, "subset_seed", 0),
+        domain_balanced=getattr(args, "domain_balanced", True),
+        sensor_noise_aug=getattr(args, "sensor_noise", True),
+    )
+    if is_master:
+        print(f"[TPU] Indexed {len(dataset):,} training samples across {len(dataset.resolved_roots)} roots.")
+    if len(dataset) == 0:
+        raise ValueError("Found 0 training samples on TPU worker. Check /kaggle/input mounts.")
+
+    # Worker-crash with default timeout=0 hangs forever with zero output (v7:
+    # 1hr silence on step 0). timeout=600 turns a hung worker into a loud error.
+    loader_timeout = 600 if num_workers > 0 else 0
+    sampler = None
+    if single:
+        # Single-core fallback: plain shuffled loader (no cross-process sharding).
+        loader = torch.utils.data.DataLoader(
+            dataset,
+            batch_size=bs,
+            shuffle=True,
+            num_workers=num_workers,
+            drop_last=True,
+            pin_memory=False,
+            timeout=loader_timeout,
+        )
+    else:
+        sampler = torch.utils.data.distributed.DistributedSampler(
+            dataset,
+            num_replicas=world_size,
+            rank=rank,
+            shuffle=True,
+            drop_last=True,
+        )
+        loader = torch.utils.data.DataLoader(
+            dataset,
+            batch_size=bs,  # e.g. 4 images per core -> 32 global batch size
+            sampler=sampler,
+            num_workers=num_workers,
+            drop_last=True,
+            pin_memory=False,
+            timeout=loader_timeout,
+        )
+
+    if is_master:
+        # Heartbeat probe: fetch one batch single-processed BEFORE any XLA work,
+        # so a data-path stall can never again masquerade as a TPU stall.
+        print("[TPU] Warming data pipeline: fetching first batch (FUSE/h5py path check)...")
+        t_fetch = time.time()
+        probe = torch.utils.data.DataLoader(dataset, batch_size=min(bs, 4), shuffle=True, num_workers=0, drop_last=True)
+        first = next(iter(probe))
+        print(f"[TPU] First batch OK in {time.time() - t_fetch:.1f}s: "
+              f"img {tuple(first[0].shape)}, depth {tuple(first[1].shape)}, K {tuple(first[2].shape)}")
+        del first, probe
+
+    model = DioptraDINO(cfg).to(device)
+    criterion = DioptraDINOLoss(cfg).to(device)
+    raw_model = model.module if hasattr(model, "module") else model
+
+    if cfg.freeze_backbone:
+        param_groups = [
+            {"params": [p for p in raw_model.parameters() if p.requires_grad], "lr": cfg.lr_head, "weight_decay": cfg.weight_decay},
+        ]
+    else:
+        param_groups = [
+            {"params": raw_model.backbone.parameters(), "lr": cfg.lr_backbone, "weight_decay": cfg.weight_decay},
+            {"params": [p for n, p in raw_model.named_parameters() if not n.startswith("backbone.")],
+             "lr": cfg.lr_head, "weight_decay": cfg.weight_decay},
+        ]
+    optimizer = torch.optim.AdamW(param_groups, betas=(0.9, 0.999))
+
+    # Resume (every rank loads read-only from shared /kaggle/input; weights only in finetune mode)
+    start_epoch = 0
+    global_step = 0
+    ckpt_loaded = None
+    resume_arg = getattr(args, "resume", None)
+    if resume_arg and str(resume_arg).lower() not in ("none", "false"):
+        if isinstance(resume_arg, str) and os.path.isfile(resume_arg):
+            resume_target = resume_arg
+        else:
+            resume_target = _tpu_find_latest_checkpoint(output_dir)
+        if resume_target and os.path.exists(resume_target):
+            if is_master:
+                print(f"[TPU] Resuming from checkpoint: {resume_target}")
+            try:
+                ckpt_loaded = torch.load(resume_target, map_location="cpu", weights_only=False)
+            except TypeError:
+                ckpt_loaded = torch.load(resume_target, map_location="cpu")
+            sd = ckpt_loaded.get("model_state_dict", ckpt_loaded.get("state_dict", ckpt_loaded))
+            raw_model.load_state_dict(sd, strict=False)
+            if getattr(args, "finetune", False):
+                start_epoch, global_step = 0, 0
+                if is_master:
+                    print("[TPU] Fine-tune mode: weights loaded, fresh optimizer/scheduler, ARA gate=1.0.")
+            else:
+                start_epoch = int(ckpt_loaded.get("epoch", 0))
+                global_step = int(ckpt_loaded.get("global_step", 0))
+                if "optimizer_state_dict" in ckpt_loaded:
+                    try:
+                        optimizer.load_state_dict(ckpt_loaded["optimizer_state_dict"])
+                    except Exception as exc:
+                        if is_master:
+                            print(f"[TPU] Note: optimizer state skipped ({exc})")
+
+    # Optimizer steps (not batches): one step per grad_accum micro-batches.
+    steps_per_epoch = max(1, (len(loader) + grad_accum - 1) // grad_accum)
+    total_training_steps = max(1, cfg.epochs * steps_per_epoch)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=total_training_steps)
+    if global_step > 0 and not getattr(args, "finetune", False):
+        for _ in range(min(global_step, total_training_steps - 1)):
+            scheduler.step()
+
+    if is_master:
+        os.makedirs(output_dir, exist_ok=True)
+        print(f"[TPU] Config: epochs={cfg.epochs} per-core-bs={bs} "
+              f"global-bs={bs * world_size} grad_accum={grad_accum} "
+              f"eff-bs={bs * world_size * grad_accum} bf16={use_bf16} workers={world_size}")
+
+    def _autocast_ctx():
+        if use_bf16:
+            return torch.autocast(device_type="xla", dtype=torch.bfloat16)
+        return contextlib.nullcontext()
+
+    for epoch in range(start_epoch, cfg.epochs):
+        if sampler is not None:
+            sampler.set_epoch(epoch)
+        # ParallelLoader streams host batches onto the TPU device (static shapes).
+        para_loader = pl.ParallelLoader(loader, [device])
+        per_device_loader = para_loader.per_device_loader(device)
+        # Device-side running loss: accumulation is async (no host sync until epoch end).
+        epoch_loss_t = torch.zeros((), device=device)
+        n_steps = 0
+        t_start = time.time()
+        optimizer.zero_grad()
+
+        for step, batch in enumerate(per_device_loader):
+            n_steps += 1
+            global_step += 1
+            if isinstance(batch, dict):
+                img, depth, K = batch["image"], batch["depth"], batch["intrinsics"]
+            else:
+                img, depth, K = batch
+            # ParallelLoader already places tensors on `device`; enforce K shape [B,3,3].
+            # .dim/.shape are host-side metadata: no device sync.
+            assert K.dim() == 3 and K.shape[1:] == (3, 3), f"Unexpected K shape {tuple(K.shape)}"
+
+            current_gate = 1.0 if getattr(args, "finetune", False) else min(1.0, float(epoch) / 3.0)
+
+            # Throttled host sync: only the master materializes metrics every 50 steps.
+            # All other steps pass sync_metrics=False => zero .item() barriers.
+            need_metrics = bool(is_master and step % 50 == 0)
+
+            # Forward pass in bfloat16 for TPU v5e MXUs.
+            with _autocast_ctx():
+                pred = model(img, K, ara_gate=current_gate)
+                loss, loss_dict = criterion(pred, depth, img, K, sync_metrics=need_metrics)
+
+            epoch_loss_t = epoch_loss_t + loss.detach()
+            loss = loss / grad_accum
+            loss.backward()
+            xm.mark_step()
+
+            if (step + 1) % grad_accum == 0:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.gradient_clip)
+                # xm.optimizer_step performs all-reduce across all 8 cores and applies gradients.
+                xm.optimizer_step(optimizer, barrier=True)
+                optimizer.zero_grad()
+                if scheduler is not None:
+                    scheduler.step()
+
+            if need_metrics:
+                step_loss_val = loss.item() * grad_accum
+                print(f"Epoch [{epoch + 1}/{cfg.epochs}] Step [{step}/{len(loader)}] "
+                      f"Loss: {step_loss_val:.4f} "
+                      f"(SiLog: {loss_dict.get('loss_silog', 0):.3f}, "
+                      f"Scale: {loss_dict.get('loss_scale', 0):.3f}, "
+                      f"Edge: {loss_dict.get('loss_edge', 0):.3f}, "
+                      f"VNL: {loss_dict.get('loss_vnl', 0):.3f}) "
+                      f"ARA Gate: {current_gate:.2f}")
+
+            # Master-only periodic checkpoint via xm.save (XLA tensor serialization).
+            if is_master and (step + 1) % save_interval == 0:
+                checkpoint = {
+                    "epoch": epoch,
+                    "global_step": global_step,
+                    "model_state_dict": raw_model.state_dict(),
+                    "optimizer_state_dict": optimizer.state_dict(),
+                    "scheduler_state_dict": scheduler.state_dict(),
+                    "cfg": cfg,
+                }
+                xm.save(checkpoint, os.path.join(output_dir, "checkpoint_step_latest.pt"))
+                xm.save(checkpoint, os.path.join(output_dir, "checkpoint_latest.pt"))
+                del checkpoint
+
+        # Single host sync per epoch (master only): materialize the mean loss.
+        mean_loss_t = epoch_loss_t / max(1, n_steps)
+        mean_loss = float(mean_loss_t.item()) if is_master else 0.0
+        del epoch_loss_t, mean_loss_t
+        if is_master:
+            print(f"[TPU] ==> Epoch {epoch + 1} Complete! Mean Loss: {mean_loss:.4f}, "
+                  f"Runtime: {time.time() - t_start:.1f}s")
+            epoch_dict = {
+                "epoch": epoch + 1,
+                "global_step": global_step,
+                "model_state_dict": raw_model.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+                "scheduler_state_dict": scheduler.state_dict(),
+                "cfg": cfg,
+                "mean_loss": mean_loss,
+            }
+            xm.save(epoch_dict, os.path.join(output_dir, f"dioptra_dino_epoch_{epoch + 1}.pt"))
+            xm.save(epoch_dict, os.path.join(output_dir, "checkpoint_latest.pt"))
+            xm.save(epoch_dict, os.path.join(output_dir, "dioptra_dino_best.pt"))
+            print(f"[TPU] Saved atomic checkpoint: dioptra_dino_epoch_{epoch + 1}.pt")
+            del epoch_dict
+
+    if is_master:
+        print("\n>>> DIOPTRA-DINO TPU v5e-8 TRAINING COMPLETED SUCCESSFULLY! <<<\n")
+
+
+def train_dioptra_dino_tpu(args) -> None:
+    """Entry point for TPU v5e: single-process single-core XLA training.
+
+    Multiprocess xmp.spawn cannot init a TPU client on this host (Kaggle's
+    single-client libtpu build fails every child with slice_builder
+    "Expected 8 worker addresses, got 1", via fork or spawn), and SPMD Mesh
+    construction is broken against the installed numpy (UFuncTypeError). So
+    one process trains on one core with static-shape loss formulations.
+    """
+    os.environ["PJRT_DEVICE"] = "TPU"
+    _get_xla_modules()  # fail fast if torch_xla is missing
+    print("[TPU] Single-process single-core XLA training ...")
+    args._tpu_spmd = False
+    args._tpu_single_device = True
+    _tpu_mp_fn(0, args)
+
+
+def should_use_tpu(args) -> bool:
+    """True when --tpu is passed or PJRT_DEVICE=TPU with torch_xla importable."""
+    if bool(getattr(args, "tpu", False)):
+        return True
+    if os.environ.get("PJRT_DEVICE", "").upper() == "TPU":
+        try:
+            _get_xla_modules()
+            return True
+        except Exception:
+            return False
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -1785,6 +2518,8 @@ def train_dioptra_dino(args):
         grad_accum = max(1, 32 // max(1, bs))
     use_ckpt = getattr(args, "use_checkpointing", True)
 
+    freeze_bb = getattr(args, "freeze_backbone", False)
+
     cfg = DioptraDINOConfig(
         image_size=img_sz,
         grid_size=img_sz // 14,
@@ -1795,6 +2530,7 @@ def train_dioptra_dino(args):
         lr_head=args.lr_head,
         weight_normal=w_norm,
         use_checkpointing=use_ckpt,
+        freeze_backbone=freeze_bb,
     )
 
     model = DioptraDINO(cfg).to(device)
@@ -1812,10 +2548,17 @@ def train_dioptra_dino(args):
     raw_model = model.module if hasattr(model, "module") else model
 
     # Optimizer with differential learning rates
-    param_groups = [
-        {"params": raw_model.backbone.parameters(), "lr": cfg.lr_backbone, "weight_decay": cfg.weight_decay},
-        {"params": [p for n, p in raw_model.named_parameters() if not n.startswith("backbone.")], "lr": cfg.lr_head, "weight_decay": cfg.weight_decay},
-    ]
+    if cfg.freeze_backbone:
+        param_groups = [
+            {"params": [p for p in raw_model.parameters() if p.requires_grad], "lr": cfg.lr_head, "weight_decay": cfg.weight_decay},
+        ]
+        num_trainable = sum(p.numel() for p in raw_model.parameters() if p.requires_grad)
+        print(f"[Dioptra-DINO] Level 1 Acceleration: DINOv2 backbone frozen. Training {num_trainable:,} head parameters (~3.8M) with full dynamic crops.")
+    else:
+        param_groups = [
+            {"params": raw_model.backbone.parameters(), "lr": cfg.lr_backbone, "weight_decay": cfg.weight_decay},
+            {"params": [p for n, p in raw_model.named_parameters() if not n.startswith("backbone.")], "lr": cfg.lr_head, "weight_decay": cfg.weight_decay},
+        ]
     optimizer = torch.optim.AdamW(param_groups, betas=(0.9, 0.999))
 
     # Modern AMP GradScaler
@@ -1824,21 +2567,26 @@ def train_dioptra_dino(args):
     except (AttributeError, TypeError):
         scaler = torch.cuda.amp.GradScaler(enabled=cfg.use_amp and torch.cuda.is_available())
 
-    # Multi-domain dataset instantiation
+    # Dataset instantiation: High-performance pruned multi-domain and TartanAir loader
     train_root_arg = getattr(args, "train", None) or "auto"
-    print(f"[Dioptra-DINO Dataset] Resolving multi-domain dataset roots from: '{train_root_arg}'...")
+    print(f"[Dioptra-DINO Dataset] Initializing dataset loader: '{train_root_arg}'")
     dataset = MultiDomainDINODataset(
         root_dirs=train_root_arg,
         split="train",
         image_size=cfg.image_size,
         apply_pinhole_aug=True,
         crop_min=getattr(args, "crop_min", 0.35),
+        subset_fraction=getattr(args, "subset_fraction", None),
+        subset_seed=getattr(args, "subset_seed", 0),
+        domain_balanced=getattr(args, "domain_balanced", True),
+        sensor_noise_aug=getattr(args, "sensor_noise", True),
     )
+    print(f"[Dioptra-DINO Dataset] Successfully loaded {len(dataset):,} training samples ✓")
 
     if len(dataset) == 0:
         raise ValueError(
             f"Found 0 training samples across configured roots ({train_root_arg})!\n"
-            "Please ensure inputs (TartanAir, Hypersim, NYUv2, KITTI) are attached to this Kaggle notebook."
+            "Please ensure TartanAir warehouse stereo suite is attached to this Kaggle notebook."
         )
 
     # Use 0 workers and pin_memory=False for absolute host RAM stability on Kaggle Linux VM
@@ -1889,9 +2637,37 @@ def train_dioptra_dino(args):
         best_p = os.path.join(out_dir, "dioptra_dino_best.pt")
         if os.path.isfile(best_p):
             return best_p
-        # 4. Check /kaggle/input for mounted checkpoint datasets
+        # 4. Fast shallow check for known input checkpoint locations
+        for p in [
+            "/kaggle/input/datasets/volsiai/dioptra-dino-epoch5-ckpt/checkpoint_step_latest.pt",
+            "/kaggle/input/dioptra-dino-epoch5-ckpt/checkpoint_step_latest.pt",
+            "/kaggle/input/datasets/yumnamharryson/dioptra-dino-epoch5-ckpt/checkpoint_step_latest.pt",
+            "/kaggle/input/datasets/volsiai/dioptra-dino-epoch5-ckpt/checkpoint_latest.pt",
+            "/kaggle/input/dioptra-dino-epoch5-ckpt/checkpoint_latest.pt",
+            "/kaggle/input/datasets/yumnamharryson/dioptra-dino-epoch5-ckpt/dioptra_dino_epoch_4.pt",
+            "/kaggle/input/dioptra-dino-epoch5-ckpt/dioptra_dino_epoch_4.pt",
+        ]:
+            if os.path.isfile(p):
+                return p
+
+        # Fast shallow glob over immediate input subdirectories (avoids 4-hour recursive glob over millions of files)
+        shallow_cands = (
+            glob.glob("/kaggle/input/*ckpt*/*.pt")
+            + glob.glob("/kaggle/input/*epoch*/*.pt")
+            + glob.glob("/kaggle/input/*/*ckpt*/*.pt")
+        )
+        if shallow_cands:
+            return shallow_cands[0]
+
+        # Prefer step checkpoint first (most recent progress)
+        for name in ["checkpoint_step_latest.pt", "checkpoint_latest.pt"]:
+            step_cands = glob.glob(f"/kaggle/input/*/{name}")
+            if step_cands:
+                return step_cands[0]
+        # Then check epoch checkpoints sorted by epoch number
         input_cands = sorted(
-            glob.glob("/kaggle/input/**/dioptra_dino*.pt", recursive=True)
+            glob.glob("/kaggle/input/**/dioptra_dino_epoch_*.pt", recursive=True)
+            + glob.glob("/kaggle/input/**/dioptra_dino*.pt", recursive=True)
             + glob.glob("/kaggle/input/**/dioptra_dino*.zip", recursive=True),
             key=lambda p: int(os.path.splitext(os.path.basename(p))[0].split("_")[-1]) if os.path.splitext(os.path.basename(p))[0].split("_")[-1].isdigit() else 0
         )
@@ -1908,20 +2684,19 @@ def train_dioptra_dino(args):
     if resume_arg and str(resume_arg).lower() not in ("none", "false"):
         resume_target = resume_arg if (isinstance(resume_arg, str) and os.path.isfile(resume_arg)) else find_latest_checkpoint(output_dir)
         if resume_target and os.path.exists(resume_target):
-            # If checkpoint is packaged inside a .zip file, extract the .pt file first
+            # If checkpoint is packaged inside a .zip file, extract the .pt file first if needed
             if resume_target.lower().endswith(".zip"):
                 try:
                     import tempfile
-                    extract_tmp = tempfile.mkdtemp(prefix="ckpt_extract_")
                     with zipfile.ZipFile(resume_target, "r") as zf:
                         pt_members = [m for m in zf.namelist() if m.endswith(".pt")]
                         if pt_members:
-                            # Choose the latest epoch / best checkpoint inside the zip
+                            extract_tmp = tempfile.mkdtemp(prefix="ckpt_extract_")
                             pt_members.sort(key=lambda p: int(os.path.splitext(os.path.basename(p))[0].split("_")[-1]) if os.path.splitext(os.path.basename(p))[0].split("_")[-1].isdigit() else 0)
                             extracted_pt = zf.extract(pt_members[-1], path=extract_tmp)
                             resume_target = extracted_pt
                 except Exception as z_err:
-                    print(f"[Dioptra-DINO] Warning: Failed to extract zip checkpoint ({z_err})")
+                    print(f"[Dioptra-DINO] Warning: Zip inspection note: {z_err}")
 
             print(f"[Dioptra-DINO] Resuming training from checkpoint: {resume_target}")
             import __main__
@@ -1932,36 +2707,41 @@ def train_dioptra_dino(args):
             except TypeError:
                 ckpt_loaded = torch.load(resume_target, map_location=device)
 
-            if "model_state_dict" in ckpt_loaded:
-                raw_model.load_state_dict(ckpt_loaded["model_state_dict"])
-            elif "state_dict" in ckpt_loaded:
-                raw_model.load_state_dict(ckpt_loaded["state_dict"])
+            sd = ckpt_loaded.get("model_state_dict", ckpt_loaded.get("state_dict", ckpt_loaded))
+            if isinstance(sd, dict):
+                sd = {k[7:] if k.startswith("module.") else k: v for k, v in sd.items()}
+                raw_model.load_state_dict(sd, strict=False)
             else:
-                raw_model.load_state_dict(ckpt_loaded)
+                raw_model.load_state_dict(sd)
 
-            start_epoch = ckpt_loaded.get("epoch", 0)
-            global_step = ckpt_loaded.get("global_step", start_epoch * len(dataloader))
+            if getattr(args, "finetune", False):
+                start_epoch = 0
+                global_step = 0
+                print(f"[Dioptra-DINO] Fine-tune mode active: Loaded weights from {resume_target}. Initializing fresh optimizer and CosineAnnealing schedule for high-res training.")
+            else:
+                start_epoch = ckpt_loaded.get("epoch", 0)
+                global_step = ckpt_loaded.get("global_step", start_epoch * len(dataloader))
 
-            if "optimizer_state_dict" in ckpt_loaded and optimizer is not None:
-                try:
-                    optimizer.load_state_dict(ckpt_loaded["optimizer_state_dict"])
-                    print("[Dioptra-DINO] Restored optimizer state successfully.")
-                except Exception as exc:
-                    print(f"[Dioptra-DINO] Note: optimizer state skipped ({exc})")
+                if "optimizer_state_dict" in ckpt_loaded and optimizer is not None:
+                    try:
+                        optimizer.load_state_dict(ckpt_loaded["optimizer_state_dict"])
+                        print("[Dioptra-DINO] Restored optimizer state successfully.")
+                    except Exception as exc:
+                        print(f"[Dioptra-DINO] Note: optimizer state skipped ({exc})")
 
-            if "scaler_state_dict" in ckpt_loaded and scaler is not None:
-                try:
-                    scaler.load_state_dict(ckpt_loaded["scaler_state_dict"])
-                    print("[Dioptra-DINO] Restored AMP scaler state successfully.")
-                except Exception as exc:
-                    print(f"[Dioptra-DINO] Note: scaler state skipped ({exc})")
+                if "scaler_state_dict" in ckpt_loaded and scaler is not None:
+                    try:
+                        scaler.load_state_dict(ckpt_loaded["scaler_state_dict"])
+                        print("[Dioptra-DINO] Restored AMP scaler state successfully.")
+                    except Exception as exc:
+                        print(f"[Dioptra-DINO] Note: scaler state skipped ({exc})")
 
-            print(f"[Dioptra-DINO] Successfully restored state! Starting Epoch {start_epoch + 1}/{cfg.epochs} (Global Step: {global_step})")
+                print(f"[Dioptra-DINO] Successfully restored state! Starting Epoch {start_epoch + 1}/{cfg.epochs} (Global Step: {global_step})")
 
     # Learning Rate Scheduler
     total_training_steps = max(1, cfg.epochs * len(dataloader))
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=total_training_steps)
-    if ckpt_loaded and "scheduler_state_dict" in ckpt_loaded:
+    if not getattr(args, "finetune", False) and ckpt_loaded and "scheduler_state_dict" in ckpt_loaded:
         try:
             scheduler.load_state_dict(ckpt_loaded["scheduler_state_dict"])
             print("[Dioptra-DINO] Restored scheduler state.")
@@ -1982,13 +2762,29 @@ def train_dioptra_dino(args):
             return torch.cuda.amp.autocast(enabled=enabled)
         return torch.cpu.amp.autocast(enabled=False) if hasattr(torch, "cpu") else torch.cuda.amp.autocast(enabled=False)
 
+    start_step = 0
+    if ckpt_loaded:
+        expected_epoch_start_step = start_epoch * len(dataloader)
+        if global_step > expected_epoch_start_step:
+            start_step = global_step - expected_epoch_start_step
+            if start_step >= len(dataloader):
+                print(f"[Dioptra-DINO] Global step ({global_step:,}) exceeds local dataloader size ({len(dataloader):,}). Starting Epoch {start_epoch + 1} from batch 0.")
+                start_step = 0
+            else:
+                print(f"[Dioptra-DINO] Mid-epoch checkpoint detected: fast-forwarding first {start_step:,} batches of Epoch {start_epoch + 1}...")
+
     for epoch in range(start_epoch, cfg.epochs):
         model.train()
         epoch_loss = 0.0
         t_start = time.time()
+        steps_trained_in_epoch = 0
 
         for step, batch in enumerate(dataloader):
+            if epoch == start_epoch and step < start_step:
+                continue
+
             global_step += 1
+            steps_trained_in_epoch += 1
             if isinstance(batch, dict):
                 images = batch["image"].to(device, non_blocking=True)
                 depths = batch["depth"].to(device, non_blocking=True)
@@ -1999,7 +2795,7 @@ def train_dioptra_dino(args):
                 depths = depths.to(device, non_blocking=True)
                 Ks = Ks.to(device, non_blocking=True)
 
-            current_gate = min(1.0, float(epoch + step / len(dataloader)) / 3.0)
+            current_gate = 1.0 if getattr(args, "finetune", False) else min(1.0, float(epoch + step / len(dataloader)) / 3.0)
 
             with get_autocast_context(cfg.use_amp and torch.cuda.is_available()):
                 preds = model(images, Ks, ara_gate=current_gate)
@@ -2056,8 +2852,9 @@ def train_dioptra_dino(args):
                     torch.cuda.empty_cache()
 
         elapsed = time.time() - t_start
-        mean_loss = epoch_loss / len(dataloader)
+        mean_loss = epoch_loss / max(1, steps_trained_in_epoch)
         print(f"==> Epoch {epoch+1} Complete! Mean Loss: {mean_loss:.4f}, Runtime: {elapsed:.1f}s")
+        start_step = 0
 
         # Atomic per-epoch checkpoint
         epoch_dict = {
@@ -2241,17 +3038,33 @@ if __name__ == "__main__":
     parser.add_argument("--crop-min", type=float, default=0.35, help="Minimum scale for dynamic optical pinhole crop")
     parser.add_argument("--lr-backbone", type=float, default=2e-5, help="Learning rate for DINOv2 backbone")
     parser.add_argument("--lr-head", type=float, default=2e-4, help="Learning rate for geometric head")
+    parser.add_argument("--freeze-backbone", action="store_true", help="Freeze DINOv2 backbone for 3-4x faster training of geometric head")
     parser.add_argument("--resume", type=str, default=None, nargs="?", const="auto", help="Resume from checkpoint (path or 'auto' for latest in outputs_dino/)")
+    parser.add_argument("--finetune", action="store_true", help="Fine-tuning mode: load weights only, reset optimizer/epoch/step to 0 for high-res run")
     parser.add_argument("--eval", action="store_true", help="Run quantitative evaluation benchmark")
     parser.add_argument("--sweep", action="store_true", help="Run multi-FOV sweep visualization")
     parser.add_argument("--checkpoint", type=str, default="outputs_dino/dioptra_dino_best.pt", help="Path to model checkpoint")
     parser.add_argument("--image", type=str, default=None, help="Path to input image for single evaluation / sweep")
     parser.add_argument("--depth", type=str, default=None, help="Path to ground truth depth map (.npy)")
     parser.add_argument("--output-dir", type=str, default="outputs_dino", help="Directory to save figures and metrics")
+    parser.add_argument("--tpu", action="store_true", help="Force TPU v5e-8 distributed training via torch_xla (SPMD, 8 cores)")
+    parser.add_argument("--use-bfloat16", action="store_true", help="Enable native bfloat16 mixed precision on TPU v5e MXUs")
+    parser.add_argument("--tpu-num-cores", type=int, default=8, help="Number of TPU cores (reserved; single-core XLA on this host)")
+    parser.add_argument("--save-interval", type=int, default=500, help="Master-only checkpoint interval in steps (TPU path)")
+    parser.add_argument("--num-workers", type=int, default=4, help="DataLoader workers per TPU core (default: 4)")
+    parser.add_argument("--subset-fraction", type=float, default=None, help="Stratified per-domain data fraction for fine-tuning (e.g. 0.15 keeps ~15%% of each domain, all domains represented)")
+    parser.add_argument("--subset-seed", type=int, default=0, help="Deterministic seed for stratified subset sampling")
+    parser.add_argument("--domain-balanced", action="store_true", default=True, help="Enable balanced batch sampling across domain clusters (default: True)")
+    parser.add_argument("--no-domain-balanced", dest="domain_balanced", action="store_false", help="Disable domain-balanced batch sampling")
+    parser.add_argument("--sensor-noise", action="store_true", default=True, help="Enable realistic sensor noise augmentation on synthetic domains (default: True)")
+    parser.add_argument("--no-sensor-noise", dest="sensor_noise", action="store_false", help="Disable sensor noise augmentation")
     args = parser.parse_args()
 
     if args.train is not None:
-        train_dioptra_dino(args)
+        if should_use_tpu(args):
+            train_dioptra_dino_tpu(args)
+        else:
+            train_dioptra_dino(args)
     elif args.eval or args.sweep:
         from scripts.eval_dino import load_model, run_fov_sweep, run_benchmark
         device = torch.device("cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu"))

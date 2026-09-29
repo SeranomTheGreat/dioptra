@@ -1,8 +1,7 @@
 {
-  "id": "volsiai/notebookff7e204f6e",
-  "id_no": 133507982,
-  "title": "notebookff7e204f6e",
-  "code_file": "notebookff7e204f6e.ipynb",
+  "id": "volsiai/dioptra-dino-level1-v2",
+  "title": "dioptra-dino-level1-v2",
+  "code_file": "dioptra_dino_highres_robotics.ipynb",
   "language": "python",
   "kernel_type": "notebook",
   "is_private": true,
@@ -10,23 +9,34 @@
   "enable_tpu": false,
   "enable_internet": true,
   "keywords": [
-    "gpu"
+    "gpu",
+    "robotics",
+    "deep-learning"
   ],
   "dataset_sources": [
-    "yumnamharryson/tartanair-warehouse-stereo-suite",
-    "yumnamharryson/tartanground-office-stereo-depth",
-    "yumnamharryson/tartanground-oldindustrialcity-stereo-depth",
-    "yumnamharryson/tartanground-hospital-stereo-depth",
-    "yumnamharryson/tartanair-indoors-hospital",
-    "yumnamharryson/tartanair-indoors-abandonedschool",
-    "yumnamharryson/tartanair-indoors-restaurant",
-    "yumnamharryson/tartanair-indoors-office2",
+    "volsiai/dioptra-dino-epoch5-ckpt",
+    "yumnamharryson/scannet-frames-99gb",
     "volsiai/hypersim-pack",
-    "pandrii000/dasvo-tartanair-rgb-d-validation-split",
     "soumikrakshit/nyu-depth-v2",
-    "alextitto/kitti-rgb-depth-20k-subset"
+    "yumnamharryson/tartanair2-indoors-abandonedschool",
+    "yumnamharryson/tartanair2-indoors-americandiner",
+    "yumnamharryson/tartanair2-indoors-archviztinyhouseday",
+    "yumnamharryson/tartanair2-indoors-archviztinyhousenight",
+    "yumnamharryson/tartanair2-indoors-carwelding",
+    "yumnamharryson/tartanair2-indoors-hospital",
+    "yumnamharryson/tartanair2-indoors-house",
+    "yumnamharryson/tartanair2-indoors-hqwesternsaloon",
+    "yumnamharryson/tartanair2-indoors-industrialhangar",
+    "yumnamharryson/tartanair2-indoors-office",
+    "yumnamharryson/tartanair2-indoors-oldbrickhouseday",
+    "yumnamharryson/tartanair2-indoors-oldbrickhousenight",
+    "yumnamharryson/tartanair2-indoors-prison",
+    "yumnamharryson/tartanair2-indoors-restaurant",
+    "yumnamharryson/tartanair2-indoors-retrooffice",
+    "yumnamharryson/tartanair2-indoors-supermarket"
   ],
   "kernel_sources": [],
   "competition_sources": [],
-  "model_sources": []
+  "model_sources": [],
+  "machine_shape": "NvidiaTeslaT4"
 }

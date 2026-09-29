@@ -1,0 +1,25 @@
+{
+  "id": "yumnamharryson/dioptra-dino-rigorous-eval",
+  "title": "dioptra-dino-rigorous-eval",
+  "code_file": "dioptra_dino_rigorous_evaluation.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "keywords": [
+    "gpu",
+    "computer-vision"
+  ],
+  "dataset_sources": [
+    "yumnamharryson/dioptra-dino-epoch5-ckpt",
+    "volsiai/hypersim-pack",
+    "soumikrakshit/nyu-depth-v2",
+    "alextitto/kitti-rgb-depth-20k-subset",
+    "pandrii000/dasvo-tartanair-rgb-d-validation-split"
+  ],
+  "kernel_sources": [],
+  "competition_sources": [],
+  "model_sources": []
+}

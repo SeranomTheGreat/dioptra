@@ -279,7 +279,7 @@ A central observation when evaluating qualitative depth visualizations alongside
    - In earlier evaluation figures, Dioptra-DINO was padded into a $640 \times 480$ frame with NaNs on the left and right 80 pixels, rendering thick black sidebars that made the model look cropped.
    - We updated `scripts/generate_comprehensive_baseline_figure.py` and `scripts/generate_error_heatmaps_comparison.py` to evaluate all models on the exact same shared $480 \times 480$ square crop, eliminating sidebars entirely.
 5. **Physical Absolute Error Heatmaps ($|\hat{\mathbf{D}} - \mathbf{D}^*|$) As Definitive Proof**:
-   - In [`outputs/fig_error_heatmaps_comparison.png`](file:///Users/krishnakant/Downloads/tesseract_kaggle_code_v16/outputs/fig_error_heatmaps_comparison.png), row 1 plots absolute error in metres ($0\text{--}5$\,m).
+   - In [`outputs/fig_error_heatmaps_comparison.png`](outputs/fig_error_heatmaps_comparison.png), row 1 plots absolute error in metres ($0\text{--}5$\,m).
    - Dioptra-DINO is uniformly dark blue ($\text{MAE} = 0.65$\,m, AbsRel $0.0555$).
    - Metric3D glows blazing yellow/white ($\text{MAE} = 24.96$\,m, AbsRel $0.327$).
    - UniDepth-V2 shows large planar error patches ($\text{MAE} = 1.98$\,m, AbsRel $0.119$).

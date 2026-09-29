@@ -54,5 +54,25 @@ logs/
 eval_receipts/
 outputs_ablations/
 outputs_dino_eval/
+outputs_equal_resolution_336/
+outputs_highres_final/
+outputs_progression_comparison/
+outputs_pure_indoor_3000/
+outputs_pure_indoor_test/
+outputs_scannet_eval/
+outputs_strictly_indoor/
+outputs_unidepth_comparison/
 kaggle_kernel_volsiai/output/
+staging_*/
+kaggle_ckpt_upload/
+kaggle_tpu_logs/
+kaggle_tpu_logs_v4/
+.kaggle*/
+.venv*/
+*.log
+dataset_index_train.json
+
+# PDF documents (ignore arbitrary PDFs, but track compiled research paper)
 *.pdf
+!research_paper/dioptra_dino_paper.pdf
+

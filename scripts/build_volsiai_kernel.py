@@ -41,7 +41,8 @@ def build_kernel():
             "volsiai/hypersim-pack",
             "pandrii000/dasvo-tartanair-rgb-d-validation-split",
             "soumikrakshit/nyu-depth-v2",
-            "alextitto/kitti-rgb-depth-20k-subset"
+            "alextitto/kitti-rgb-depth-20k-subset",
+            "volsiai/dioptra-dino-checkpoint-latest"
         ],
         "kernel_sources": [],
         "competition_sources": [],
@@ -50,7 +51,7 @@ def build_kernel():
 
     with open(os.path.join(out_dir, "kernel-metadata.json"), "w") as f:
         json.dump(metadata, f, indent=2)
-    print("✓ Saved kernel-metadata.json with 12 dataset sources (checkpoint detached).")
+    print("✓ Saved kernel-metadata.json with 13 dataset sources (checkpoint attached).")
 
     # 3. Build Jupyter Notebook cells
     cells = [
@@ -112,7 +113,7 @@ def build_kernel():
                 "        os.remove(f)\n",
                 "\n",
                 "print('\\nIndexing training dataset across all domains (with persistent caching)...')\n",
-                "train_dataset = MultiDomainDINODataset(root_dirs='auto', split='train', image_size=224, apply_pinhole_aug=True, crop_min=0.35)\n",
+                "train_dataset = MultiDomainDINODataset(root_dirs='auto', split='train', image_size=336, apply_pinhole_aug=True, crop_min=0.35)\n",
                 "print(f'Total training samples: {len(train_dataset):,} (Indexed in {time.time()-t0:.2f}s)')\n",
                 "\n",
                 "dom_counts = {}\n",
@@ -129,32 +130,34 @@ def build_kernel():
             "execution_count": None,
             "outputs": [],
             "source": [
-                "# [3] Launch Memory-Optimized Multi-Domain Training (Epoch 0 to 40)\n",
-                "# --train auto : Auto-scans all 12 mounted datasets across TartanAir, Hypersim, NYUv2, and KITTI\n",
-                "# --batch-size 4 : Memory-optimized micro-batch size per GPU (2 per T4 under DataParallel)\n",
-                "# --grad-accum 8 : 8 accumulation steps (effective batch size = 32 = 4 x 8)\n",
-                "# --use-checkpointing : Activation gradient checkpointing slashing peak VRAM by ~70%\n",
-                "# --resume auto : Automatically resumes from checkpoint if present, else starts from scratch\n",
-                "# --weight-normal 0.25 : 3D Virtual Normal Loss enforcing surface planarity & boundary sharpness\n",
-                "# --crop-min 0.35 : Wide optical zoom crop for camera-intrinsic equivariance\n",
+                "# [3] Launch Memory-Optimized High-Resolution Fine-Tuning (336x336)\n",
+                "# --image-size 336 : 24x24 ViT patch grid = 576 tokens\n",
+                "# --batch-size 2 : 1 image per GPU (eliminates OOM risk, ~4.5 GB peak VRAM)\n",
+                "# --grad-accum 16 : 16 accumulation steps (effective batch size = 32 = 2 x 16)\n",
+                "# --lr-backbone 5e-6 : Gentle fine-tuning for DINOv2 backbone\n",
+                "# --lr-head 5e-5 : Precision fine-tuning for DPT geometric decoder\n",
+                "# --resume auto : Automatically loads latest checkpoint from input\n",
+                "# --finetune : Resets optimizer & scheduler for high-res training, locks ARA gate at 1.0\n",
                 "import os\n",
                 "os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True,max_split_size_mb:128'\n",
                 "\n",
                 "cmd = (\n",
                 "    'python /kaggle/working/dioptra_dino.py '\n",
                 "    '--train auto '\n",
-                "    '--epochs 5 '\n",
-                "    '--batch-size 4 '\n",
-                "    '--grad-accum 8 '\n",
+                "    '--epochs 3 '\n",
+                "    '--image-size 336 '\n",
+                "    '--batch-size 2 '\n",
+                "    '--grad-accum 16 '\n",
                 "    '--use-checkpointing '\n",
                 "    '--weight-normal 0.25 '\n",
                 "    '--crop-min 0.35 '\n",
-                "    '--lr-backbone 2e-5 '\n",
-                "    '--lr-head 2e-4 '\n",
+                "    '--lr-backbone 5e-6 '\n",
+                "    '--lr-head 5e-5 '\n",
                 "    '--resume auto '\n",
+                "    '--finetune '\n",
                 "    '--output-dir /kaggle/working/outputs_dino'\n",
                 ")\n",
-                "print('Executing training command:')\n",
+                "print('Executing high-resolution fine-tuning command:')\n",
                 "print(cmd)\n",
                 "print('=' * 70)\n",
                 "exit_code = os.system(cmd)\n",
