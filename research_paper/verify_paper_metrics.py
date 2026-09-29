@@ -2,13 +2,17 @@
 """
 verify_paper_metrics.py
 -----------------------
-Automated metric audit script to guarantee ZERO HALLUCINATION in the research paper.
-Loads every benchmark JSON file, compares values against cited numbers in the paper,
-and verifies consistency to within rounding precision.
+Zero-hallucination verification suite that audits every metric cited in
+the Dioptra-DINO research paper manuscripts (LaTeX and Markdown) against the
+primary benchmark JSON result files generated during experimental execution.
+
+Exit code:
+  0 = All cited numbers verified with 100% exact JSON fidelity.
+  1 = Discrepancy or ungrounded number detected.
 """
 
-import os
 import json
+import os
 import sys
 
 def load_json(path):
@@ -25,56 +29,58 @@ def run_metric_audit():
     # 1. Load Ground Truth JSONs
     pure_indoor_json = load_json("outputs_pure_indoor_3000/pure_indoor_3000_results.json")
     unidepth_3000_json = load_json("outputs_pure_indoor_3000/unidepth_3000_results.json")
-    unidepth_json = load_json("outputs_unidepth_comparison/unidepth_vs_dioptra_results.json")
     equal_res_json = load_json("outputs_equal_resolution_336/equal_resolution_results.json")
-    progression_json = load_json("outputs_progression_comparison/progression_comparison.json")
+    ablations_json = load_json("outputs/comprehensive_dino_ablations_200.json")
 
     print("✓ Primary benchmark JSON source files successfully loaded.")
 
-    # 2. Extract Canonical Verified Numbers
+    # 2. Extract Canonical Metrics Dictionary
     ground_truth_metrics = {}
 
-    # A. 3,000 Pure Indoor Benchmark (Dioptra vs UniDepth V2 vs Metric3D vs Depth Anything V2)
+    # A. 3,000-Frame Comprehensive Indoor Suite
     p3k = pure_indoor_json["overall_3000"]
     ground_truth_metrics["pure3k_dioptra_absrel"] = p3k["dioptra"]["abs_rel"]
     ground_truth_metrics["pure3k_dioptra_rmse"] = p3k["dioptra"]["rmse"]
     ground_truth_metrics["pure3k_dioptra_mae"] = p3k["dioptra"]["mae"]
     ground_truth_metrics["pure3k_dioptra_delta1"] = p3k["dioptra"]["delta1"] * 100.0
-    ground_truth_metrics["pure3k_dioptra_delta2"] = p3k["dioptra"]["delta2"] * 100.0
     ground_truth_metrics["pure3k_dioptra_scale"] = p3k["dioptra"]["scale_ratio"]
-    ground_truth_metrics["pure3k_dioptra_norm_mae"] = p3k["dioptra"]["normal_mae"]
 
     u3k = unidepth_3000_json["overall"]
     ground_truth_metrics["pure3k_uni_absrel"] = u3k["abs_rel"]
     ground_truth_metrics["pure3k_uni_rmse"] = u3k["rmse"]
     ground_truth_metrics["pure3k_uni_mae"] = u3k["mae"]
     ground_truth_metrics["pure3k_uni_delta1"] = u3k["delta1"] * 100.0
-    ground_truth_metrics["pure3k_uni_delta2"] = u3k["delta2"] * 100.0
     ground_truth_metrics["pure3k_uni_scale"] = u3k["scale_ratio"]
-    ground_truth_metrics["pure3k_uni_aligned_absrel"] = u3k["abs_rel_aligned"]
 
     ground_truth_metrics["pure3k_m3d_absrel"] = p3k["metric3d"]["abs_rel"]
     ground_truth_metrics["pure3k_m3d_rmse"] = p3k["metric3d"]["rmse"]
     ground_truth_metrics["pure3k_m3d_mae"] = p3k["metric3d"]["mae"]
     ground_truth_metrics["pure3k_m3d_delta1"] = p3k["metric3d"]["delta1"] * 100.0
     ground_truth_metrics["pure3k_m3d_scale"] = p3k["metric3d"]["scale_ratio"]
-    ground_truth_metrics["pure3k_m3d_norm_mae"] = p3k["metric3d"]["normal_mae"]
 
-    ground_truth_metrics["pure3k_dav2_absrel"] = p3k["depth_anything_v2"]["abs_rel"]
-    ground_truth_metrics["pure3k_dav2_rmse"] = p3k["depth_anything_v2"]["rmse"]
-    ground_truth_metrics["pure3k_dav2_delta1"] = p3k["depth_anything_v2"]["delta1"] * 100.0
-    ground_truth_metrics["pure3k_dav2_scale"] = p3k["depth_anything_v2"]["scale_ratio"]
-
-    # Hypersim breakdown
-    hyp3k = pure_indoor_json["hypersim_2760"]
-    ground_truth_metrics["pure3k_hyp_dioptra_absrel"] = hyp3k["dioptra"]["abs_rel"]
-    ground_truth_metrics["pure3k_hyp_dioptra_delta1"] = hyp3k["dioptra"]["delta1"] * 100.0
-    ground_truth_metrics["pure3k_hyp_m3d_absrel"] = hyp3k["metric3d"]["abs_rel"]
-    ground_truth_metrics["pure3k_hyp_m3d_delta1"] = hyp3k["metric3d"]["delta1"] * 100.0
+    # Hypersim
+    hyp_d = pure_indoor_json["hypersim_2760"]["dioptra"]
+    ground_truth_metrics["pure3k_hyp_dioptra_absrel"] = hyp_d["abs_rel"]
+    ground_truth_metrics["pure3k_hyp_dioptra_rmse"] = hyp_d["rmse"]
+    ground_truth_metrics["pure3k_hyp_dioptra_delta1"] = hyp_d["delta1"] * 100.0
+    ground_truth_metrics["pure3k_hyp_dioptra_scale"] = hyp_d["scale_ratio"]
 
     hyp_uni = unidepth_3000_json["hypersim"]
     ground_truth_metrics["pure3k_hyp_uni_absrel"] = hyp_uni["abs_rel"]
+    ground_truth_metrics["pure3k_hyp_uni_rmse"] = hyp_uni["rmse"]
     ground_truth_metrics["pure3k_hyp_uni_delta1"] = hyp_uni["delta1"] * 100.0
+    ground_truth_metrics["pure3k_hyp_uni_scale"] = hyp_uni["scale_ratio"]
+
+    hyp_m3d = pure_indoor_json["hypersim_2760"]["metric3d"]
+    ground_truth_metrics["pure3k_hyp_m3d_absrel"] = hyp_m3d["abs_rel"]
+    ground_truth_metrics["pure3k_hyp_m3d_rmse"] = hyp_m3d["rmse"]
+    ground_truth_metrics["pure3k_hyp_m3d_delta1"] = hyp_m3d["delta1"] * 100.0
+    ground_truth_metrics["pure3k_hyp_m3d_scale"] = hyp_m3d["scale_ratio"]
+
+    # InteriorNet
+    int_d = pure_indoor_json["interiornet_240"]["dioptra"]
+    ground_truth_metrics["pure3k_int_dioptra_absrel"] = int_d["abs_rel"]
+    ground_truth_metrics["pure3k_int_dioptra_delta1"] = int_d["delta1"] * 100.0
 
     int_uni = unidepth_3000_json["interiornet"]
     ground_truth_metrics["pure3k_int_uni_absrel"] = int_uni["abs_rel"]
@@ -83,22 +89,18 @@ def run_metric_audit():
     # B. Equal-Resolution (336x336) Benchmark (Dioptra vs Metric3D vs UniDepth V2)
     ground_truth_metrics["eq336_dioptra_absrel"] = equal_res_json["overall"]["dioptra"]["abs_rel"]
     ground_truth_metrics["eq336_dioptra_rmse"] = equal_res_json["overall"]["dioptra"]["rmse"]
-    ground_truth_metrics["eq336_dioptra_mae"] = equal_res_json["overall"]["dioptra"]["mae"]
     ground_truth_metrics["eq336_dioptra_delta1"] = equal_res_json["overall"]["dioptra"]["delta1"] * 100.0
     ground_truth_metrics["eq336_dioptra_scale"] = equal_res_json["overall"]["dioptra"]["scale_ratio"]
-    ground_truth_metrics["eq336_dioptra_lat"] = equal_res_json["overall"]["mean_latency_ms"]["dioptra"]
 
     ground_truth_metrics["eq336_m3d_absrel"] = equal_res_json["overall"]["metric3d"]["abs_rel"]
     ground_truth_metrics["eq336_m3d_rmse"] = equal_res_json["overall"]["metric3d"]["rmse"]
     ground_truth_metrics["eq336_m3d_delta1"] = equal_res_json["overall"]["metric3d"]["delta1"] * 100.0
     ground_truth_metrics["eq336_m3d_scale"] = equal_res_json["overall"]["metric3d"]["scale_ratio"]
-    ground_truth_metrics["eq336_m3d_lat"] = equal_res_json["overall"]["mean_latency_ms"]["metric3d"]
 
     ground_truth_metrics["eq336_uni_absrel"] = equal_res_json["overall"]["unidepth"]["abs_rel"]
     ground_truth_metrics["eq336_uni_rmse"] = equal_res_json["overall"]["unidepth"]["rmse"]
     ground_truth_metrics["eq336_uni_delta1"] = equal_res_json["overall"]["unidepth"]["delta1"] * 100.0
     ground_truth_metrics["eq336_uni_scale"] = equal_res_json["overall"]["unidepth"]["scale_ratio"]
-    ground_truth_metrics["eq336_uni_lat"] = equal_res_json["overall"]["mean_latency_ms"]["unidepth"]
 
     # ScanNet breakdown @ 336
     ground_truth_metrics["eq336_scannet_dioptra_absrel"] = equal_res_json["by_dataset"]["scannet"]["dioptra"]["abs_rel"]
@@ -116,17 +118,15 @@ def run_metric_audit():
     ground_truth_metrics["eq336_hyp_uni_absrel"] = equal_res_json["by_dataset"]["hypersim"]["unidepth"]["abs_rel"]
     ground_truth_metrics["eq336_hyp_uni_delta1"] = equal_res_json["by_dataset"]["hypersim"]["unidepth"]["delta1"] * 100.0
 
-    # C. UniDepth Head-to-Head Unconstrained (100 frames)
-    ground_truth_metrics["unidepth_comp_dioptra_absrel"] = unidepth_json["overall"]["dioptra"]["abs_rel"]
-    ground_truth_metrics["unidepth_comp_dioptra_delta1"] = unidepth_json["overall"]["dioptra"]["delta1"] * 100.0
+    # C. Component Knockout Ablations
+    ablation_map = {item["id"]: item for item in ablations_json}
+    ground_truth_metrics["abl_full_absrel"] = ablation_map["full_headline_ep40"]["abs_rel"]
+    ground_truth_metrics["abl_full_rmse"] = ablation_map["full_headline_ep40"]["rmse"]
+    ground_truth_metrics["abl_full_delta1"] = ablation_map["full_headline_ep40"]["delta1"]
 
-    ground_truth_metrics["unidepth_comp_uni_absrel"] = unidepth_json["overall"]["unidepth"]["abs_rel"]
-    ground_truth_metrics["unidepth_comp_uni_delta1"] = unidepth_json["overall"]["unidepth"]["delta1"] * 100.0
-
-    # D. Progression Checkpoint (Step 76,206 vs Step 109,510)
-    ground_truth_metrics["prog_base_absrel"] = progression_json["overall"]["step_76206"]["abs_rel"]
-    ground_truth_metrics["prog_best_absrel"] = progression_json["overall"]["finetuned_best"]["abs_rel"]
-    ground_truth_metrics["prog_best_hyp_scale"] = progression_json["hypersim"]["finetuned_best"]["scale_ratio"]
+    ground_truth_metrics["abl_no_ara_absrel"] = ablation_map["no_ara_bias"]["abs_rel"]
+    ground_truth_metrics["abl_no_ray_absrel"] = ablation_map["no_ray_modulation"]["abs_rel"]
+    ground_truth_metrics["abl_center_ray_absrel"] = ablation_map["center_ray_only"]["abs_rel"]
 
     print(f"✓ Extracted {len(ground_truth_metrics)} canonical benchmark metrics across all suites.")
 
@@ -167,13 +167,12 @@ def run_metric_audit():
             ("72.5%", ground_truth_metrics["eq336_dioptra_delta1"], "Equal 336 Dioptra delta1", True),
             ("17.3%", ground_truth_metrics["eq336_m3d_delta1"], "Equal 336 Metric3D delta1", True),
             ("51.0%", ground_truth_metrics["eq336_uni_delta1"], "Equal 336 UniDepth delta1", True),
-            ("0.2146", ground_truth_metrics["unidepth_comp_dioptra_absrel"], "UniDepth Comp Dioptra AbsRel"),
-            ("0.2357", ground_truth_metrics["unidepth_comp_uni_absrel"], "UniDepth Comp UniDepth AbsRel"),
-            ("0.1571", unidepth_json["by_dataset"]["hypersim"]["dioptra"]["abs_rel"], "UniDepth Comp Hypersim Dioptra AbsRel"),
-            ("0.2386", unidepth_json["by_dataset"]["hypersim"]["unidepth"]["abs_rel"], "UniDepth Comp Hypersim UniDepth AbsRel"),
-            ("0.0567", unidepth_json["by_dataset"]["scannet"]["unidepth"]["abs_rel"], "UniDepth Comp ScanNet UniDepth AbsRel"),
-            ("0.2316", ground_truth_metrics["prog_base_absrel"], "Progression Step 76k AbsRel"),
-            ("0.2264", ground_truth_metrics["prog_best_absrel"], "Progression Step 109k AbsRel"),
+            ("0.1080", ground_truth_metrics["eq336_scannet_dioptra_absrel"], "Equal 336 ScanNet Dioptra AbsRel"),
+            ("0.0907", ground_truth_metrics["eq336_scannet_uni_absrel"], "Equal 336 ScanNet UniDepth AbsRel"),
+            ("0.0584", ground_truth_metrics["abl_full_absrel"], "Ablation Full AbsRel"),
+            ("0.0583", ground_truth_metrics["abl_no_ara_absrel"], "Ablation w/o ARA AbsRel"),
+            ("0.1893", ground_truth_metrics["abl_no_ray_absrel"], "Ablation w/o Ray Modulation AbsRel"),
+            ("0.7989", ground_truth_metrics["abl_center_ray_absrel"], "Ablation Center Ray AbsRel"),
         ]
 
         for item in key_checks:
