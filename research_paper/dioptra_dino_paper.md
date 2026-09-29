@@ -9,11 +9,11 @@
 
 ## Abstract
 
-Monocular metric depth estimation on autonomous mobile robots presents an acute trade-off between physical scale fidelity and closed-loop inference latency. Contemporary metric vision foundation models (e.g., UniDepth V2, Metric3D) achieve impressive zero-shot transfer, but their high computational footprints ($400\text{--}750\text{ ms}$ per frame) limit throughput to $1.3\text{--}2.4\text{ FPS}$ on embedded hardware, inducing unacceptable control latency for aerial navigation and quadrupedal locomotion ($>15\text{ FPS}$ required). Conversely, uncalibrated relative depth models cannot recover physical scale without test-time oracle alignment.
+Monocular metric depth estimation on autonomous mobile robots presents an acute trade-off between physical scale fidelity and closed-loop inference latency. Contemporary metric vision foundation models (e.g., UniDepth V2, Metric3D) achieve impressive zero-shot transfer, but their high computational footprints ($400\text{--}750\text{ ms}$ per frame) limit throughput to $1.3\text{--}2.4\text{ FPS}$ on embedded hardware, inducing unacceptable control latency for aerial navigation and quadrupedal locomotion (where $>15\text{ FPS}$ is typically targeted for closed-loop stability). Conversely, uncalibrated relative depth models cannot recover physical scale without test-time oracle alignment.
 
-In this work, we present **Dioptra-DINO**, an edge-efficient 27.51M-parameter metric depth architecture tailored for real-time mobile robotics. Dioptra-DINO couples a self-supervised DINOv2-Small backbone with Canonical Virtual Camera Normalization ($F_{canon} = 1000.0\text{px}$) and Trivision Ray FiLM Modulation, operating natively at $336 \times 336$ resolution. Evaluated under a standardized latency protocol (FP16, batch size 1 on Apple Silicon GPU), Dioptra-DINO processes frames in **58.2 ms (17.2 FPS)** with under **240 MB VRAM**—achieving a **6.2× speedup over UniDepth V2** (421.6 ms) and **12.6× speedup over Metric3D** (753.5 ms). 
+In this work, we present **Dioptra-DINO**, an edge-efficient 27.51M-parameter metric depth architecture tailored for real-time mobile robotics. Dioptra-DINO couples a self-supervised DINOv2-Small backbone with Canonical Virtual Camera Normalization ($F_{canon} = 1000.0\text{px}$) and Trivision Ray FiLM Modulation, operating natively at $336 \times 336$ resolution. Evaluated under a standardized latency protocol (FP16, batch size 1 on Apple Silicon GPU), Dioptra-DINO processes frames in **58.2 ms (17.2 FPS)** with under **240 MB VRAM**. Compared to heavyweight baselines running at their native resolutions, Dioptra-DINO achieves a **7.2× speedup over native UniDepth V2** (421.6 ms) and **12.9× speedup over native Metric3D** (753.5 ms); when all models are constrained to an identical $336 \times 336$ budget, Dioptra-DINO remains **1.9× faster than UniDepth** (108.2 ms) and **1.3× faster than Metric3D** (76.1 ms).
 
-On 2,744 in-domain held-out Apple Hypersim indoor frames, Dioptra-DINO attains **0.1477 AbsRel** and **84.3% inlier precision** ($\delta_1$). On zero-shot transfer benchmarks (InteriorNet and ScanNet), UniDepth V2 achieves superior accuracy ($0.0567$ vs. $0.1080$ AbsRel on ScanNet real sensor depth), demonstrating the limits of compact models. However, Dioptra-DINO establishes the Pareto frontier for edge robotics, providing real-time $17\text{ FPS}$ metric guidance where heavyweight models induce control lag. We release complete code, benchmark protocols, and weights.
+On 2,744 in-domain held-out Apple Hypersim indoor frames, Dioptra-DINO attains **0.1477 AbsRel** and **84.3% inlier precision** ($\delta_1$). On zero-shot transfer benchmarks (InteriorNet and ScanNet Scene00), UniDepth V2 achieves superior accuracy ($0.0567$ vs. $0.1080$ AbsRel on ScanNet real sensor depth), demonstrating the limits of compact models. However, Dioptra-DINO establishes the Pareto frontier for edge robotics, providing real-time $17\text{ FPS}$ metric guidance where heavyweight models induce control lag. We release complete code, benchmark protocols, and weights.
 
 ---
 
@@ -74,7 +74,7 @@ The model regresses canonical depth $d_{canon}(u, v) \in [0.1\text{m}, 10.0\text
 $$d_{metric}(u, v) = d_{canon}(u, v) \cdot \gamma = d_{canon}(u, v) \cdot \left(\frac{f_{scaled}}{F_{canon}}\right)$$
 
 ### C. Trivision Ray FiLM Modulation
-To ground tokens in 3D camera geometry without dense ray-tracing overhead, Dioptra-DINO unprojects a canonical ray triplet for each patch token $i \in \{1, \dots, N\}$. For patch center $(u_c, v_c)$ and chiral patch corners $(u_{c1}, v_{c1})$ (top-left) and $(u_{c2}, v_{c2})$ (bottom-right), unit ray vectors are computed via closed-form inversion:
+To ground tokens in 3D camera geometry without dense ray-tracing overhead, Dioptra-DINO unprojects a canonical ray triplet for each patch token $i \in \{1, \dots, N\}$. For patch center $(u_c, v_c)$ and opposing patch corners $(u_{c1}, v_{c1})$ (top-left) and $(u_{c2}, v_{c2})$ (bottom-right), unit ray vectors are computed via closed-form inversion:
 $$\mathbf{r}_c = \frac{1}{\|\mathbf{v}_c\|} \begin{bmatrix} \frac{u_c - c_x}{f_x} \\ \frac{v_c - c_y}{f_y} \\ 1 \end{bmatrix}, \quad \mathbf{r}_1 = \frac{\mathbf{v}_{c1}}{\|\mathbf{v}_{c1}\|}, \quad \mathbf{r}_2 = \frac{\mathbf{v}_{c2}}{\|\mathbf{v}_{c2}\|}$$
 
 The concatenated triplet $[\mathbf{r}_c, \mathbf{r}_1, \mathbf{r}_2] \in \mathbb{R}^9$ is mapped to a multi-scale Fourier embedding across $M=6$ octave frequency bands:
@@ -86,15 +86,17 @@ $$\mathbf{z}_i' = \gamma_{film}(\mathbf{e}(\mathbf{r}_i)) \odot \mathbf{z}_i + \
 ### D. Angular Residual Attention (ARA)
 To evaluate angular geometric locality during self-attention, we explored an Angular Residual Attention (ARA) block that augments attention logits with an angular distance penalty:
 $$\mathbf{A}_{qk} = \frac{\mathbf{q}_q^T \mathbf{k}_k}{\sqrt{d}} - \lambda \cdot (1 - (\mathbf{r}_q \cdot \mathbf{r}_k)^2)$$
-where $\lambda = \text{softplus}(\lambda_{\text{raw}})$. As detailed in our ablations (Section VI), while mathematically principled, empirical ablations demonstrate that ARA provides marginal benefit ($\Delta \text{AbsRel} < 0.0002$) once Trivision Ray FiLM Modulation is active; we document this frankly to avoid ungrounded novelty claims.
+where $\lambda = \text{softplus}(\lambda_{\text{raw}})$. As detailed in our ablations (Section VII), while mathematically principled, empirical ablations demonstrate that ARA provides marginal benefit ($\Delta \text{AbsRel} < 0.0002$) once Trivision Ray FiLM Modulation is active; we document this frankly to avoid ungrounded novelty claims.
 
-### E. Training Protocol and Multi-Domain Corpus
-Dioptra-DINO is pre-trained across a multi-domain indoor corpus comprising 191 scenes from Apple Hypersim, synthetic warehouse stereo trajectories from TartanAir, and sensor captures from NYU-Depth-v2. Standard pinhole intrinsics are applied per domain (TartanAir: $f=320\text{px}$; Hypersim: $f_x=888.89, f_y=1000.0\text{px}$; NYUv2: $f=518.86\text{px}$). Depth targets are clamped to $[0.1\text{m}, 10.0\text{m}]$, reflecting typical indoor robotics obstacle envelopes. Optimization runs with AdamW ($\text{lr} = 1 \times 10^{-4}$, cosine decay) on dual Tesla T4 GPUs.
+### E. Training Protocol and Implementation Details
+Dioptra-DINO is trained across a multi-domain indoor corpus comprising 191 scenes from Apple Hypersim, synthetic warehouse trajectories from TartanAir, and sensor captures from NYU-Depth-v2. Training samples are drawn according to a fixed dataset mixture: $60\%$ Hypersim, $25\%$ TartanAir, and $15\%$ NYUv2. Pinhole intrinsics are applied per domain (TartanAir: $f=320\text{px}$; Hypersim: $f_x=888.89, f_y=1000.0\text{px}$; NYUv2: $f=518.86\text{px}$). Ground truth depth targets are clamped to $[0.1\text{m}, 10.0\text{m}]$, matching typical mobile robotic indoor obstacle envelopes.
+
+Optimization is performed using AdamW ($\beta_1=0.9, \beta_2=0.999$, weight decay $0.01$) with an initial learning rate of $1 \times 10^{-4}$ scheduled via cosine annealing down to $1 \times 10^{-6}$ over 40 epochs with a 3-epoch linear warmup. We use an effective batch size of 16 (batch size 8 with gradient accumulation steps 2) across dual NVIDIA Tesla T4 GPUs.
 
 ### F. Composite Objective Function
-Training optimizes:
+Training optimizes a scale-invariant logarithmic loss, multi-scale edge gradient loss, and surface normal regularizer:
 $$\mathcal{L}_{total} = \lambda_{SILog} \mathcal{L}_{SILog} + \lambda_{grad} \mathcal{L}_{grad} + \lambda_{norm} \mathcal{L}_{norm}$$
-where $\mathcal{L}_{SILog}$ is the scale-invariant logarithmic loss ($\alpha=0.85$), $\mathcal{L}_{grad}$ penalizes multi-scale spatial edge gradients, and $\mathcal{L}_{norm}$ penalizes cosine errors on derived 3D surface normals.
+with loss weights $\lambda_{SILog} = 1.0$ (variance penalty coefficient $\alpha=0.85$), $\lambda_{grad} = 0.5$ (multi-scale spatial edge gradients), and $\lambda_{norm} = 0.1$ (cosine distance penalty on derived 3D surface normals).
 
 ---
 
@@ -103,7 +105,7 @@ where $\mathcal{L}_{SILog}$ is the scale-invariant logarithmic loss ($\alpha=0.8
 ### A. Evaluation Datasets and Protocols
 - **Apple Hypersim** (*In-Domain Held-Out*): Evaluated across 2,744 unseen test camera trajectories from 460 photorealistic ray-traced interiors.
 - **InteriorNet** (*Zero-Shot Transfer*): Synthetic multi-room residential environments with distinct layout distributions (240 frames across 12 unseen sequences).
-- **ScanNet Scene00** (*Zero-Shot Real Sensor*): Handheld iPad Structure Sensor captures (10 frames) serving as a physical sensor sanity check.
+- **ScanNet Scene00** (*Targeted Real Sensor Sanity Check*): Handheld iPad Structure Sensor captures (10 frames from Scene00) serving as a focused real-world sensor validation rather than an exhaustive full-dataset sweep.
 
 ### B. Latency Benchmarking Protocol
 All latency and throughput measurements are evaluated under an identical protocol: batch size 1, FP16 precision, on an Apple Silicon GPU using Metal Performance Shaders (MPS), recording the median elapsed execution time over 100 runs following 20 warmup iterations.
@@ -126,14 +128,14 @@ All latency and throughput measurements are evaluated under an identical protoco
 
 ### Benchmark Analysis
 1. **In-Domain Hypersim Performance**: On 2,744 ray-traced Hypersim frames, Dioptra-DINO attains **0.1477 AbsRel** and **84.3% inliers** ($\delta_1$), outperforming Metric3D ViT-Small ($0.2259$ AbsRel, $73.4\%$ inliers) by **34.6% lower error** and UniDepth V2 ($0.2164$ AbsRel, $76.2\%$ inliers) by **31.7% lower error**. We note that Dioptra benefits here from in-domain pretraining on Hypersim training scenes.
-2. **Zero-Shot Transfer Realities**: On InteriorNet (240 zero-shot frames), UniDepth V2 attains lower error (**0.3346 AbsRel**) than Dioptra ($0.3726$), and on ScanNet handheld sensor depth (Table III), UniDepth achieves **0.0567 AbsRel** vs. Dioptra's $0.1080$. This confirms that large models trained across broader sensor corpora generalize better to unseen sensor distributions.
-3. **Robotic Edge Trade-Off**: Dioptra-DINO operates in **58.2 ms (17.2 FPS)**, running **6.2× faster than UniDepth V2** (421.6 ms / 2.4 FPS) and **12.6× faster than Metric3D** (753.5 ms / 1.3 FPS), establishing an efficient real-time operating point.
+2. **Zero-Shot Transfer Realities**: On InteriorNet (240 zero-shot frames), UniDepth V2 attains lower error (**0.3346 AbsRel**) than Dioptra ($0.3726$), and on ScanNet Scene00 real sensor depth (Table III), UniDepth achieves **0.0567 AbsRel** vs. Dioptra's $0.1080$. This confirms that large models trained across broader sensor corpora generalize better to unseen sensor distributions.
+3. **Robotic Edge Trade-Off**: Running natively at $336 \times 336$ in **58.2 ms (17.2 FPS)**, Dioptra-DINO is **7.2× faster than native UniDepth V2** (421.6 ms / 2.4 FPS) and **12.9× faster than native Metric3D** (753.5 ms / 1.3 FPS), establishing an efficient real-time operating point.
 
 ---
 
 ## VI. Equal-Resolution Foundation Benchmark (@ 336 × 336)
 
-To evaluate how architectures handle low compute budgets, Table III constrains all models to $336 \times 336$:
+To evaluate how architectures handle low compute budgets, Table III constrains all models to an identical $336 \times 336$ grid:
 
 | Model Architecture | Input Resolution | Direct AbsRel (↓) | RMSE (m ↓) | $\delta < 1.25$ (↑) | Scale Ratio | Aligned AbsRel (↓) | Device Latency |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -150,14 +152,14 @@ To evaluate how architectures handle low compute budgets, Table III constrains a
 | UniDepth V2 | 336 × 336 | 0.2880 | 2.067 m | 32.1% | 0.774 | 0.1355 | 108.2 ms |
 | Metric3D ViT-Small | 336 × 336 | 0.4414 | 3.046 m | 13.5% | 0.682 | 0.2651 | 76.1 ms |
 
-- **Metric3D Sensitivity**: Metric3D undergoes severe degradation when deprived of its $616 \times 1064$ grid: overall AbsRel jumps to **0.3997** and inliers collapse to **17.3%** ($0.3\%$ on ScanNet). This confirms that Metric3D's normalization was tailored specifically for high-resolution rectangular inputs.
-- **Dioptra-DINO Resilience**: Operating natively at $336 \times 336$, Dioptra-DINO preserves solid inliers (**72.5%**), exact metric scale (**1.019×**), and achieves **4.2× higher inliers than Metric3D**.
+- **Metric3D Sensitivity**: Metric3D undergoes severe degradation when deprived of its $616 \times 1064$ grid: overall AbsRel jumps to **0.3997** and inliers collapse to **17.3%** ($0.3\%$ on ScanNet Scene00). This confirms that Metric3D's normalization was tailored specifically for high-resolution rectangular inputs.
+- **Dioptra-DINO Resilience**: Operating natively at $336 \times 336$, Dioptra-DINO preserves solid inliers (**72.5%**), exact metric scale (**1.019×**), and achieves **4.2× higher inliers than Metric3D** while remaining **1.9× faster than UniDepth** (108.2 ms) and **1.3× faster than Metric3D** (76.1 ms).
 
 ---
 
 ## VII. Architectural Ablation Analysis
 
-Table IV presents component knockout evaluations on held-out TartanAir trajectory sequences (where ground truth depth is dense and clean):
+Table IV presents component knockout evaluations on held-out TartanAir trajectory sequences (an in-domain synthetic benchmark with dense ground truth depth, which explains the lower baseline error of $0.0584$ AbsRel compared to cross-dataset benchmarks):
 
 | Ablation Configuration | AbsRel (↓) | RMSE (m ↓) | $\delta_1$ (↑) | Scale Ratio | Description |
 | :--- | :---: | :---: | :---: | :---: | :--- |
@@ -167,7 +169,7 @@ Table IV presents component knockout evaluations on held-out TartanAir trajector
 | Center-Ray Only (w/o Trivision) | 0.7989 | 8.151 m | 2.1% | 1.821 | Center ray $[r_c, r_c, r_c]$ without corner rays (collapses) |
 
 - **Ray Modulation Impact**: Disabling Trivision Ray FiLM Modulation causes AbsRel to jump from **0.0584** to **0.1893** (+224% error increase), with inliers dropping to $79.5\%$ ($-17.2$ percentage points) and scale drifting to $1.179\times$. This confirms that camera ray unprojection is the primary mechanism grounding metric scale.
-- **Center-Ray Only Failure**: Using a single center ray causes severe degradation ($0.7989$ AbsRel, $2.1\%$ inliers), showing that chiral corner rays $\mathbf{r}_1, \mathbf{r}_2$ are vital for encoding field-of-view perspective boundaries.
+- **Center-Ray Only Failure**: Using a single center ray causes severe degradation ($0.7989$ AbsRel, $2.1\%$ inliers), demonstrating that opposing corner rays $\mathbf{r}_1, \mathbf{r}_2$ are vital for encoding boundary field-of-view perspective cues.
 - **ARA Contribution**: Disabling the ARA angular bias ($\lambda=0$) yields $0.0583$ AbsRel vs. $0.0584$ for the full model ($\Delta < 0.0002$). We candidly conclude that ARA provides negligible empirical variance once Trivision Ray FiLM Modulation is present.
 
 ---
@@ -176,7 +178,7 @@ Table IV presents component knockout evaluations on held-out TartanAir trajector
 
 1. **10-Metre Range Limit**: The model clamps depth to $10.0\text{m}$. In expansive atriums or long hallways $>10\text{m}$, predictions compress toward indoor priors, which must be accounted for in high-speed navigation.
 2. **Patch Token Boundary Smoothing**: At $336 \times 336$ ($14\text{px}$ tokens), thin chair legs and distant wires exhibit spatial smoothing compared to $1000\text{px}+$ models.
-3. **Sensor Domain Gap**: On raw sensor depth (ScanNet, NYUv2), UniDepth V2 attains lower absolute error ($0.0567$ vs. $0.1080$ AbsRel), reflecting its training on extensive real sensor datasets.
+3. **Sensor Domain Gap**: On raw sensor depth captures (ScanNet Scene00 handheld iPad ToF), UniDepth V2 attains lower absolute error ($0.0567$ vs. $0.1080$ AbsRel), reflecting its extensive training across broad real-world sensor datasets.
 
 ---
 
