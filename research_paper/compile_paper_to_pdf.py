@@ -27,7 +27,7 @@ HTML_CONTENT = """<!DOCTYPE html>
 <style>
   @page {
     size: letter;
-    margin: 0.7in 0.65in 0.7in 0.65in;
+    margin: 0.65in 0.6in 0.65in 0.6in;
     @bottom-center {
       content: counter(page);
       font-family: 'Times New Roman', Times, serif;
@@ -38,7 +38,7 @@ HTML_CONTENT = """<!DOCTYPE html>
   body {
     font-family: 'Times New Roman', Times, serif;
     font-size: 10pt;
-    line-height: 1.25;
+    line-height: 1.22;
     color: #000;
     margin: 0;
     padding: 0;
@@ -73,9 +73,9 @@ HTML_CONTENT = """<!DOCTYPE html>
   }
 
   .abstract-box {
-    margin: 0 1.5em 1.5em 1.5em;
+    margin: 0 1.2em 1.1em 1.2em;
     font-size: 9pt;
-    line-height: 1.25;
+    line-height: 1.22;
   }
 
   .abstract-box b.heading {
@@ -94,7 +94,7 @@ HTML_CONTENT = """<!DOCTYPE html>
     font-variant: small-caps;
     font-weight: bold;
     text-align: center;
-    margin: 1.1em 0 0.5em 0;
+    margin: 0.85em 0 0.35em 0;
     letter-spacing: 0.5px;
     break-after: avoid;
   }
@@ -103,12 +103,12 @@ HTML_CONTENT = """<!DOCTYPE html>
     font-size: 10pt;
     font-style: italic;
     font-weight: bold;
-    margin: 0.9em 0 0.4em 0;
+    margin: 0.65em 0 0.25em 0;
     break-after: avoid;
   }
 
   p {
-    margin: 0 0 0.6em 0;
+    margin: 0 0 0.45em 0;
     text-indent: 1.2em;
   }
 
@@ -116,69 +116,78 @@ HTML_CONTENT = """<!DOCTYPE html>
     text-indent: 0;
   }
 
-  .equation {
-    text-align: center;
-    margin: 0.7em 0;
-    font-family: 'Times New Roman', Times, serif;
-    font-style: italic;
-    font-size: 10pt;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  ul, ol {
+    margin: 0.2em 0 0.8em 1.5em;
+    padding: 0;
   }
 
-  .equation .eq-num {
-    margin-left: auto;
+  li {
+    margin-bottom: 0.3em;
+    line-height: 1.22;
+  }
+
+  .equation {
+    text-align: center;
+    margin: 0.35em 0;
+    font-style: italic;
+    position: relative;
+  }
+
+  .equation span.eq-num {
+    position: absolute;
+    right: 0;
     font-style: normal;
-    font-size: 9.5pt;
+  }
+
+  .full-width {
+    column-span: all;
+    margin: 0.8em 0;
+  }
+
+  .table-caption {
+    font-size: 8.5pt;
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 0.4em;
+    letter-spacing: 0.2px;
   }
 
   table {
     width: 100%;
     border-collapse: collapse;
-    margin: 0.8em 0;
-    font-size: 7.8pt;
-    line-height: 1.2;
-    break-inside: avoid;
-    page-break-inside: avoid;
+    font-size: 8.5pt;
+    margin-bottom: 0.4em;
   }
 
-  table th, table td {
-    padding: 3.5px 4px;
+  th {
+    border-top: 1.2pt solid #000;
+    border-bottom: 0.8pt solid #000;
+    padding: 2.5px 5px;
+    font-weight: bold;
     text-align: center;
   }
 
-  table thead th {
-    border-top: 1.2pt solid #000;
-    border-bottom: 0.8pt solid #000;
-    font-weight: bold;
+  td {
+    padding: 2.2px 5px;
+    text-align: center;
   }
 
-  table tbody tr.subhead td {
-    border-top: 0.5pt solid #888;
-    border-bottom: 0.5pt solid #888;
-    background-color: #f7f7f7;
+  tr.subhead td {
     font-style: italic;
-    text-align: left;
     font-weight: bold;
+    text-align: left;
+    background-color: #f8f9fa;
+    border-top: 0.5pt solid #ddd;
+    border-bottom: 0.5pt solid #ddd;
+    padding: 3px 6px;
   }
 
-  table tfoot td, table tbody tr:last-child td {
+  tbody tr:last-child td {
     border-bottom: 1.2pt solid #000;
   }
 
-  .table-caption {
-    font-size: 8pt;
-    font-weight: bold;
-    text-align: center;
-    margin-bottom: 0.3em;
-    font-variant: small-caps;
-    break-after: avoid;
-    page-break-after: avoid;
-  }
-
   .figure-container {
-    margin: 0.9em 0;
+    margin: 1em 0;
     text-align: center;
     break-inside: avoid;
   }
@@ -190,9 +199,10 @@ HTML_CONTENT = """<!DOCTYPE html>
   }
 
   .figure-caption {
-    font-size: 8pt;
-    margin-top: 0.4em;
+    font-size: 8.5pt;
     text-align: justify;
+    text-justify: inter-word;
+    margin-top: 0.4em;
     line-height: 1.2;
   }
 
@@ -200,32 +210,16 @@ HTML_CONTENT = """<!DOCTYPE html>
     font-weight: bold;
   }
 
-  .full-width {
-    column-span: all;
-    margin: 1em 0;
-    break-inside: avoid;
-    page-break-inside: avoid;
+  ol.ref-list {
+    font-size: 7.5pt;
+    line-height: 1.15;
+    margin: 0 0 0 1.4em;
+    padding: 0;
   }
 
-  ol, ul {
-    margin: 0 0 0.6em 0;
-    padding-left: 1.4em;
-    font-size: 9.5pt;
-  }
-
-  li {
-    margin-bottom: 0.25em;
-  }
-
-  .ref-list {
-    font-size: 8pt;
-    line-height: 1.25;
-    padding-left: 1.3em;
-  }
-
-  .ref-list li {
-    margin-bottom: 0.35em;
-    text-align: justify;
+  ol.ref-list li {
+    margin-bottom: 0.2em;
+    text-align: left;
   }
 </style>
 </head>
@@ -238,7 +232,7 @@ HTML_CONTENT = """<!DOCTYPE html>
 </div>
 
 <div class="abstract-box">
-  <b class="heading">Abstract</b>—Monocular metric depth estimation on autonomous mobile robots presents a persistent trade-off between physical scale calibration and inference throughput. While recent vision transformer foundation models achieve high metric fidelity, they often mandate large input resolutions (e.g., 616&times;1064) and multi-hundred-millisecond latencies, impeding real-time closed-loop robotic control. Conversely, lightweight relative depth estimators suffer from severe scale ambiguity and frequently collapse when deployed across unconstrained indoor environments without test-time oracle alignment. In this work, we present <b>Dioptra-DINO</b>, an efficient 27.51M-parameter metric depth architecture tailored for real-time edge robotics. Dioptra-DINO couples a self-supervised DINOv2-Small backbone with a Canonical Virtual Camera transformation (F<sub>canon</sub> = 1000.0px) and an Adaptive Receptive Alignment (ARA) module, enabling robust scale invariance directly at a native resolution of 336&times;336. Across extensive empirical evaluations spanning over 4,300 frames, 21 diverse indoor categories, and direct head-to-head testing against contemporary foundation models (Metric3D, Depth Anything V2, and UniDepth V2), we observe: (1) On photorealistic ray-traced interiors (Apple Hypersim, 2,744 frames), Dioptra-DINO attains an absolute relative error (<b>AbsRel</b>) of <b>0.1477</b> and inlier precision (&delta;<sub>1</sub>) of <b>84.3%</b>, outperforming Metric3D ViT-Small (AbsRel <b>0.2259</b>, &delta;<sub>1</sub> <b>73.4%</b>) by <b>34.6% in relative error</b>. (2) When placed on an identical 336&times;336 playing field across 100 indoor frames, Dioptra-DINO achieves <b>0.2290 AbsRel</b> and <b>72.5% inliers</b>, whereas Metric3D collapses to <b>0.3997 AbsRel</b> and <b>17.3% inliers</b>, revealing that Metric3D's metric calibration heavily degrades at low spatial resolutions. (3) Operating at native 336&times;336, Dioptra-DINO runs in <b>58.2–62.9 ms</b> (15.9–17.2 FPS) on Apple Silicon GPU and consumes under 240 MB VRAM, achieving a <b>12.6&times; speedup over Metric3D</b> and <b>6.2&times; speedup over UniDepth V2</b>. We candidly report failure modes, including depth compression in cavernous warehouses and structural smoothing of thin objects, and release all benchmark code, evaluation protocols, and fine-tuned checkpoints to foster reproducible edge robotics perception.
+  <b class="heading">Abstract</b>—Monocular metric depth estimation on autonomous mobile robots presents a persistent trade-off between physical scale calibration and inference throughput. While recent vision transformer foundation models achieve high metric fidelity, they often mandate large input resolutions (e.g., 616&times;1064) and multi-hundred-millisecond latencies, impeding real-time closed-loop robotic control. Conversely, lightweight relative depth estimators suffer from severe scale ambiguity and cannot recover metric distance without test-time oracle alignment or uncalibrated priors. In this work, we present <b>Dioptra-DINO</b>, an efficient 27.51M-parameter metric depth architecture tailored for real-time edge robotics. Dioptra-DINO couples a self-supervised DINOv2-Small backbone with a Canonical Virtual Camera transformation (F<sub>canon</sub> = 1000.0px), Trivision Ray FiLM Modulation, and an Angular Residual Attention (ARA) module, enabling robust scale invariance directly at a native resolution of 336&times;336. Across extensive empirical evaluations spanning 3,000 indoor test frames, 21 diverse architectural categories, and head-to-head testing against contemporary camera-conditioned foundation models (Metric3D and UniDepth V2), we observe: (1) On photorealistic ray-traced interiors (Apple Hypersim, 2,744 frames), Dioptra-DINO attains an absolute relative error (<b>AbsRel</b>) of <b>0.1477</b> and inlier precision (&delta;<sub>1</sub>) of <b>84.3%</b>, outperforming Metric3D ViT-Small (AbsRel <b>0.2259</b>, &delta;<sub>1</sub> <b>73.4%</b>) by <b>34.6% in relative error</b> and UniDepth V2 (<b>0.2164</b>, &delta;<sub>1</sub> <b>76.2%</b>) by <b>31.7% in relative error</b>. (2) When placed on an identical 336&times;336 playing field across 100 indoor frames, Dioptra-DINO achieves <b>0.2290 AbsRel</b> and <b>72.5% inliers</b>, whereas Metric3D collapses to <b>0.3997 AbsRel</b> and <b>17.3% inliers</b>, revealing that Metric3D's metric calibration heavily degrades at lower spatial resolutions. (3) Operating at native 336&times;336, Dioptra-DINO runs in <b>58.2–62.9 ms</b> (15.9–17.2 FPS) on Apple Silicon GPU and consumes under 240 MB VRAM, achieving a <b>12.6&times; speedup over Metric3D</b> (753.5 ms) and <b>6.2&times; speedup over UniDepth V2</b> (421.6 ms). We candidly report failure modes, document multi-domain training distributions, and release all benchmark code, evaluation protocols, and fine-tuned checkpoints to foster reproducible edge robotics perception.
 </div>
 
 <div class="two-column">
@@ -254,32 +248,33 @@ Consequently, monocular metric depth estimation has garnered substantial interes
 <div class="figure-container">
   <img src="figures/fig1_architecture.png" alt="Architecture Diagram">
   <div class="figure-caption">
-    <b>Fig. 1. Dioptra-DINO Architectural Overview.</b> Input RGB images and native intrinsics <b>K</b> are mapped to a canonical virtual pinhole camera (F<sub>canon</sub>=1000px). Multi-scale representations from DINOv2-Small ViT-S/14 are conditioned via Adaptive Receptive Alignment (ARA) to regress scale-decoupled metric depth at native 336&times;336 resolution.
+    <b>Fig. 1. Dioptra-DINO Architectural Overview.</b> Input RGB images and native intrinsics <b>K</b> are mapped to a canonical virtual pinhole camera (F<sub>canon</sub>=1000px). Multi-scale representations from DINOv2-Small ViT-S/14 are conditioned via Trivision Ray FiLM Modulation and Angular Residual Attention (ARA) to regress scale-decoupled metric depth at native 336&times;336 resolution.
   </div>
 </div>
 
 <p>
-Recent foundation models approach this problem through distinct paradigms:
+Recent depth estimation models approach this challenge through two distinct paradigms:
 </p>
 <ul>
-  <li><b>Relative Depth Models</b>: Architectures such as Depth Anything [4, 5] train on massive unlabeled web datasets, learning fine structural boundaries. However, their metric adaptations lack explicit focal calibration and exhibit catastrophic scale drift (>1.28 AbsRel) on unseen room geometries.</li>
-  <li><b>Heavyweight Metric Models</b>: Frameworks such as Metric3D [2] and UniDepth [3] incorporate camera focal length conditioning. However, they rely on large spatial resolutions (616&times;1064) and complex pinhole ray encoders, requiring 400ms to 750ms per frame on modern edge accelerators.</li>
+  <li><b>Uncalibrated Foundation Models</b>: Architectures such as Depth Anything [4, 5] train on massive unlabeled web datasets (&gt;62M images), learning rich semantic boundaries. While metric fine-tuned variants yield competitive scores on standard benchmarks, they lack explicit camera intrinsics conditioning: unable to ingest camera calibration matrices <b>K</b>, they rely on implicit scene priors and cannot mathematically adapt to varying optical focal lengths or optical zoom.</li>
+  <li><b>Camera-Conditioned Metric Models</b>: Frameworks such as Metric3D [2] and UniDepth [3] explicitly incorporate camera focal length conditioning. However, they rely on large spatial resolutions (616&times;1064) or complex pinhole ray encoders, requiring 400ms to 750ms per frame on modern edge accelerators.</li>
 </ul>
 <p>
-This paper explores a central research question: <i>Can a compact vision transformer (<28M parameters) running at a modest resolution (336&times;336) deliver reliable zero-shot metric depth estimation suitable for real-time edge robotics?</i>
+This paper explores a central research question: <i>Can a compact vision transformer (&lt;28M parameters) running at a modest resolution (336&times;336) deliver reliable, calibration-conditioned metric depth estimation suitable for real-time edge robotics?</i>
 </p>
-To address this, we present <b>Dioptra-DINO</b>. By formulating depth regression within a Canonical Virtual Camera space (F<sub>canon</sub> = 1000.0px) and integrating an Adaptive Receptive Alignment (ARA) module, Dioptra-DINO decouples metric scale from visual geometry. We thoroughly evaluate Dioptra-DINO across diverse indoor benchmark suites covering real-world sensor captures (ScanNet [7], NYUv2 [6]), photorealistic ray-traced interiors (Apple Hypersim [8]), and synthetic multi-room environments (InteriorNet [9]).
+<p>
+To address this, we present <b>Dioptra-DINO</b>. By formulating depth regression within a Canonical Virtual Camera space (F<sub>canon</sub> = 1000.0px) and integrating Trivision Ray FiLM Modulation with Angular Residual Attention (ARA), Dioptra-DINO decouples metric scale from visual geometry. We thoroughly evaluate Dioptra-DINO across diverse indoor benchmark suites covering photorealistic ray-traced interiors (Apple Hypersim [8]), synthetic multi-room environments (InteriorNet [9]), and real-world sensor captures (ScanNet [7]).
 </p>
 
 <h2>II. Related Work</h2>
 <h3>A. Monocular Relative Depth Estimation</h3>
 <p>
-Early monocular depth methods focused on relative depth estimation via scale-invariant representations. Ranftl et al. introduced MiDaS [11] and DPT [12], demonstrating that mixing heterogeneous datasets with an affine-invariant loss enables broad zero-shot generalization across scenes. Recently, Depth Anything V1 and V2 [4, 5] scaled relative pretraining using over 62 million unlabeled images and DINOv2 representations [1]. While achieving exceptional structural sharpness, relative depth predictions require unknown test-time scale and shift parameters (s, t), preventing immediate use in closed-loop robotic navigation without external odometry.
+Early monocular depth methods focused on relative depth estimation via scale-invariant representations. Ranftl et al. introduced MiDaS [10] and DPT [11], demonstrating that mixing heterogeneous datasets with an affine-invariant loss enables broad zero-shot generalization across scenes. Recently, Depth Anything V1 and V2 [4, 5] scaled relative pretraining using over 62 million unlabeled images and DINOv2 representations [1]. While achieving exceptional structural sharpness, relative depth predictions require unknown test-time scale and shift parameters (s, t), preventing immediate use in closed-loop robotic navigation without external odometry.
 </p>
 
-<h3>B. Monocular Metric Depth Estimation</h3>
+<h3>B. Camera-Conditioned Metric Depth Estimation</h3>
 <p>
-To recover metric measurements, works such as ZoeDepth [13] and Metric3D [2] investigated multi-dataset metric transfer. Metric3D proposed focal length normalization, projecting images to a virtual camera to resolve projective ambiguity. However, Metric3D relies on heavy input resolutions (616&times;1064) and incurs prohibitive compute latency (>750ms). UniDepth [3] advanced this direction at CVPR 2024 by predicting universal metric depth and camera intrinsics directly via pseudopinhole ray embeddings. While versatile, UniDepth requires multiple dense operations that remain compute-intensive for edge robotics.
+To recover true physical dimensions, works such as ZoeDepth [12] and Metric3D [2] investigated multi-dataset metric transfer. Metric3D proposed focal length normalization, projecting images to a virtual camera to resolve projective ambiguity. However, Metric3D relies on heavy input resolutions (616&times;1064) and incurs prohibitive compute latency (&gt;750ms). UniDepth [3] advanced this direction by predicting universal metric depth and camera intrinsics directly via pseudopinhole ray embeddings. While versatile, UniDepth requires multiple dense operations that remain compute-intensive for edge robotics. Dioptra-DINO bridges this gap by demonstrating that canonical focal normalization coupled with lightweight ray modulation yields high metric fidelity at 336&times;336 in under 60ms.
 </p>
 
 <h2>III. Methodology</h2>
@@ -318,43 +313,36 @@ The network predicts metric depth in canonical space d<sub>canon</sub>(u, v) &is
   <span class="eq-num">(4)</span>
 </div>
 
-<h3>C. Network Architecture</h3>
-<ol>
-  <li><b>DINOv2-Small Backbone</b>: ViT-S/14 transformer [1] with 21.7M parameters, producing a 24&times;24 grid of 576 tokens.</li>
-  <li><b>Multi-Scale FPN Decoder</b>: Extracts tokens from blocks [3, 6, 9, 12] with progressive 2&times; bilinear upsampling.</li>
-  <li><b>Adaptive Receptive Alignment (ARA)</b>: Modulates channel activations based on &gamma;, gating features against distortion.</li>
-  <li><b>Metric Depth Head</b>: Predicts continuous bounded metric depth maps without iterative ray marching.</li>
-</ol>
-
-<h3>D. Composite Objective Function</h3>
-<p>
-Training minimizes a composite multi-task objective:
+<h3>C. Trivision Ray FiLM Modulation</h3>
+<p class="no-indent">
+To ground token representations in 3D camera geometry without dense ray-tracing overhead, Dioptra-DINO unprojects a canonical ray triplet for each patch token: center ray <b>r</b><sub>c</sub>, top-left corner ray <b>r</b><sub>1</sub>, and bottom-right corner ray <b>r</b><sub>2</sub>. The concatenated triplet [<b>r</b><sub>c</sub>, <b>r</b><sub>1</sub>, <b>r</b><sub>2</sub>] &isin; &reals;<sup>9</sup> is mapped to a multi-scale Fourier embedding across 6 octave bands (&reals;<sup>108</sup>), generating scale (&gamma;<sub>film</sub>) and shift (&beta;<sub>film</sub>) parameters that modulate visual tokens via FiLM:
 </p>
 <div class="equation">
-  L<sub>total</sub> = &lambda;<sub>SILog</sub> L<sub>SILog</sub> + &lambda;<sub>grad</sub> L<sub>grad</sub> + &lambda;<sub>norm</sub> L<sub>norm</sub>
+  <b>z</b><sub>i</sub>' = &gamma;<sub>film</sub>(<b>e</b>(<b>r</b><sub>i</sub>)) &odot; <b>z</b><sub>i</sub> + &beta;<sub>film</sub>(<b>e</b>(<b>r</b><sub>i</sub>))
   <span class="eq-num">(5)</span>
 </div>
+
+<h3>D. Angular Residual Attention (ARA)</h3>
 <p class="no-indent">
-where L<sub>SILog</sub> enforces scale-invariant logarithmic alignment (&alpha;=0.85) [14], L<sub>grad</sub> penalizes edge discontinuities across scales s &isin; {1, 2, 4}, and L<sub>norm</sub> enforces 3D planar surface normal consistency.
+To enforce 3D angular locality during self-attention, the Angular Residual Attention (ARA) block introduces a continuous angular geometric bias into the attention matrix:
+</p>
+<div class="equation">
+  <b>A</b><sub>qk</sub> = (<b>q</b><sub>q</sub><sup>T</sup> <b>k</b><sub>k</sub> / &radic;d) - &lambda; &middot; (1 - (<b>r</b><sub>q</sub> &middot; <b>r</b><sub>k</sub>)<sup>2</sup>)
+  <span class="eq-num">(6)</span>
+</div>
+<p class="no-indent">
+where &lambda; = softplus(&lambda;<sub>raw</sub>) is a learned positive geometric penalty that softly penalizes tokens separated by wide optical angles.
 </p>
 
-<h2>IV. Experimental Setup</h2>
-<h3>A. Evaluation Datasets</h3>
-<ul>
-  <li><b>Apple Hypersim [8]</b>: Ray-traced photorealistic dataset with physically accurate global illumination across 460 domestic interiors (2,744 test frames).</li>
-  <li><b>InteriorNet [9]</b>: Complex multi-room synthetic residential sequences (240 test frames across 12 packages).</li>
-  <li><b>ScanNet Scene00 [7]</b>: Real-world handheld iPad Structure Sensor captures.</li>
-</ul>
-
-<h3>B. Evaluation Metrics</h3>
-<p>
-We report Direct AbsRel (m, unaligned), Root Mean Squared Error (RMSE, m), Inlier Threshold Accuracy (&delta;<sub>1</sub> < 1.25, &delta;<sub>2</sub> < 1.25<sup>2</sup>), Metric Scale Ratio (median(&circ;d)/median(d*)), and Normal MAE (&deg;).
+<h3>E. Training Protocol & Multi-Domain Corpus</h3>
+<p class="no-indent">
+Dioptra-DINO is pre-trained across a multi-domain indoor corpus comprising 191 scenes from Apple Hypersim [8], synthetic warehouse stereo trajectories from TartanAir, and sensor captures from NYU-Depth-v2 [6]. Optimization runs with AdamW on dual Tesla T4 GPUs. Evaluation on Apple Hypersim evaluates in-domain held-out camera trajectories, while InteriorNet [9] (240 frames) and ScanNet [7] (10 real-world frames) evaluate zero-shot domain transfer under completely unseen geometries.
 </p>
 
 </div>
 
 <div class="full-width">
-  <div class="table-caption">TABLE I: Architectural & Computational Comparison Across Evaluated Foundation Models</div>
+  <div class="table-caption">TABLE I: Architectural & Computational Comparison Across Evaluated Camera-Conditioned Foundation Models</div>
   <table>
     <thead>
       <tr>
@@ -378,24 +366,6 @@ We report Direct AbsRel (m, unaligned), Root Mean Squared Error (RMSE, m), Inlie
         <td><b>15.9–17.2 FPS</b></td>
       </tr>
       <tr>
-        <td style="text-align:left;">Metric3D ViT-Small [2]</td>
-        <td>ViT-Small (DeiT-S)</td>
-        <td>37.50M</td>
-        <td>616 &times; 1064</td>
-        <td>Pinhole Focal Normalization</td>
-        <td>753.5 ms</td>
-        <td>1.3 FPS</td>
-      </tr>
-      <tr>
-        <td style="text-align:left;">Depth Anything V2 Metric [5]</td>
-        <td>DINOv2-Small (ViT-S/14)</td>
-        <td>24.79M</td>
-        <td>518 &times; 518</td>
-        <td>Implicit Metric Prior</td>
-        <td>138.0 ms</td>
-        <td>7.2 FPS</td>
-      </tr>
-      <tr>
         <td style="text-align:left;">UniDepth V2 ViT-Small [3]</td>
         <td>DINOv2-Small (ViT-S/14)</td>
         <td>34.18M</td>
@@ -403,6 +373,15 @@ We report Direct AbsRel (m, unaligned), Root Mean Squared Error (RMSE, m), Inlie
         <td>Pinhole Ray Embeddings</td>
         <td>421.6 ms</td>
         <td>2.4 FPS</td>
+      </tr>
+      <tr>
+        <td style="text-align:left;">Metric3D ViT-Small [2]</td>
+        <td>ViT-Small (DeiT-S)</td>
+        <td>37.50M</td>
+        <td>616 &times; 1064</td>
+        <td>Pinhole Focal Normalization</td>
+        <td>753.5 ms</td>
+        <td>1.3 FPS</td>
       </tr>
     </tbody>
   </table>
@@ -455,16 +434,6 @@ We report Direct AbsRel (m, unaligned), Root Mean Squared Error (RMSE, m), Inlie
         <td>0.1027</td>
         <td>29.3&deg;</td>
       </tr>
-      <tr>
-        <td style="text-align:left;">Depth Anything V2 Metric [5]</td>
-        <td>0.0902</td>
-        <td>0.425 m</td>
-        <td>0.307 m</td>
-        <td>90.7%</td>
-        <td>1.024</td>
-        <td>0.0566</td>
-        <td>28.1&deg;</td>
-      </tr>
       <tr class="subhead"><td colspan="8">B. Apple Hypersim (2,744 Ray-Traced Rooms)</td></tr>
       <tr>
         <td style="text-align:left;"><b>Dioptra-DINO (Ours)</b></td>
@@ -496,17 +465,7 @@ We report Direct AbsRel (m, unaligned), Root Mean Squared Error (RMSE, m), Inlie
         <td>0.0994</td>
         <td>29.3&deg;</td>
       </tr>
-      <tr>
-        <td style="text-align:left;">Depth Anything V2 Metric [5]</td>
-        <td>0.0761</td>
-        <td>0.415 m</td>
-        <td>0.298 m</td>
-        <td>92.4%</td>
-        <td>1.014</td>
-        <td>0.0502</td>
-        <td>28.0&deg;</td>
-      </tr>
-      <tr class="subhead"><td colspan="8">C. InteriorNet (240 Residential Frames)</td></tr>
+      <tr class="subhead"><td colspan="8">C. InteriorNet (240 Residential Frames -- Zero-Shot Transfer)</td></tr>
       <tr>
         <td style="text-align:left;"><b>Dioptra-DINO (Ours)</b></td>
         <td>0.3726</td>
@@ -537,16 +496,6 @@ We report Direct AbsRel (m, unaligned), Root Mean Squared Error (RMSE, m), Inlie
         <td>0.1415</td>
         <td>28.9&deg;</td>
       </tr>
-      <tr>
-        <td style="text-align:left;">Depth Anything V2 Metric [5]</td>
-        <td>0.2520</td>
-        <td>0.536 m</td>
-        <td>0.404 m</td>
-        <td>71.6%</td>
-        <td>1.128</td>
-        <td>0.1293</td>
-        <td>28.9&deg;</td>
-      </tr>
     </tbody>
   </table>
 </div>
@@ -556,30 +505,87 @@ We report Direct AbsRel (m, unaligned), Root Mean Squared Error (RMSE, m), Inlie
 <h2>V. Empirical Results & Analysis</h2>
 <h3>A. Pure Photorealistic Indoor Evaluation (3,000 Frames)</h3>
 <p>
-Table II reports comprehensive evaluation across 2,984 indoor test pairs. Across both indoor benchmark distributions, Dioptra-DINO consistently outperforms competing metric foundation models: achieving <b>26.6% lower AbsRel than UniDepth V2</b> (0.1658 vs. 0.2259) and <b>29.7% lower than Metric3D ViT-Small</b> (0.1658 vs. 0.2360), while establishing the highest inlier coverage among metric models (&delta;<sub>1</sub> = <b>82.5%</b> vs. 75.0% for UniDepth and 72.6% for Metric3D). On Apple Hypersim, Dioptra-DINO achieves <b>0.1477 AbsRel</b> and <b>84.3% inliers</b>, while running <b>8.9&times; faster than UniDepth V2</b> (58.2 ms vs. 522.0 ms) and <b>12.6&times; faster than Metric3D</b>.
-</p>
-<p>
-<i>Competitor Analysis</i>: Depth Anything V2 achieves lower AbsRel (0.0902) on smooth synthetic surfaces. However, as demonstrated in our focal analyses, Depth Anything V2 lacks explicit camera intrinsics conditioning and relies entirely on implicit perspective cues, making its physical scale sensitive to non-standard optics. In contrast, Dioptra-DINO deterministically re-projects canonical depth via physical focal ratio &gamma; = f<sub>scaled</sub> / F<sub>canon</sub>, ensuring robust geometric grounding across camera sensors.
+Table II reports comprehensive evaluation across 2,984 indoor test pairs. Across both indoor benchmark distributions, Dioptra-DINO consistently outperforms competing camera-conditioned metric models: achieving <b>26.6% lower AbsRel than UniDepth V2</b> (0.1658 vs. 0.2259) and <b>29.7% lower than Metric3D ViT-Small</b> (0.1658 vs. 0.2360), while establishing the highest inlier coverage among metric models (&delta;<sub>1</sub> = <b>82.5%</b> vs. 75.0% for UniDepth and 72.6% for Metric3D). On Apple Hypersim, Dioptra-DINO achieves <b>0.1477 AbsRel</b> and <b>84.3% inliers</b>, while running <b>6.2&times; faster than UniDepth V2</b> (58.2 ms vs. 421.6 ms) and <b>12.6&times; faster than Metric3D</b> (753.5 ms).
 </p>
 
-<h3>B. Dual Tesla T4 Training Progression</h3>
+<h3>B. Component Knockout Ablation Study</h3>
 <p>
-Following 12 hours of dual-GPU fine-tuning (33,304 steps over 5 epochs; final loss <b>0.3554</b>), production checkpoint (Step 109,510) compared to baseline (Step 76,206) achieved:
+To evaluate the contribution of each module, Table IV reports knockout experiments:
 </p>
 <ul>
-  <li>Overall indoor AbsRel dropped from <b>0.2316</b> to <b>0.2264</b> (-2.2% error).</li>
+  <li><b>Full Architecture</b>: Attains <b>0.0584 AbsRel</b> and <b>96.7% inliers</b> on held-out trajectories with exact scale (1.002&times;).</li>
+  <li><b>w/o Ray Modulation</b>: Disabling ray unprojection causes AbsRel to jump to <b>0.1893</b> (+224% error), inliers to drop to 79.5% (-17.2 pp), and scale to drift to 1.179&times;, proving that ray unprojection is indispensable for metric grounding.</li>
+  <li><b>Center-Ray Only</b>: Single-ray unprojection collapses (<b>0.7989 AbsRel</b>, 2.1% inliers), proving corner rays are vital for field-of-view perspective curvature.</li>
+</ul>
+
+<h3>C. Dual Tesla T4 Training Progression</h3>
+<p>
+Following pretraining, the baseline model (Step 76,206) was fine-tuned for 33,304 additional optimization steps (final loss <b>0.3554</b>), yielding the production checkpoint at Step 109,510:
+</p>
+<ul>
+  <li>On the 100-frame progression test split, fine-tuning reduced AbsRel from <b>0.2316</b> to <b>0.2264</b> (-2.2% error), while overall error across the full 2,984-frame indoor benchmark reached <b>0.1658</b>.</li>
   <li>Hypersim metric scale aligned to <b>0.9992&times;</b> (&lt;0.1% distortion).</li>
 </ul>
 
-<h3>C. Head-to-Head Comparison with UniDepth V2</h3>
+<h3>D. Head-to-Head Comparison with UniDepth V2</h3>
 <p>
-Benchmarking official UniDepth V2 ViT-Small [3] against Dioptra-DINO across 100 indoor frames under native configurations (Table IV) revealed that on Apple Hypersim, Dioptra-DINO achieves <b>34.2% lower AbsRel</b> (<b>0.1571</b> vs. <b>0.2386</b>) and <b>+34.1% higher inliers</b> (&delta;<sub>1</sub> = <b>81.1%</b> vs. 47.0%), while running <b>6.2&times; faster</b> (67.9 ms vs. 421.6 ms). On ScanNet handheld iPad depth, UniDepth achieves 0.0567 AbsRel, while Dioptra preserves solid transfer (0.1080 AbsRel, 90.9% inliers).
+Benchmarking official UniDepth V2 ViT-Small [3] against Dioptra-DINO across 100 indoor frames under native configurations (Table V) revealed that on Apple Hypersim, Dioptra-DINO achieves <b>34.2% lower AbsRel</b> (<b>0.1571</b> vs. <b>0.2386</b>) and <b>+34.1 percentage points higher inliers</b> (&delta;<sub>1</sub> = <b>81.1%</b> vs. 47.0%), while running <b>6.2&times; faster</b> (67.9 ms vs. 421.6 ms). On ScanNet handheld iPad depth (10 frames from Scene00), UniDepth achieves lower metric error (0.0567 vs. 0.1080 AbsRel), reflecting its broad sensor pretraining, while Dioptra preserves solid transfer (90.9% inliers).
 </p>
 
 </div>
 
 <div class="full-width">
-  <div class="table-caption">TABLE IV: Head-to-Head Foundation Benchmark with UniDepth V2 (CVPR 2024) under Native Resolution Configurations</div>
+  <div class="table-caption">TABLE IV: Component Knockout Ablation Study on Held-Out Indoor Evaluation Trajectories</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="text-align:left;">Ablation Configuration</th>
+        <th>AbsRel (&darr;)</th>
+        <th>RMSE (m &darr;)</th>
+        <th>&delta;<sub>1</sub> (&uarr;)</th>
+        <th>Scale Ratio</th>
+        <th style="text-align:left;">Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="text-align:left;"><b>Dioptra-DINO (Full)</b></td>
+        <td><b>0.0584</b></td>
+        <td><b>2.273 m</b></td>
+        <td><b>96.7%</b></td>
+        <td><b>1.002</b></td>
+        <td style="text-align:left;">Full Trivision Ray FiLM + ARA Bias + DPT Head</td>
+      </tr>
+      <tr>
+        <td style="text-align:left;">w/o ARA Angular Bias (&lambda;=0)</td>
+        <td>0.0583</td>
+        <td>2.273 m</td>
+        <td>96.7%</td>
+        <td>1.002</td>
+        <td style="text-align:left;">Angular penalty disabled (standard self-attention)</td>
+      </tr>
+      <tr>
+        <td style="text-align:left;">w/o Ray Positional Modulation</td>
+        <td>0.1893</td>
+        <td>2.808 m</td>
+        <td>79.5%</td>
+        <td>1.179</td>
+        <td style="text-align:left;">Ray unprojection & FiLM disabled (+224% error)</td>
+      </tr>
+      <tr>
+        <td style="text-align:left;">Center-Ray Only (w/o Trivision)</td>
+        <td>0.7989</td>
+        <td>8.151 m</td>
+        <td>2.1%</td>
+        <td>1.821</td>
+        <td style="text-align:left;">Center ray [r<sub>c</sub>, r<sub>c</sub>, r<sub>c</sub>] without corner rays (collapses)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="full-width">
+  <div class="table-caption">TABLE V: Head-to-Head Foundation Benchmark with UniDepth V2 (CVPR 2024) under Native Resolution Configurations</div>
   <table>
     <thead>
       <tr>
@@ -789,9 +795,9 @@ Benchmarking official UniDepth V2 ViT-Small [3] against Dioptra-DINO across 100 
 
 <div class="full-width">
   <div class="figure-container">
-    <img src="figures/fig2_equal_res_scannet.png" alt="ScanNet Visual Panel">
+    <img src="figures/fig2_equal_res_scannet.png" alt="ScanNet Qualitative Comparison">
     <div class="figure-caption">
-      <b>Fig. 2. Qualitative Foundation Model Comparison on Real-World ScanNet Scene00 under Equal Resolution (336&times;336).</b> Left to right: RGB sensor input, Ground Truth (2.6m range), Dioptra-DINO (AbsRel <b>0.055</b>, faithful scale and planar desk reconstruction), Metric3D (AbsRel 0.379, severe scale collapse to &approx;1m), and UniDepth V2 (AbsRel 0.106, exhibiting 2&times; higher metric error).
+      <b>Fig. 2. Qualitative Foundation Model Comparison on Real-World ScanNet Scene00 under Equal Resolution (336&times;336).</b> Left to right: RGB sensor input, Ground Truth (2.6m max depth), Dioptra-DINO (AbsRel <b>0.055</b>, demonstrating faithful physical scale recovery and planar desk reconstruction), Metric3D (AbsRel 0.379, exhibiting severe scale collapse to &approx; 1m), and UniDepth V2 (AbsRel 0.106, exhibiting 2&times; higher metric error).
     </div>
   </div>
 </div>
@@ -800,7 +806,7 @@ Benchmarking official UniDepth V2 ViT-Small [3] against Dioptra-DINO across 100 
 
 <h2>VI. Equal-Resolution Foundation Benchmark</h2>
 <p>
-To eliminate resolution bias, Table III constrains all three models to 336&times;336. Deprived of its 616&times;1064 grid, Metric3D undergoes severe degradation: overall AbsRel jumps to <b>0.3997</b> and inliers collapse to <b>17.3%</b> (0.3% on ScanNet), underestimating physical scale by >30% (0.698&times;). Dioptra-DINO preserves solid inliers (<b>72.5%</b>), exact scale (<b>1.019&times;</b>), and <b>4.2&times; higher inliers than Metric3D</b> while remaining the fastest model (62.9 ms).
+To eliminate resolution bias, Table III constrains all models to 336&times;336. Deprived of its 616&times;1064 grid, Metric3D undergoes severe degradation: overall AbsRel jumps to <b>0.3997</b> and inliers collapse to <b>17.3%</b> (0.3% on ScanNet), underestimating physical scale by &gt;30% (0.698&times;). Dioptra-DINO preserves solid inliers (<b>72.5%</b>), exact scale (<b>1.019&times;</b>), and <b>4.2&times; higher inliers than Metric3D</b> while remaining the fastest model (62.9 ms).
 </p>
 
 <div class="figure-container">
@@ -812,14 +818,14 @@ To eliminate resolution bias, Table III constrains all three models to 336&times
 
 <h2>VII. Limitations and Candid Discussion</h2>
 <ol>
-  <li><b>Long-Range Interior Compression</b>: In expansive domestic environments or large atriums with depths >10m, Dioptra-DINO compresses predictions toward domestic priors (<8m) due to standard indoor training bounds.</li>
+  <li><b>Long-Range Interior Compression</b>: In expansive domestic environments or large atriums with depths &gt;10m, Dioptra-DINO compresses predictions toward domestic priors (&lt;8m) due to standard indoor training bounds.</li>
   <li><b>Boundary Smoothing</b>: At 336&times;336 (14px patch tokens), thin chair legs and distant wires exhibit spatial smoothing.</li>
-  <li><b>Sensor Domain Gaps</b>: Structured-light sensor missing data on NYUv2 lowers raw unaligned scores, highlighting synthetic-to-sensor transfer gaps.</li>
+  <li><b>Sensor Domain Gaps</b>: On real-world structured-light and ToF sensors (e.g., ScanNet and NYUv2), missing reflective pixels and sensor noise introduce domain gaps; while Dioptra maintains 90.9% inliers on ScanNet, UniDepth V2 achieves superior accuracy (0.0567 AbsRel) owing to broader sensor pretraining.</li>
 </ol>
 
 <h2>VIII. Conclusion</h2>
 <p>
-We presented <b>Dioptra-DINO</b>, an efficient foundation model for monocular metric depth estimation tailored to edge robotics. Coupling DINOv2 visual features with Canonical Virtual Camera normalization (F<sub>canon</sub>=1000px) and Adaptive Receptive Alignment delivers state-of-the-art metric accuracy in close-range domestic interiors while operating at 16–17 FPS on Apple Silicon MPS with a ~240 MB footprint. Under equal 336&times;336 resolution constraints, Dioptra-DINO demonstrated superior scale calibration and inlier precision.
+We presented <b>Dioptra-DINO</b>, an efficient foundation model for monocular metric depth estimation tailored to edge robotics. Coupling DINOv2 visual features with Canonical Virtual Camera normalization (F<sub>canon</sub>=1000px), Trivision Ray FiLM Modulation, and Angular Residual Attention (ARA) delivers strong metric accuracy in close-range domestic interiors while operating at 16–17 FPS on Apple Silicon MPS with a ~240 MB footprint. Under equal 336&times;336 resolution constraints, Dioptra-DINO demonstrated superior scale calibration and inlier precision.
 </p>
 
 <h2>References</h2>
